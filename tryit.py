@@ -10,11 +10,11 @@ from textblob import TextBlob
 import json
 import os
 import time
+import hashlib
 
 # --- SAYFA AYARLARI VE ÖZEL NEON CSS ---
 st.set_page_config(page_title="Pro-Yatırım Terminali", layout="wide", page_icon="📈")
 
-# Görsel Makyaj (Özel Tasarım CSS)
 st.markdown("""
 <style>
     div[data-testid="metric-container"] {
@@ -42,25 +42,82 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.title("🛡️ Portföy Düzenleyici 🛡️")
+# =========================================================================================
+# --- ÇOK KULLANICILI VERİTABANI VE KİMLİK DOĞRULAMA (AUTH) ---
+# =========================================================================================
+DB_DOSYASI = "kullanicilar_db.json"
 
-# --- VERİTABANI (JSON) FONKSİYONLARI ---
-DOSYA_ADI = "sanal_cuzdan.json"
+def sifre_sifrele(sifre):
+    return hashlib.sha256(sifre.encode()).hexdigest()
 
-def cuzdan_yukle():
-    if os.path.exists(DOSYA_ADI):
-        with open(DOSYA_ADI, "r", encoding="utf-8") as f:
-            veri = json.load(f)
-            if "izleme_listesi" not in veri:
-                veri["izleme_listesi"] = ["Türk Hava Yolları", "Bitcoin", "Altın (Ons)"]
-            return veri
-    return {"nakit": 1000000.0, "varliklar": {}, "izleme_listesi": ["Türk Hava Yolları", "Bitcoin", "Altın (Ons)"]}
+def db_yukle():
+    if os.path.exists(DB_DOSYASI):
+        with open(DB_DOSYASI, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {}
 
-def cuzdan_kaydet(veri):
-    with open(DOSYA_ADI, "w", encoding="utf-8") as f:
-        json.dump(veri, f, indent=4)
+def db_kaydet(db):
+    with open(DB_DOSYASI, "w", encoding="utf-8") as f:
+        json.dump(db, f, indent=4)
 
-cuzdan = cuzdan_yukle()
+if 'aktif_kullanici' not in st.session_state:
+    st.session_state.aktif_kullanici = None
+
+db = db_yukle()
+
+# GİRİŞ EKRANI (Kullanıcı giriş yapmadıysa sadece burası görünür)
+if st.session_state.aktif_kullanici is None:
+    st.title("🛡️ Pro-Yatırım Kulübüne Hoş Geldiniz")
+    st.markdown("Sanal 1.000.000 TL bakiye ile kendi fonunuzu yönetmek ve yapay zeka analizlerine ulaşmak için giriş yapın.")
+    
+    tab_giris, tab_kayit = st.tabs(["🔑 Giriş Yap", "📝 Kayıt Ol"])
+    
+    with tab_giris:
+        g_kullanici = st.text_input("Kullanıcı Adı", key="g_isim")
+        g_sifre = st.text_input("Şifre", type="password", key="g_sifre")
+        if st.button("Giriş Yap", use_container_width=True):
+            if g_kullanici in db and db[g_kullanici]["sifre"] == sifre_sifrele(g_sifre):
+                st.session_state.aktif_kullanici = g_kullanici
+                st.success("Giriş başarılı! Terminale yönlendiriliyorsunuz...")
+                time.sleep(1)
+                st.rerun()
+            else:
+                st.error("Kullanıcı adı veya şifre hatalı!")
+                
+    with tab_kayit:
+        k_kullanici = st.text_input("Yeni Kullanıcı Adı", key="k_isim")
+        k_sifre = st.text_input("Yeni Şifre", type="password", key="k_sifre")
+        if st.button("Hesap Oluştur", use_container_width=True):
+            if k_kullanici in db:
+                st.error("Bu kullanıcı adı zaten alınmış!")
+            elif len(k_kullanici) < 3 or len(k_sifre) < 4:
+                st.warning("Kullanıcı adı en az 3, şifre en az 4 karakter olmalıdır.")
+            else:
+                # Yeni kullanıcıya sıfır kilometre cüzdan tahsis et
+                db[k_kullanici] = {
+                    "sifre": sifre_sifrele(k_sifre),
+                    "cuzdan": {
+                        "nakit": 1000000.0,
+                        "varliklar": {},
+                        "izleme_listesi": ["Türk Hava Yolları", "Bitcoin", "Altın (Ons)"]
+                    }
+                }
+                db_kaydet(db)
+                st.success("Hesabınız oluşturuldu! Şimdi giriş yapabilirsiniz.")
+                
+    st.stop() # Giriş yapılana kadar uygulamanın geri kalanını durdurur
+
+# =========================================================================================
+# AKTİF KULLANICI VERİLERİNİ ÇEK
+aktif_kullanici = st.session_state.aktif_kullanici
+cuzdan = db[aktif_kullanici]["cuzdan"]
+
+def aktif_cuzdan_kaydet():
+    db[aktif_kullanici]["cuzdan"] = cuzdan
+    db_kaydet(db)
+
+st.title("🛡️ Profesyonel Algoritmik Yatırım Karargahı")
+st.caption(f"👤 Fon Yöneticisi: **{aktif_kullanici.upper()}**")
 
 # =========================================================================================
 # --- MEGA PİYASA SÖZLÜKLERİ ---
@@ -126,9 +183,12 @@ st.sidebar.header("🕹️ Uygulama Modu")
 uygulama_modu = st.sidebar.radio("Mod Seçiniz:", ["🔍 Algoritmik Piyasa Tarama", "💼 Sanal Portföy (Oyun)"])
 st.sidebar.markdown("---")
 
-# =========================================================================================
-# --- YASAL UYARI (DISCLAIMER) EKLENDİ ---
-# =========================================================================================
+if st.sidebar.button("🚪 Çıkış Yap", use_container_width=True):
+    st.session_state.aktif_kullanici = None
+    st.rerun()
+
+# YASAL UYARI (DISCLAIMER)
+st.sidebar.markdown("---")
 st.sidebar.warning("""
 **⚠️ YASAL UYARI (YTD)**
 Burada yer alan yatırım bilgi, yorum, algoritma sonuçları ve yapay zeka tahminleri **yatırım danışmanlığı kapsamında değildir.** Bu uygulama tamamen matematiksel simülasyon, eğitim ve test amacıyla geliştirilmiştir. Sistem tarafından üretilen "AL/SAT" sinyalleri veya portföy dağılımları kesin getiri vaat etmez. Bu verilere dayanarak yapılacak işlemlerden doğabilecek maddi/manevi zararlardan geliştirici sorumlu tutulamaz.
@@ -147,7 +207,7 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
 
     aktif_varliklar = {}
     if piyasa_secimi == "👤 Kendi İzleme Listem":
-        st.sidebar.info("Buradaki seçimleriniz otomatik olarak kaydedilir:")
+        st.sidebar.info("Buradaki seçimleriniz profilinize otomatik kaydedilir:")
         
         if "ilk_liste" not in st.session_state:
             st.session_state.ilk_liste = [v for v in cuzdan.get("izleme_listesi", []) if v in tum_varliklar_mega]
@@ -161,7 +221,7 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
         if set(secilen_isimler) != set(st.session_state.ilk_liste):
             st.session_state.ilk_liste = secilen_isimler
             cuzdan["izleme_listesi"] = secilen_isimler
-            cuzdan_kaydet(cuzdan)
+            aktif_cuzdan_kaydet()
             
         aktif_varliklar = {isim: tum_varliklar_mega[isim] for isim in secilen_isimler}
         
@@ -274,7 +334,7 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
         else:
             st.warning("Lütfen sol menüden en az bir varlık seçin.")
 
-    # --- ANALİZ SONUÇLARI VE AKILLI TABLO (HEATMAP) ---
+    # --- ANALİZ SONUÇLARI VE AKILLI TABLO ---
     if not st.session_state.df_sonuc.empty:
         st.success("✅ Tarama Tamamlandı!")
         
@@ -299,9 +359,7 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
             
         st.markdown("---")
         
-        # FERAH TASARIM: Portföy Modülleri
         if piyasa_secimi == "👤 Kendi İzleme Listem" and not st.session_state.ozel_portfoy_verisi.empty:
-            
             with st.expander("⚖️ Markowitz Optimum Portföy Dağılımını Göster", expanded=False):
                 st.write("Sistem, seçtiğiniz varlıkların geçmiş korelasyonlarını analiz ederek riski minimumda tutan altın oranları hesapladı.")
                 df_port = st.session_state.ozel_portfoy_verisi.ffill().dropna()
@@ -342,7 +400,7 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                                          color_continuous_scale="RdYlGn", 
                                          title="Korelasyon Isı Haritası", template="plotly_dark")
                     st.plotly_chart(fig_corr, use_container_width=True)
-                    st.info("💡 **Nasıl Okunur?** Yeşil renkler hisselerin/coinlerin aynı anda yükselip düştüğünü (aynı risk grubu), Kırmızı renkler ise biri düşerken diğerinin yükseldiğini (risk dengeleyici ters korelasyon) gösterir.")
+                    st.info("💡 **Nasıl Okunur?** Yeşil renkler aynı anda yükselip düştüğünü, Kırmızı renkler ise biri düşerken diğerinin yükseldiğini gösterir.")
                 else:
                     st.warning("Korelasyon hesaplamak için en az 2 varlık ve yeterli geçmiş veri gerekiyor.")
         
@@ -411,7 +469,6 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                             fig3.update_layout(height=450, template="plotly_dark", margin=dict(t=10, b=10))
                             st.plotly_chart(fig3, use_container_width=True)
             with col2:
-                # NLP DUYGU ANALİZİ
                 st.write("### 🧠 Piyasa Psikolojisi")
                 try:
                     haberler = yf.Ticker(secilen_sembol).news
@@ -452,7 +509,6 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                 
                 st.markdown("---")
                 
-                # Haber Paneli
                 with st.expander("📰 Son Dakika Haberlerini Oku", expanded=True):
                     try:
                         if haberler:
@@ -519,7 +575,7 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                 if cuzdan["nakit"] >= islem_tutari:
                     cuzdan["nakit"] -= islem_tutari
                     cuzdan["varliklar"][secili_varlik] = cuzdan["varliklar"].get(secili_varlik, 0) + islem_miktari
-                    cuzdan_kaydet(cuzdan)
+                    aktif_cuzdan_kaydet()
                     st.success(f"✅ {islem_miktari} adet {secili_varlik} başarıyla alındı!")
                     time.sleep(1) 
                     st.rerun() 
@@ -531,7 +587,7 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                     cuzdan["varliklar"][secili_varlik] -= islem_miktari
                     cuzdan["nakit"] += islem_tutari
                     if cuzdan["varliklar"][secili_varlik] <= 0: del cuzdan["varliklar"][secili_varlik]
-                    cuzdan_kaydet(cuzdan)
+                    aktif_cuzdan_kaydet()
                     st.success(f"✅ {islem_miktari} adet {secili_varlik} başarıyla satıldı!")
                     time.sleep(1)
                     st.rerun() 
@@ -544,8 +600,9 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
             st.dataframe(pd.DataFrame(portfoy_listesi).sort_values(by="Toplam Değer (₺)", ascending=False), use_container_width=True)
             st.markdown("<br>", unsafe_allow_html=True)
             if st.button("🗑️ Portföyü Sıfırla (Baştan Başla)", use_container_width=True):
-                cuzdan_kaydet({"nakit": 1000000.0, "varliklar": {}, "izleme_listesi": cuzdan.get("izleme_listesi", [])})
+                cuzdan["nakit"] = 1000000.0
+                cuzdan["varliklar"] = {}
+                aktif_cuzdan_kaydet()
                 st.rerun()
         else:
             st.info("Portföyünüz şu an boş. Sol taraftan işlem yaparak yatırım yapmaya başlayabilirsiniz!")
-
