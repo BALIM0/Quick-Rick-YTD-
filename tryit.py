@@ -104,7 +104,7 @@ if st.session_state.aktif_kullanici is None:
                 db_kaydet(db)
                 st.success("Hesabınız oluşturuldu! Şimdi giriş yapabilirsiniz.")
                 
-    st.stop() # Giriş yapılana kadar uygulamanın geri kalanını durdurur
+    st.stop()
 
 # =========================================================================================
 # AKTİF KULLANICI VERİLERİNİ ÇEK
@@ -403,7 +403,6 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                 else:
                     st.warning("Korelasyon hesaplamak için en az 2 varlık ve yeterli geçmiş veri gerekiyor.")
         
-        # --- YENİ EKLENEN: ANALİZ KISMI İÇİN ANINDA YENİLEME BUTONU ---
         st.markdown("<br>", unsafe_allow_html=True)
         col_analiz_baslik, col_analiz_yenile = st.columns([3, 1])
         with col_analiz_baslik:
@@ -536,9 +535,18 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
     toplam_varlik_degeri = 0
     guncel_fiyatlar = {}
     
+    # GERİYE DÖNÜK UYUMLULUK VE GÜNCEL FİYAT ÇEKİMİ
     if cuzdan["varliklar"]:
         st.info("Portföyünüzdeki varlıkların güncel canlı fiyatları çekiliyor...")
-        for varlik_ismi, adet in cuzdan["varliklar"].items():
+        for varlik_ismi, v_veri in list(cuzdan["varliklar"].items()):
+            # Eski kayıtlarda (sadece sayı varsa) maliyeti otomatik olarak 0 ayarlarız ki sistem çökmesin
+            if isinstance(v_veri, (int, float)):
+                cuzdan["varliklar"][varlik_ismi] = {"adet": v_veri, "maliyet": 0.0}
+                aktif_cuzdan_kaydet()
+                adet = v_veri
+            else:
+                adet = v_veri["adet"]
+                
             sembol = tum_varliklar_mega.get(varlik_ismi)
             if sembol:
                 try:
@@ -580,7 +588,19 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
             if islem_tipi == "AL":
                 if cuzdan["nakit"] >= islem_tutari:
                     cuzdan["nakit"] -= islem_tutari
-                    cuzdan["varliklar"][secili_varlik] = cuzdan["varliklar"].get(secili_varlik, 0) + islem_miktari
+                    
+                    mevcut_veri = cuzdan["varliklar"].get(secili_varlik, {"adet": 0.0, "maliyet": 0.0})
+                    if isinstance(mevcut_veri, (int, float)): 
+                        mevcut_veri = {"adet": mevcut_veri, "maliyet": anlik_fiyat} # Eski kaydı onar
+                        
+                    eski_adet = mevcut_veri["adet"]
+                    eski_maliyet = mevcut_veri["maliyet"]
+                    
+                    yeni_adet = eski_adet + islem_miktari
+                    # Matematiksel Ortalama Maliyet Hesaplaması
+                    yeni_maliyet = ((eski_adet * eski_maliyet) + islem_tutari) / yeni_adet
+                    
+                    cuzdan["varliklar"][secili_varlik] = {"adet": yeni_adet, "maliyet": yeni_maliyet}
                     aktif_cuzdan_kaydet()
                     st.success(f"✅ {islem_miktari} adet {secili_varlik} başarıyla alındı!")
                     time.sleep(1) 
@@ -588,11 +608,22 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                 else: st.error("❌ Yetersiz bakiye!")
                     
             elif islem_tipi == "SAT":
-                mevcut_adet = cuzdan["varliklar"].get(secili_varlik, 0)
+                mevcut_veri = cuzdan["varliklar"].get(secili_varlik, {"adet": 0.0, "maliyet": 0.0})
+                if isinstance(mevcut_veri, (int, float)):
+                    mevcut_veri = {"adet": mevcut_veri, "maliyet": 0.0}
+                    
+                mevcut_adet = mevcut_veri["adet"]
+                
                 if mevcut_adet >= islem_miktari:
-                    cuzdan["varliklar"][secili_varlik] -= islem_miktari
+                    yeni_adet = mevcut_adet - islem_miktari
                     cuzdan["nakit"] += islem_tutari
-                    if cuzdan["varliklar"][secili_varlik] <= 0: del cuzdan["varliklar"][secili_varlik]
+                    
+                    # Küsurat hatalarını önlemek için küçük bir tolerans koyduk
+                    if yeni_adet <= 0.000001: 
+                        del cuzdan["varliklar"][secili_varlik]
+                    else:
+                        cuzdan["varliklar"][secili_varlik]["adet"] = yeni_adet
+                        
                     aktif_cuzdan_kaydet()
                     st.success(f"✅ {islem_miktari} adet {secili_varlik} başarıyla satıldı!")
                     time.sleep(1)
@@ -600,7 +631,6 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                 else: st.error(f"❌ Elinde yeterli {secili_varlik} yok! (Mevcut: {mevcut_adet})")
 
     with col_durum:
-        # --- YENİ EKLENEN: PORTFÖY İÇİN ANINDA YENİLEME BUTONU ---
         col_baslik, col_yenile = st.columns([2, 1])
         with col_baslik:
             st.subheader("📋 Elinizdeki Varlıklar")
@@ -609,8 +639,54 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                 st.rerun()
                 
         if cuzdan["varliklar"]:
-            portfoy_listesi = [{"Varlık": v, "Adet": round(a, 4), "Güncel Fiyat": round(guncel_fiyatlar.get(v, 0), 2), "Toplam Değer (₺)": round(a * guncel_fiyatlar.get(v, 0), 2)} for v, a in cuzdan["varliklar"].items()]
-            st.dataframe(pd.DataFrame(portfoy_listesi).sort_values(by="Toplam Değer (₺)", ascending=False), use_container_width=True)
+            portfoy_listesi = []
+            for v_isim, v_veri in cuzdan["varliklar"].items():
+                adet = v_veri["adet"]
+                maliyet = v_veri["maliyet"]
+                g_fiyat = guncel_fiyatlar.get(v_isim, 0)
+                
+                toplam_deger = adet * g_fiyat
+                toplam_maliyet = adet * maliyet
+                
+                kar_zarar_tl = toplam_deger - toplam_maliyet
+                # Maliyet 0 ise (eski veya hediye hesap), yüzdelik hesaplama hatası olmasın diye kontrol
+                kar_zarar_yuzde = ((g_fiyat - maliyet) / maliyet * 100) if maliyet > 0 else 0.0
+                
+                portfoy_listesi.append({
+                    "Varlık": v_isim, 
+                    "Adet": round(adet, 4), 
+                    "Maliyet (₺)": maliyet, 
+                    "Güncel Fiyat (₺)": g_fiyat, 
+                    "Toplam Değer (₺)": toplam_deger,
+                    "Kâr/Zarar (₺)": kar_zarar_tl,
+                    "% K/Z": kar_zarar_yuzde
+                })
+                
+            df_port = pd.DataFrame(portfoy_listesi).sort_values(by="Toplam Değer (₺)", ascending=False)
+            
+            # --- RENKLENDİRME (KÂR: YEŞİL / ZARAR: KIRMIZI) ---
+            def color_profit_loss(val):
+                try:
+                    if float(val) > 0: return 'color: #00ff00; font-weight: bold;'
+                    elif float(val) < 0: return 'color: #ff4444; font-weight: bold;'
+                except: pass
+                return 'color: gray;'
+                
+            if hasattr(df_port.style, "map"):
+                styled_port = df_port.style.map(color_profit_loss, subset=['Kâr/Zarar (₺)', '% K/Z'])
+            else:
+                styled_port = df_port.style.applymap(color_profit_loss, subset=['Kâr/Zarar (₺)', '% K/Z'])
+                
+            # Rakamları daha şık (virgüllü ve TL simgeli) gösterelim
+            styled_port = styled_port.format({
+                "Maliyet (₺)": "{:,.2f}",
+                "Güncel Fiyat (₺)": "{:,.2f}",
+                "Toplam Değer (₺)": "{:,.2f}",
+                "Kâr/Zarar (₺)": "{:,.2f}",
+                "% K/Z": "% {:,.2f}"
+            })
+            
+            st.dataframe(styled_port, use_container_width=True)
             st.markdown("<br>", unsafe_allow_html=True)
             if st.button("🗑️ Portföyü Sıfırla (Baştan Başla)", use_container_width=True):
                 cuzdan["nakit"] = 1000000.0
