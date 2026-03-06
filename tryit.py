@@ -18,8 +18,9 @@ try:
 except ImportError:
     HAS_AUTOREFRESH = False
 
-st.set_page_config(page_title="Pro-Yatırım Terminali", layout="wide", page_icon="📈")
+st.set_page_config(page_title="Portföy Analiz ve Yönetimi", layout="wide", page_icon="📊")
 
+# --- GELİŞMİŞ UI / UX TASARIMI (KUTULARI EŞİTLEYEN CSS MÜHENDİSLİĞİ) ---
 st.markdown("""
 <style>
     div[data-testid="metric-container"] {background-color: #1e1e1e; border: 1px solid #333; padding: 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0, 255, 255, 0.05); transition: transform 0.3s;}
@@ -28,6 +29,51 @@ st.markdown("""
     div.stButton > button:hover {border-color: #00ffff; box-shadow: 0 0 10px rgba(0,255,255,0.3); color: #00ffff;}
     .bagis-panosu {text-align: center; padding: 15px; background: linear-gradient(135deg, rgba(255,215,0,0.1) 0%, rgba(255,140,0,0.1) 100%); border-radius: 12px; border: 1px solid rgba(255,215,0,0.3); margin-bottom: 20px;}
     .bagis-sayi {color: #FFD700; font-size: 24px; font-weight: bold; text-shadow: 0 0 10px rgba(255,215,0,0.5);}
+
+    /* KUTULARIN BOYUTLARINI VE HİZALARINI %100 SABİTLEME */
+    div.stRadio div[role="radiogroup"] {
+        display: flex !important;
+        flex-direction: column !important; /* Kutuları zorunlu alt alta diz */
+        width: 100% !important; /* Konteynerin tam genişliğini kullan */
+        gap: 10px !important;
+    }
+    div.stRadio div[role="radiogroup"] > label {
+        width: 100% !important; /* TÜM KUTULARI EŞİT VE TAM BOY YAPAR */
+        min-height: 45px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-align: center !important;
+        padding: 5px 10px !important;
+        border: 1px solid #333 !important;
+        border-radius: 8px !important;
+        background-color: #1a1a1a !important;
+        transition: all 0.3s ease !important;
+        cursor: pointer !important;
+        margin: 0 !important;
+    }
+    div.stRadio div[role="radiogroup"] > label > div:first-child {
+        display: none !important;
+    }
+    div.stRadio div[role="radiogroup"] > label p {
+        margin: 0 !important;
+        font-size: 14px !important;
+        width: 100% !important; /* Yazının tam ortalanması için */
+    }
+    div.stRadio div[role="radiogroup"] > label:hover {
+        border-color: #00ffff !important;
+        background-color: #222 !important;
+        box-shadow: 0 4px 10px rgba(0, 255, 255, 0.1) !important;
+    }
+    div.stRadio div[role="radiogroup"] > label:has(input:checked) {
+        background: linear-gradient(90deg, rgba(0,255,255,0.15) 0%, rgba(0,255,255,0.02) 100%) !important;
+        border-color: #00ffff !important;
+        border-left: 4px solid #00ffff !important; 
+    }
+    div.stRadio div[role="radiogroup"] > label:has(input:checked) p {
+        color: #00ffff !important;
+        font-weight: bold !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -63,7 +109,7 @@ db = db_yukle()
 
 # --- GİRİŞ VE KAYIT EKRANI ---
 if st.session_state.aktif_kullanici is None:
-    st.title("🛡️ Pro-Yatırım Kulübüne Hoş Geldiniz")
+    st.title("📊 Portföy Analiz ve Yönetimi")
     st.markdown("Sanal 1.000.000 TL bakiye ile kendi fonunuzu yönetmek ve yapay zeka analizlerine ulaşmak için giriş yapın.")
     tab_giris, tab_kayit = st.tabs(["🔑 Giriş Yap", "📝 Kayıt Ol"])
     
@@ -103,7 +149,7 @@ if st.session_state.aktif_kullanici is None:
                 db[k_kullanici] = {
                     "sifre": sifre_sifrele(k_sifre), 
                     "nickname": k_nickname, 
-                    "son_isim_degistirme": 0, # İsim değiştirme zamanlayıcısı
+                    "son_isim_degistirme": 0,
                     "cuzdan": {"nakit": 1000000.0, "varliklar": {}, "izleme_listesi": ["Türk Hava Yolları", "Bitcoin", "Altın (Ons)"]}
                 }
                 db_kaydet(db)
@@ -118,7 +164,7 @@ def aktif_cuzdan_kaydet():
     db[aktif_kullanici]["cuzdan"] = cuzdan
     db_kaydet(db)
 
-st.title("🛡️ Profesyonel Algoritmik Yatırım Karargahı")
+st.title("📊 Portföy Analiz ve Yönetimi")
 st.caption(f"👤 Fon Yöneticisi: **{aktif_nickname.upper()}** | 💵 Güncel Kur (USD/TRY): **{guncel_kur_getir():.2f} ₺**")
 
 bist_30 = {"Akbank": "AKBNK.IS", "Alarko": "ALARK.IS", "Aselsan": "ASELS.IS", "Astor": "ASTOR.IS", "BİM": "BIMAS.IS", "Borusan": "BRSAN.IS", "Coca Cola": "CCOLA.IS", "Emlak Konut": "EKGYO.IS", "Enka": "ENKAI.IS", "Ereğli": "EREGL.IS", "Ford": "FROTO.IS", "Garanti": "GARAN.IS", "Gübre Fab": "GUBRF.IS", "Hektaş": "HEKTS.IS", "İş Bankası": "ISCTR.IS", "Koç Hol": "KCHOL.IS", "Kontrolmatik": "KONTR.IS", "Koza Altın": "KOZAL.IS", "Kardemir": "KRDMD.IS", "Odaş": "ODAS.IS", "Petkim": "PETKM.IS", "Pegasus": "PGSUS.IS", "Sabancı Hol": "SAHOL.IS", "Sasa": "SASA.IS", "Şişecam": "SISE.IS", "Turkcell": "TCELL.IS", "THY": "THYAO.IS", "Tofaş": "TOASO.IS", "Tüpraş": "TUPRS.IS", "Yapı Kredi": "YKBNK.IS"}
@@ -130,14 +176,13 @@ madenler_emtia = {"Altın (Ons)": "GC=F", "Gümüş (Ons)": "SI=F", "Bakır": "H
 tum_varliklar_mega = {**bist_genis, **kripto, **madenler_emtia}
 
 st.sidebar.header("🕹️ Uygulama Modu")
-uygulama_modu = st.sidebar.radio("Mod Seçiniz:", ["🔍 Algoritmik Piyasa Tarama", "💼 Sanal Portföy (Oyun)"])
+uygulama_modu = st.sidebar.radio("Mod Seçiniz:", ["🔍 Algoritmik Piyasa Tarama", "💼 Sanal Portföy (Oyun)"], label_visibility="collapsed")
 st.sidebar.markdown("---")
 
 if st.sidebar.button("🚪 Çıkış Yap", use_container_width=True):
     st.session_state.aktif_kullanici = None
     st.rerun()
 
-# --- YENİ EKLENEN: GELİŞMİŞ HESAP AYARLARI PANELİ ---
 with st.sidebar.expander("⚙️ Hesap Ayarları", expanded=False):
     tab_sifre, tab_isim, tab_sil = st.tabs(["🔑 Şifre", "🏷️ İsim", "❌ Sil"])
     
@@ -163,7 +208,6 @@ with st.sidebar.expander("⚙️ Hesap Ayarları", expanded=False):
     with tab_isim:
         su_an = time.time()
         son_degisim = db[aktif_kullanici].get("son_isim_degistirme", 0)
-        # 7 Günlük bekleme süresi hesabı
         kalan_saniye = (7 * 24 * 60 * 60) - (su_an - son_degisim)
         
         if kalan_saniye > 0:
@@ -209,8 +253,10 @@ usd_kuru = guncel_kur_getir()
 
 if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
     st.sidebar.header("⚙️ Tarama Ayarları")
-    vade_secimi = st.sidebar.radio("1. Yatırım Vadesi:", ["⏱️ Kısa Vadeli (1-3 Ay / Al-Sat)", "📅 Uzun Vadeli (1+ Yıl / Yatırım)"])
-    piyasa_secimi = st.sidebar.radio("2. İncelenecek Piyasa:", ["🇹🇷 BIST 30 (En Büyükler)", "🇹🇷 BIST 100", "🇹🇷 BIST Tüm (Genişletilmiş)", "🪙 Kripto Paralar", "⛏️ Tüm Emtia ve Madenler", "👤 Kendi İzleme Listem"])
+    st.sidebar.markdown("<b>1. Yatırım Vadesi</b>", unsafe_allow_html=True)
+    vade_secimi = st.sidebar.radio("Vade:", ["⏱️ Kısa Vadeli (1-3 Ay / Al-Sat)", "📅 Uzun Vadeli (1+ Yıl / Yatırım)"], label_visibility="collapsed")
+    st.sidebar.markdown("<b>2. İncelenecek Piyasa</b>", unsafe_allow_html=True)
+    piyasa_secimi = st.sidebar.radio("Piyasa:", ["🇹🇷 BIST 30 (En Büyükler)", "🇹🇷 BIST 100", "🇹🇷 BIST Tüm (Genişletilmiş)", "🪙 Kripto Paralar", "⛏️ Tüm Emtia ve Madenler", "👤 Kendi İzleme Listem"], label_visibility="collapsed")
 
     aktif_varliklar = {}
     if piyasa_secimi == "👤 Kendi İzleme Listem":
@@ -232,7 +278,7 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
     if 'df_sonuc' not in st.session_state: st.session_state.df_sonuc = pd.DataFrame()
     if 'ozel_portfoy_verisi' not in st.session_state: st.session_state.ozel_portfoy_verisi = pd.DataFrame()
 
-    if st.button("🚀 Algoritmayı Çalıştır"):
+    if st.button("🚀 Algoritmayı Çalıştır", use_container_width=True):
         sonuclar = []
         ilerleme_cubugu = st.progress(0.0)
         durum_metni = st.empty()
@@ -488,7 +534,8 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
         col_islem, col_durum = st.columns([1, 2])
         
         with col_islem:
-            islem_tipi = st.radio("İşlem Yönü:", ["AL", "SAT"], horizontal=True)
+            st.markdown("<b>Hızlı İşlem Masası</b>", unsafe_allow_html=True)
+            islem_tipi = st.radio("İşlem Yönü:", ["AL", "SAT"], horizontal=True, label_visibility="collapsed")
             secili_varlik = st.selectbox("Varlık Seçin:", list(tum_varliklar_mega.keys()))
             sembol_islem = tum_varliklar_mega[secili_varlik]
             
