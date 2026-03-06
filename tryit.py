@@ -10,8 +10,37 @@ import json
 import os
 import time
 
-# --- SAYFA AYARLARI ---
+# --- SAYFA AYARLARI VE ÖZEL NEON CSS ---
 st.set_page_config(page_title="Pro-Yatırım Terminali", layout="wide", page_icon="📈")
+
+# Görsel Makyaj (Özel Tasarım CSS)
+st.markdown("""
+<style>
+    div[data-testid="metric-container"] {
+        background-color: #1e1e1e;
+        border: 1px solid #333;
+        padding: 15px;
+        border-radius: 12px;
+        box-shadow: 0 4px 10px rgba(0, 255, 255, 0.05);
+        transition: transform 0.3s;
+    }
+    div[data-testid="metric-container"]:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 15px rgba(0, 255, 255, 0.15);
+    }
+    div.stButton > button {
+        border-radius: 8px;
+        font-weight: bold;
+        transition: all 0.3s ease;
+    }
+    div.stButton > button:hover {
+        border-color: #00ffff;
+        box-shadow: 0 0 10px rgba(0,255,255,0.3);
+        color: #00ffff;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 st.title("🛡️ Profesyonel Algoritmik Yatırım Karargahı")
 
 # --- VERİTABANI (JSON) FONKSİYONLARI ---
@@ -111,7 +140,6 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
     if piyasa_secimi == "👤 Kendi İzleme Listem":
         st.sidebar.info("Buradaki seçimleriniz otomatik olarak kaydedilir:")
         
-        # Streamlit Çift Tıklama Bug'ı Çözümü
         if "ilk_liste" not in st.session_state:
             st.session_state.ilk_liste = [v for v in cuzdan.get("izleme_listesi", []) if v in tum_varliklar_mega]
             
@@ -139,7 +167,7 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
 
     if st.button("🚀 Algoritmayı Çalıştır"):
         if len(aktif_varliklar) > 100:
-            st.warning("⚠️ Çok geniş bir piyasa seçtiniz. Verilerin çekilmesi 1-2 dakika sürebilir.")
+            st.warning("⚠️ Çok geniş bir piyasa seçtiniz. Verilerin çekilmesi 1-2 dakika sürebilir, lütfen bekleyin.")
             
         sonuclar = []
         ilerleme_cubugu = st.progress(0.0)
@@ -237,55 +265,78 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
         else:
             st.warning("Lütfen sol menüden en az bir varlık seçin.")
 
-    # --- ANALİZ SONUÇLARI BÖLÜMÜ ---
+    # --- ANALİZ SONUÇLARI VE AKILLI TABLO (HEATMAP) ---
     if not st.session_state.df_sonuc.empty:
         st.success("✅ Tarama Tamamlandı!")
-        st.dataframe(st.session_state.df_sonuc, use_container_width=True)
+        
+        # Tablo Renklendirme Mantığı (Pandas Styler)
+        try:
+            if "Kısa" in vade_secimi:
+                def style_rsi(val):
+                    try:
+                        v = float(val)
+                        if v < 35: return 'background-color: rgba(0, 255, 0, 0.2); font-weight: bold; color: #00ff00;'
+                        elif v > 65: return 'background-color: rgba(255, 0, 0, 0.2); font-weight: bold; color: #ff4444;'
+                    except: pass
+                    return ''
+                # Pandas applymap uyarısı almamak için yeni ve eski sürüm uyumluluğu
+                if hasattr(st.session_state.df_sonuc.style, "map"):
+                    styled_df = st.session_state.df_sonuc.style.map(style_rsi, subset=['RSI'])
+                else:
+                    styled_df = st.session_state.df_sonuc.style.applymap(style_rsi, subset=['RSI'])
+                st.dataframe(styled_df, use_container_width=True)
+            else:
+                st.dataframe(st.session_state.df_sonuc, use_container_width=True)
+        except:
+            st.dataframe(st.session_state.df_sonuc, use_container_width=True)
+            
         st.markdown("---")
         
-        # Markowitz Portföy Optimizasyonu
+        # FERAH TASARIM: Markowitz Portföy Optimizasyonu (Açılır-Kapanır Panel)
         if piyasa_secimi == "👤 Kendi İzleme Listem" and not st.session_state.ozel_portfoy_verisi.empty:
-            st.write("### ⚖️ Markowitz Portföy Optimizasyonu")
-            df_port = st.session_state.ozel_portfoy_verisi.ffill().dropna()
-            returns = df_port.pct_change().dropna()
-            if len(returns) > 10: 
-                mean_returns, cov_matrix, num_portfolios = returns.mean(), returns.cov(), 5000 
-                results, weights_record = np.zeros((3, num_portfolios)), []
-                for i in range(num_portfolios):
-                    weights = np.random.random(len(df_port.columns))
-                    weights /= np.sum(weights)
-                    weights_record.append(weights)
-                    p_std = np.sqrt(np.dot(weights.T, np.dot(cov_matrix, weights))) * np.sqrt(252)
-                    p_ret = np.sum(mean_returns * weights) * 252
-                    results[0,i], results[1,i], results[2,i] = p_ret, p_std, p_ret / p_std
-                max_sharpe_idx = np.argmax(results[2])
-                opt_weights = weights_record[max_sharpe_idx]
-                pie_data = pd.DataFrame({'Varlık': df_port.columns, 'Oran': opt_weights * 100})
-                col_pie, col_text = st.columns([1, 1])
-                with col_pie:
-                    fig_pie = px.pie(pie_data, values='Oran', names='Varlık', title="Optimum Sermaye Dağılımı", hole=0.4, template="plotly_dark")
-                    fig_pie.update_traces(textposition='inside', textinfo='percent+label')
-                    st.plotly_chart(fig_pie, use_container_width=True)
-                with col_text:
-                    st.info("💡 **Optimizasyon Analizi:** Bu dağılım, riski dengeleyecek en ideal matematiksel kurguyu sunar.")
-                    st.write(f"**Beklenen Yıllık Getiri:** %{round(results[0,max_sharpe_idx]*100, 2)}")
-                    st.write(f"**Tahmini Yıllık Risk (Volatilite):** %{round(results[1,max_sharpe_idx]*100, 2)}")
-                    st.write(f"**Sharpe Oranı:** {round(results[2,max_sharpe_idx], 2)}")
-            st.markdown("---")
+            with st.expander("⚖️ Markowitz Optimum Portföy Dağılımını Göster", expanded=False):
+                st.write("Sistem, seçtiğiniz varlıkların geçmiş korelasyonlarını analiz ederek riski minimumda tutan altın oranları hesapladı.")
+                df_port = st.session_state.ozel_portfoy_verisi.ffill().dropna()
+                returns = df_port.pct_change().dropna()
+                if len(returns) > 10: 
+                    mean_returns, cov_matrix, num_portfolios = returns.mean(), returns.cov(), 5000 
+                    results, weights_record = np.zeros((3, num_portfolios)), []
+                    for i in range(num_portfolios):
+                        weights = np.random.random(len(df_port.columns))
+                        weights /= np.sum(weights)
+                        weights_record.append(weights)
+                        p_std = np.sqrt(np.dot(weights.T, np.dot(cov_matrix, weights))) * np.sqrt(252)
+                        p_ret = np.sum(mean_returns * weights) * 252
+                        results[0,i], results[1,i], results[2,i] = p_ret, p_std, p_ret / p_std
+                    max_sharpe_idx = np.argmax(results[2])
+                    opt_weights = weights_record[max_sharpe_idx]
+                    pie_data = pd.DataFrame({'Varlık': df_port.columns, 'Oran': opt_weights * 100})
+                    col_pie, col_text = st.columns([1, 1])
+                    with col_pie:
+                        fig_pie = px.pie(pie_data, values='Oran', names='Varlık', title="Optimum Sermaye Dağılımı", hole=0.4, template="plotly_dark")
+                        fig_pie.update_traces(textposition='inside', textinfo='percent+label')
+                        st.plotly_chart(fig_pie, use_container_width=True)
+                    with col_text:
+                        st.info("💡 **Analiz:** Bu dağılım, sadece en çok kazandıranı seçmez. Riski dengeleyecek en ideal matematiksel kurguyu sunar.")
+                        st.write(f"**Beklenen Yıllık Getiri:** %{round(results[0,max_sharpe_idx]*100, 2)}")
+                        st.write(f"**Tahmini Yıllık Risk (Volatilite):** %{round(results[1,max_sharpe_idx]*100, 2)}")
+                        st.write(f"**Sharpe Oranı:** {round(results[2,max_sharpe_idx], 2)}")
+                else:
+                    st.warning("Geçmiş veri optimizasyon için yeterli değil.")
         
         # Grafikler ve Sekmeler
-        st.write("### 🤖 Gelişmiş Analiz ve 📰 Haber Akışı")
+        st.write("### 🤖 Gelişmiş Analiz Paneli")
         liste = st.session_state.df_sonuc['Varlık Adı'].tolist()
-        secilen_isim = st.selectbox("Detayları görmek istediğiniz varlığı seçin:", liste)
+        secilen_isim = st.selectbox("Detaylı grafik analizi için varlık seçin:", liste)
         secilen_sembol = tum_varliklar_mega.get(secilen_isim)
         
         if secilen_sembol:
             col1, col2 = st.columns([2, 1])
             with col1:
-                with st.spinner("Analizler hazırlanıyor..."):
+                with st.spinner("Yapay Zeka modelleri hesaplanıyor..."):
                     grafik_veri = yf.Ticker(secilen_sembol).history(period="6mo")
                     if not grafik_veri.empty:
-                        tab1, tab2, tab3 = st.tabs(["🤖 Yapay Zeka (Trend)", "🎲 Monte Carlo", "⏪ Backtest"])
+                        tab1, tab2, tab3 = st.tabs(["🤖 Yapay Zeka", "🎲 Monte Carlo", "⏪ Backtest"])
                         with tab1:
                             df_ml = grafik_veri[['Close']].dropna().copy()
                             df_ml['Gunler'] = np.arange(len(df_ml))
@@ -338,20 +389,25 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                             fig3.update_layout(height=450, template="plotly_dark", margin=dict(t=10, b=10))
                             st.plotly_chart(fig3, use_container_width=True)
             with col2:
-                st.write("### 📰 Son Haberler")
-                try:
-                    for h in yf.Ticker(secilen_sembol).news[:5]:
-                        t = h.get('title') or h.get('content', {}).get('title', 'Başlık Yok')
-                        if t != "Başlık Yok":
-                            l = h.get('link') or h.get('url') or h.get('content', {}).get('clickThroughUrl', {}).get('url', '#')
-                            st.markdown(f"**[{t}]({l})**"); st.markdown("---")
-                except: st.info("Haber bulunamadı.")
+                # FERAH TASARIM: Haberler için Açılır-Kapanır Panel
+                with st.expander("📰 Son Dakika Haberlerini Oku", expanded=True):
+                    try:
+                        haberler = yf.Ticker(secilen_sembol).news
+                        if haberler:
+                            for h in haberler[:5]:
+                                t = h.get('title') or h.get('content', {}).get('title', 'Başlık Yok')
+                                if t != "Başlık Yok":
+                                    l = h.get('link') or h.get('url') or h.get('content', {}).get('clickThroughUrl', {}).get('url', '#')
+                                    st.markdown(f"🔗 **[{t}]({l})**"); st.markdown("---")
+                        else:
+                            st.info("Haber bulunamadı.")
+                    except: st.error("Haber servisi yüklenemedi.")
 
 # =========================================================================================
 # MOD 2: SANAL PORTFÖY (PAPER TRADING OYUNU)
 # =========================================================================================
 elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
-    st.header("💼 Sanal Portföy Yönetimi")
+    st.header("💼 Sanal Hedge Fon Yönetimi")
     st.write("Sanal 1.000.000 TL bakiye ile yatırım stratejilerinizi risksiz bir şekilde test edin!")
     
     toplam_varlik_degeri = 0
@@ -381,7 +437,7 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
     col_islem, col_durum = st.columns([1, 1])
     
     with col_islem:
-        st.subheader("🛒 İşlem Yap")
+        st.subheader("🛒 Hızlı İşlem Masası")
         islem_tipi = st.radio("İşlem Yönü:", ["AL", "SAT"], horizontal=True)
         secili_varlik = st.selectbox("Varlık Seçin:", list(tum_varliklar_mega.keys()))
         sembol_islem = tum_varliklar_mega[secili_varlik]
@@ -397,15 +453,16 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
         islem_tutari = islem_miktari * anlik_fiyat
         st.write(f"Toplam Tutar: **{islem_tutari:,.2f} ₺**")
 
-        if st.button(f"Onayla ({islem_tipi})"):
+        if st.button(f"Siparişi Onayla ({islem_tipi})", use_container_width=True):
             if islem_tipi == "AL":
                 if cuzdan["nakit"] >= islem_tutari:
                     cuzdan["nakit"] -= islem_tutari
                     cuzdan["varliklar"][secili_varlik] = cuzdan["varliklar"].get(secili_varlik, 0) + islem_miktari
                     cuzdan_kaydet(cuzdan)
-                    st.success(f"{islem_miktari} adet {secili_varlik} başarıyla alındı!")
+                    st.success(f"✅ {islem_miktari} adet {secili_varlik} başarıyla alındı!")
+                    time.sleep(1) # Mesajın okunması için ufak bir bekleme
                     st.rerun() 
-                else: st.error("Yetersiz bakiye!")
+                else: st.error("❌ Yetersiz bakiye!")
                     
             elif islem_tipi == "SAT":
                 mevcut_adet = cuzdan["varliklar"].get(secili_varlik, 0)
@@ -414,17 +471,19 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                     cuzdan["nakit"] += islem_tutari
                     if cuzdan["varliklar"][secili_varlik] <= 0: del cuzdan["varliklar"][secili_varlik]
                     cuzdan_kaydet(cuzdan)
-                    st.success(f"{islem_miktari} adet {secili_varlik} başarıyla satıldı!")
+                    st.success(f"✅ {islem_miktari} adet {secili_varlik} başarıyla satıldı!")
+                    time.sleep(1)
                     st.rerun() 
-                else: st.error(f"Elinde yeterli {secili_varlik} yok! (Mevcut: {mevcut_adet})")
+                else: st.error(f"❌ Elinde yeterli {secili_varlik} yok! (Mevcut: {mevcut_adet})")
 
     with col_durum:
         st.subheader("📋 Elinizdeki Varlıklar")
         if cuzdan["varliklar"]:
             portfoy_listesi = [{"Varlık": v, "Adet": round(a, 4), "Güncel Fiyat": round(guncel_fiyatlar.get(v, 0), 2), "Toplam Değer (₺)": round(a * guncel_fiyatlar.get(v, 0), 2)} for v, a in cuzdan["varliklar"].items()]
             st.dataframe(pd.DataFrame(portfoy_listesi).sort_values(by="Toplam Değer (₺)", ascending=False), use_container_width=True)
-            if st.button("🗑️ Portföyü Sıfırla (Bastan Başla)"):
+            st.markdown("<br>", unsafe_allow_html=True)
+            if st.button("🗑️ Portföyü Sıfırla (Baştan Başla)", use_container_width=True):
                 cuzdan_kaydet({"nakit": 1000000.0, "varliklar": {}, "izleme_listesi": cuzdan.get("izleme_listesi", [])})
                 st.rerun()
         else:
-            st.info("Portföyünüz şu an boş.")
+            st.info("Portföyünüz şu an boş. Sol taraftan işlem yaparak yatırım yapmaya başlayabilirsiniz!")
