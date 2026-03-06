@@ -6,6 +6,7 @@ import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots
 from sklearn.linear_model import LinearRegression
+from textblob import TextBlob
 import json
 import os
 import time
@@ -269,7 +270,6 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
     if not st.session_state.df_sonuc.empty:
         st.success("✅ Tarama Tamamlandı!")
         
-        # Tablo Renklendirme Mantığı (Pandas Styler)
         try:
             if "Kısa" in vade_secimi:
                 def style_rsi(val):
@@ -279,7 +279,6 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                         elif v > 65: return 'background-color: rgba(255, 0, 0, 0.2); font-weight: bold; color: #ff4444;'
                     except: pass
                     return ''
-                # Pandas applymap uyarısı almamak için yeni ve eski sürüm uyumluluğu
                 if hasattr(st.session_state.df_sonuc.style, "map"):
                     styled_df = st.session_state.df_sonuc.style.map(style_rsi, subset=['RSI'])
                 else:
@@ -292,7 +291,7 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
             
         st.markdown("---")
         
-        # FERAH TASARIM: Markowitz Portföy Optimizasyonu (Açılır-Kapanır Panel)
+        # FERAH TASARIM: Markowitz Portföy Optimizasyonu
         if piyasa_secimi == "👤 Kendi İzleme Listem" and not st.session_state.ozel_portfoy_verisi.empty:
             with st.expander("⚖️ Markowitz Optimum Portföy Dağılımını Göster", expanded=False):
                 st.write("Sistem, seçtiğiniz varlıkların geçmiş korelasyonlarını analiz ederek riski minimumda tutan altın oranları hesapladı.")
@@ -336,7 +335,7 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                 with st.spinner("Yapay Zeka modelleri hesaplanıyor..."):
                     grafik_veri = yf.Ticker(secilen_sembol).history(period="6mo")
                     if not grafik_veri.empty:
-                        tab1, tab2, tab3 = st.tabs(["🤖 Yapay Zeka", "🎲 Monte Carlo", "⏪ Backtest"])
+                        tab1, tab2, tab3 = st.tabs(["🤖 Yapay Zeka (Trend)", "🎲 Monte Carlo", "⏪ Backtest"])
                         with tab1:
                             df_ml = grafik_veri[['Close']].dropna().copy()
                             df_ml['Gunler'] = np.arange(len(df_ml))
@@ -389,10 +388,57 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                             fig3.update_layout(height=450, template="plotly_dark", margin=dict(t=10, b=10))
                             st.plotly_chart(fig3, use_container_width=True)
             with col2:
+                # --- YENİ EKLENEN: NLP DUYGU ANALİZİ (SENTIMENT) ---
+                st.write("### 🧠 Piyasa Psikolojisi (Yapay Zeka)")
+                try:
+                    haberler = yf.Ticker(secilen_sembol).news
+                    if haberler:
+                        toplam_duygu = 0
+                        gecerli_haber = 0
+                        
+                        for h in haberler[:10]:
+                            baslik = h.get('title') or h.get('content', {}).get('title', '')
+                            if baslik:
+                                analiz = TextBlob(baslik)
+                                toplam_duygu += analiz.sentiment.polarity
+                                gecerli_haber += 1
+                        
+                        if gecerli_haber > 0:
+                            ortalama_duygu = toplam_duygu / gecerli_haber
+                            
+                            # Gösterge (Gauge) Grafiği
+                            fig_gauge = go.Figure(go.Indicator(
+                                mode = "gauge+number",
+                                value = ortalama_duygu,
+                                domain = {'x': [0, 1], 'y': [0, 1]},
+                                title = {'text': "Medya Hissi (Sentiment)", 'font': {'size': 16, 'color': 'white'}},
+                                gauge = {
+                                    'axis': {'range': [-1, 1], 'tickwidth': 1, 'tickcolor': "white"},
+                                    'bar': {'color': "white", 'thickness': 0.25},
+                                    'bgcolor': "rgba(0,0,0,0)",
+                                    'steps': [
+                                        {'range': [-1, -0.2], 'color': "rgba(255, 68, 68, 0.6)"}, # Kırmızı (Ayı)
+                                        {'range': [-0.2, 0.2], 'color': "rgba(150, 150, 150, 0.4)"}, # Gri (Nötr)
+                                        {'range': [0.2, 1], 'color': "rgba(0, 200, 83, 0.6)"} # Yeşil (Boğa)
+                                    ],
+                                }
+                            ))
+                            fig_gauge.update_layout(height=250, margin=dict(l=20, r=20, t=40, b=20), template="plotly_dark")
+                            st.plotly_chart(fig_gauge, use_container_width=True)
+                            
+                            if ortalama_duygu > 0.2: st.success("📈 **AI Yorumu:** Haber akışı şu an **POZİTİF (Boğa)** yönde.")
+                            elif ortalama_duygu < -0.2: st.error("📉 **AI Yorumu:** Haber akışı şu an **NEGATİF (Ayı)** yönde.")
+                            else: st.info("⚖️ **AI Yorumu:** Haber akışı dengeli, **NÖTR (Belirsiz)**.")
+                    else:
+                        st.info("Haber bulunamadığı için duygu analizi yapılamadı.")
+                except Exception as e:
+                    st.warning("NLP Motoru başlatılamadı. (TextBlob yüklü olmayabilir)")
+                
+                st.markdown("---")
+                
                 # FERAH TASARIM: Haberler için Açılır-Kapanır Panel
                 with st.expander("📰 Son Dakika Haberlerini Oku", expanded=True):
                     try:
-                        haberler = yf.Ticker(secilen_sembol).news
                         if haberler:
                             for h in haberler[:5]:
                                 t = h.get('title') or h.get('content', {}).get('title', 'Başlık Yok')
@@ -460,7 +506,7 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                     cuzdan["varliklar"][secili_varlik] = cuzdan["varliklar"].get(secili_varlik, 0) + islem_miktari
                     cuzdan_kaydet(cuzdan)
                     st.success(f"✅ {islem_miktari} adet {secili_varlik} başarıyla alındı!")
-                    time.sleep(1) # Mesajın okunması için ufak bir bekleme
+                    time.sleep(1) 
                     st.rerun() 
                 else: st.error("❌ Yetersiz bakiye!")
                     
