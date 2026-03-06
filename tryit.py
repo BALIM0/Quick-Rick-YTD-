@@ -93,7 +93,6 @@ if st.session_state.aktif_kullanici is None:
             elif len(k_kullanici) < 3 or len(k_sifre) < 4:
                 st.warning("Kullanıcı adı en az 3, şifre en az 4 karakter olmalıdır.")
             else:
-                # Yeni kullanıcıya sıfır kilometre cüzdan tahsis et
                 db[k_kullanici] = {
                     "sifre": sifre_sifrele(k_sifre),
                     "cuzdan": {
@@ -404,8 +403,15 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                 else:
                     st.warning("Korelasyon hesaplamak için en az 2 varlık ve yeterli geçmiş veri gerekiyor.")
         
-        # Grafikler ve Sekmeler
-        st.write("### 🤖 Gelişmiş Analiz Paneli")
+        # --- YENİ EKLENEN: ANALİZ KISMI İÇİN ANINDA YENİLEME BUTONU ---
+        st.markdown("<br>", unsafe_allow_html=True)
+        col_analiz_baslik, col_analiz_yenile = st.columns([3, 1])
+        with col_analiz_baslik:
+            st.write("### 🤖 Gelişmiş Analiz Paneli")
+        with col_analiz_yenile:
+            if st.button("🔄 Grafiği & Haberleri Tazele", use_container_width=True):
+                st.rerun()
+                
         liste = st.session_state.df_sonuc['Varlık Adı'].tolist()
         secilen_isim = st.selectbox("Detaylı grafik analizi için varlık seçin:", liste)
         secilen_sembol = tum_varliklar_mega.get(secilen_isim)
@@ -594,7 +600,14 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                 else: st.error(f"❌ Elinde yeterli {secili_varlik} yok! (Mevcut: {mevcut_adet})")
 
     with col_durum:
-        st.subheader("📋 Elinizdeki Varlıklar")
+        # --- YENİ EKLENEN: PORTFÖY İÇİN ANINDA YENİLEME BUTONU ---
+        col_baslik, col_yenile = st.columns([2, 1])
+        with col_baslik:
+            st.subheader("📋 Elinizdeki Varlıklar")
+        with col_yenile:
+            if st.button("🔄 Anında Güncelle", use_container_width=True):
+                st.rerun()
+                
         if cuzdan["varliklar"]:
             portfoy_listesi = [{"Varlık": v, "Adet": round(a, 4), "Güncel Fiyat": round(guncel_fiyatlar.get(v, 0), 2), "Toplam Değer (₺)": round(a * guncel_fiyatlar.get(v, 0), 2)} for v, a in cuzdan["varliklar"].items()]
             st.dataframe(pd.DataFrame(portfoy_listesi).sort_values(by="Toplam Değer (₺)", ascending=False), use_container_width=True)
