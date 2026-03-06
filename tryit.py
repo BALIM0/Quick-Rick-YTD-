@@ -20,7 +20,7 @@ except ImportError:
 
 st.set_page_config(page_title="Portföy Analiz ve Yönetimi", layout="wide", page_icon="📊")
 
-# --- GELİŞMİŞ UI / UX TASARIMI (KUTULARI EŞİTLEYEN CSS MÜHENDİSLİĞİ) ---
+# --- GELİŞMİŞ UI / UX TASARIMI (CSS MÜHENDİSLİĞİ) ---
 st.markdown("""
 <style>
     div[data-testid="metric-container"] {background-color: #1e1e1e; border: 1px solid #333; padding: 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0, 255, 255, 0.05); transition: transform 0.3s;}
@@ -33,12 +33,12 @@ st.markdown("""
     /* KUTULARIN BOYUTLARINI VE HİZALARINI %100 SABİTLEME */
     div.stRadio div[role="radiogroup"] {
         display: flex !important;
-        flex-direction: column !important; /* Kutuları zorunlu alt alta diz */
-        width: 100% !important; /* Konteynerin tam genişliğini kullan */
+        flex-direction: column !important;
+        width: 100% !important;
         gap: 10px !important;
     }
     div.stRadio div[role="radiogroup"] > label {
-        width: 100% !important; /* TÜM KUTULARI EŞİT VE TAM BOY YAPAR */
+        width: 100% !important;
         min-height: 45px !important;
         display: flex !important;
         align-items: center !important;
@@ -58,7 +58,7 @@ st.markdown("""
     div.stRadio div[role="radiogroup"] > label p {
         margin: 0 !important;
         font-size: 14px !important;
-        width: 100% !important; /* Yazının tam ortalanması için */
+        width: 100% !important;
     }
     div.stRadio div[role="radiogroup"] > label:hover {
         border-color: #00ffff !important;
@@ -426,7 +426,8 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
             with col1:
                 grafik_veri = yf.Ticker(secilen_sembol).history(period="6mo")
                 if not grafik_veri.empty:
-                    tab1, tab2 = st.tabs(["🤖 AI Trend", "⏪ Backtest"])
+                    # --- MONTE CARLO SEKME YERLEŞİMİ GERİ EKLENDİ ---
+                    tab1, tab2, tab3 = st.tabs(["🤖 AI Trend", "🎲 Monte Carlo", "⏪ Backtest"])
                     with tab1:
                         df_ml = grafik_veri[['Close']].dropna().copy()
                         df_ml['Gunler'] = np.arange(len(df_ml))
@@ -439,7 +440,25 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                         fig1.add_trace(go.Bar(x=grafik_veri.index, y=grafik_veri['Volume'], marker_color=['green' if c >= o else 'red' for o, c in zip(grafik_veri['Open'], grafik_veri['Close'])]), row=2, col=1)
                         fig1.update_layout(xaxis_rangeslider_visible=False, height=500, template="plotly_dark", margin=dict(t=10, b=10))
                         st.plotly_chart(fig1, use_container_width=True)
+                    # --- MONTE CARLO GERİ GELDİ ---
                     with tab2:
+                        log_returns = np.log(1 + grafik_veri['Close'].pct_change()).dropna()
+                        u, var, stdev = log_returns.mean(), log_returns.var(), log_returns.std()
+                        drift = u - (0.5 * var)
+                        t_intervals, iterations = 30, 100 
+                        daily_returns = np.exp(drift + stdev * np.random.randn(t_intervals, iterations))
+                        price_paths = np.zeros_like(daily_returns)
+                        price_paths[0] = grafik_veri['Close'].iloc[-1]
+                        for t in range(1, t_intervals): price_paths[t] = price_paths[t - 1] * daily_returns[t]
+                        mc_tarihler = [grafik_veri.index[-1] + pd.Timedelta(days=i) for i in range(t_intervals)]
+                        fig2 = go.Figure()
+                        gecmis_30 = grafik_veri['Close'].iloc[-30:]
+                        fig2.add_trace(go.Scatter(x=gecmis_30.index, y=gecmis_30.values, mode='lines', name='Geçmiş Fiyat', line=dict(color='white', width=3)))
+                        for i in range(iterations): fig2.add_trace(go.Scatter(x=mc_tarihler, y=price_paths[:, i], mode='lines', showlegend=False, line=dict(color='rgba(0, 255, 255, 0.05)')))
+                        fig2.add_trace(go.Scatter(x=mc_tarihler, y=price_paths.mean(axis=1), mode='lines', name='Ortalama Beklenti', line=dict(color='red', width=3, dash='dash')))
+                        fig2.update_layout(height=500, template="plotly_dark", margin=dict(t=10, b=10))
+                        st.plotly_chart(fig2, use_container_width=True)
+                    with tab3:
                         df_bt = grafik_veri[['Close']].copy()
                         delta_bt = df_bt['Close'].diff()
                         df_bt['RSI'] = 100 - (100 / (1 + ((delta_bt.where(delta_bt > 0, 0)).rolling(14).mean() / (-delta_bt.where(delta_bt < 0, 0)).rolling(14).mean())))
