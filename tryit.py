@@ -321,20 +321,45 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                         fig3.update_layout(height=400, template="plotly_dark", margin=dict(t=10, b=10))
                         st.plotly_chart(fig3, use_container_width=True)
             with col2:
+                # HABER VE DUYGU ANALİZİ (TAMİR EDİLDİ)
+                st.write("### 🧠 Piyasa Psikolojisi")
                 try:
                     haberler = yf.Ticker(secilen_sembol).news
                     if haberler:
                         toplam_duygu, gecerli_haber = 0, 0
                         for h in haberler[:10]:
-                            baslik = h.get('title', '')
-                            if baslik: toplam_duygu += TextBlob(baslik).sentiment.polarity; gecerli_haber += 1
+                            # Yahoo'nun farklı haber formatlarını yakalayan Zırhlı (Robust) yapı
+                            baslik = h.get('title') or h.get('content', {}).get('title', '')
+                            if baslik and baslik != "Başlık Yok": 
+                                toplam_duygu += TextBlob(baslik).sentiment.polarity
+                                gecerli_haber += 1
+                                
                         if gecerli_haber > 0:
-                            fig_gauge = go.Figure(go.Indicator(mode="gauge+number", value=toplam_duygu/gecerli_haber, domain={'x': [0, 1], 'y': [0, 1]}, title={'text': "Medya Hissi", 'font': {'color': 'white'}}, gauge={'axis': {'range': [-1, 1]}, 'bar': {'color': "white"}, 'steps': [{'range': [-1, -0.2], 'color': "rgba(255,68,68,0.6)"}, {'range': [-0.2, 0.2], 'color': "rgba(150,150,150,0.4)"}, {'range': [0.2, 1], 'color': "rgba(0,200,83,0.6)"}]}))
+                            fig_gauge = go.Figure(go.Indicator(
+                                mode="gauge+number", 
+                                value=toplam_duygu/gecerli_haber, 
+                                domain={'x': [0, 1], 'y': [0, 1]}, 
+                                title={'text': "Medya Hissi", 'font': {'color': 'white'}}, 
+                                gauge={'axis': {'range': [-1, 1]}, 'bar': {'color': "white"}, 'steps': [{'range': [-1, -0.2], 'color': "rgba(255,68,68,0.6)"}, {'range': [-0.2, 0.2], 'color': "rgba(150,150,150,0.4)"}, {'range': [0.2, 1], 'color': "rgba(0,200,83,0.6)"}]}
+                            ))
                             st.plotly_chart(fig_gauge.update_layout(height=200, margin=dict(l=10, r=10, t=30, b=10), template="plotly_dark"), use_container_width=True)
-                        with st.expander("📰 Haberler", expanded=True):
+                        else:
+                            st.info("Haber başlıkları analiz edilemedi.")
+                    else:
+                        st.info("Bu varlığa ait güncel İngilizce haber bulunamadı.")
+                        
+                    with st.expander("📰 Son Dakika Haberleri", expanded=True):
+                        if haberler:
                             for h in haberler[:5]:
-                                if h.get('title'): st.markdown(f"🔗 **[{h.get('title')}]({h.get('link', '#')})**"); st.markdown("---")
-                except: st.error("Haberler yüklenemedi.")
+                                t = h.get('title') or h.get('content', {}).get('title', '')
+                                if t:
+                                    l = h.get('link') or h.get('url') or h.get('content', {}).get('clickThroughUrl', {}).get('url', '#')
+                                    st.markdown(f"🔗 **[{t}]({l})**")
+                                    st.markdown("---")
+                        else:
+                            st.write("Gösterilecek haber kaynağı yok.")
+                except Exception as e: 
+                    st.error("Haber servisine ulaşılamıyor.")
 
 elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
     toplam_varlik_degeri = 0
