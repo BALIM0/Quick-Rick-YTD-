@@ -26,6 +26,8 @@ st.markdown("""
     div[data-testid="metric-container"]:hover {transform: translateY(-5px); box-shadow: 0 6px 15px rgba(0, 255, 255, 0.15);}
     div.stButton > button {border-radius: 8px; font-weight: bold; transition: all 0.3s ease;}
     div.stButton > button:hover {border-color: #00ffff; box-shadow: 0 0 10px rgba(0,255,255,0.3); color: #00ffff;}
+    .bagis-panosu {text-align: center; padding: 15px; background: linear-gradient(135deg, rgba(255,215,0,0.1) 0%, rgba(255,140,0,0.1) 100%); border-radius: 12px; border: 1px solid rgba(255,215,0,0.3); margin-bottom: 20px;}
+    .bagis-sayi {color: #FFD700; font-size: 24px; font-weight: bold; text-shadow: 0 0 10px rgba(255,215,0,0.5);}
 </style>
 """, unsafe_allow_html=True)
 
@@ -44,8 +46,12 @@ def sifre_sifrele(sifre):
 def db_yukle():
     if os.path.exists(DB_DOSYASI):
         with open(DB_DOSYASI, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return {}
+            veri = json.load(f)
+            # GLOBAL HAVUZ KONTROLÜ (Eski sistemleri onarmak için)
+            if "_GLOBAL_" not in veri:
+                veri["_GLOBAL_"] = {"toplam_komisyon": 0.0}
+            return veri
+    return {"_GLOBAL_": {"toplam_komisyon": 0.0}}
 
 def db_kaydet(db):
     with open(DB_DOSYASI, "w", encoding="utf-8") as f:
@@ -68,7 +74,7 @@ if st.session_state.aktif_kullanici is None:
             giris_buton = st.form_submit_button("Giriş Yap", use_container_width=True)
             
         if giris_buton:
-            if g_kullanici in db and db[g_kullanici]["sifre"] == sifre_sifrele(g_sifre):
+            if g_kullanici in db and g_kullanici != "_GLOBAL_" and db[g_kullanici]["sifre"] == sifre_sifrele(g_sifre):
                 st.session_state.aktif_kullanici = g_kullanici
                 st.rerun()
             else:
@@ -81,8 +87,8 @@ if st.session_state.aktif_kullanici is None:
             kayit_buton = st.form_submit_button("Hesap Oluştur", use_container_width=True)
             
         if kayit_buton:
-            if k_kullanici in db:
-                st.error("Bu kullanıcı adı zaten alınmış!")
+            if k_kullanici in db or k_kullanici == "_GLOBAL_":
+                st.error("Bu kullanıcı adı zaten alınmış veya geçersiz!")
             elif len(k_kullanici) < 3 or len(k_sifre) < 4:
                 st.warning("Kullanıcı adı en az 3, şifre en az 4 karakter olmalıdır.")
             else:
@@ -109,7 +115,6 @@ madenler_emtia = {"Altın (Ons)": "GC=F", "Gümüş (Ons)": "SI=F", "Bakır": "H
 
 tum_varliklar_mega = {**bist_genis, **kripto, **madenler_emtia}
 
-# --- SOL MENÜ VE UYGULAMA MODU ---
 st.sidebar.header("🕹️ Uygulama Modu")
 uygulama_modu = st.sidebar.radio("Mod Seçiniz:", ["🔍 Algoritmik Piyasa Tarama", "💼 Sanal Portföy (Oyun)"])
 st.sidebar.markdown("---")
@@ -118,7 +123,6 @@ if st.sidebar.button("🚪 Çıkış Yap", use_container_width=True):
     st.session_state.aktif_kullanici = None
     st.rerun()
 
-# --- YENİ EKLENEN: HESAP SİLME BÖLÜMÜ ---
 with st.sidebar.expander("⚙️ Hesap Ayarları", expanded=False):
     st.markdown("<span style='font-size: 14px; color: #ff4444;'>Dikkat: Bu işlem kalıcıdır ve tüm portföy/geçmiş verileriniz silinir.</span>", unsafe_allow_html=True)
     sil_onay = st.checkbox("Silme işlemini onaylıyorum")
@@ -378,6 +382,10 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                     st.error("Haber servisine ulaşılamıyor.")
 
 elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
+    # --- YENİ: TOPLUMSAL BAĞIŞ PANOSU ---
+    toplam_komisyon = db["_GLOBAL_"].get("toplam_komisyon", 0.0)
+    st.markdown(f"<div class='bagis-panosu'>🌟 <b>Komisyon Olarak Bağışlanan Toplam Tutar:</b> <br><span class='bagis-sayi'>{toplam_komisyon:,.2f} ₺</span></div>", unsafe_allow_html=True)
+
     tab_portfoy, tab_liderlik = st.tabs(["💼 Portföyüm", "🏆 Liderlik Tablosu (En İyiler)"])
     
     with tab_portfoy:
@@ -416,6 +424,17 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
             secili_varlik = st.selectbox("Varlık Seçin:", list(tum_varliklar_mega.keys()))
             sembol_islem = tum_varliklar_mega[secili_varlik]
             
+            # KOMİSYON ORANI BELİRLEME
+            if secili_varlik in bist_genis:
+                komisyon_orani = 0.0015
+                komisyon_metni = "%0.15 (Hisse)"
+            elif secili_varlik in kripto:
+                komisyon_orani = 0.0020
+                komisyon_metni = "%0.20 (Kripto)"
+            else:
+                komisyon_orani = 0.0010
+                komisyon_metni = "%0.10 (Emtia)"
+
             try:
                 anlik_fiyat = float(yf.Ticker(sembol_islem).history(period="1d")['Close'].iloc[-1])
                 if not sembol_islem.endswith(".IS"): anlik_fiyat *= usd_kuru
@@ -426,30 +445,47 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
 
             islem_miktari = st.number_input("Adet / Miktar:", min_value=0.01, step=1.0)
             islem_tutari = islem_miktari * anlik_fiyat
-            st.write(f"Tutar: **{islem_tutari:,.2f} ₺**")
+            
+            # KOMİSYON HESAPLAMASI VE GÖSTERİMİ
+            komisyon_tutari = islem_tutari * komisyon_orani
+            toplam_islem_maliyeti = islem_tutari + komisyon_tutari # Alırken kasadan çıkan
+            toplam_islem_getirisi = islem_tutari - komisyon_tutari # Satarken kasaya giren
 
-            if st.button(f"Onayla ({islem_tipi})", use_container_width=True) and anlik_fiyat > 0:
+            st.write(f"İşlem Hacmi: **{islem_tutari:,.2f} ₺**")
+            st.write(f"Komisyon ({komisyon_metni}): **{komisyon_tutari:,.2f} ₺**")
+            
+            if islem_tipi == "AL":
+                st.info(f"Kasadan Çıkacak: **{toplam_islem_maliyeti:,.2f} ₺**")
+            else:
+                st.success(f"Kasaya Girecek: **{toplam_islem_getirisi:,.2f} ₺**")
+
+            if st.button(f"Siparişi Onayla", use_container_width=True) and anlik_fiyat > 0:
                 if islem_tipi == "AL":
-                    if cuzdan["nakit"] >= islem_tutari:
-                        cuzdan["nakit"] -= islem_tutari
+                    if cuzdan["nakit"] >= toplam_islem_maliyeti:
+                        cuzdan["nakit"] -= toplam_islem_maliyeti
                         mevcut_veri = cuzdan["varliklar"].get(secili_varlik, {"adet": 0.0, "maliyet": 0.0})
                         yeni_adet = mevcut_veri["adet"] + islem_miktari
-                        yeni_maliyet = ((mevcut_veri["adet"] * mevcut_veri["maliyet"]) + islem_tutari) / yeni_adet
+                        # Yeni maliyet = (Eski Toplam Maliyet + Yeni İşlem Hacmi + Komisyon) / Yeni Adet
+                        yeni_maliyet = ((mevcut_veri["adet"] * mevcut_veri["maliyet"]) + toplam_islem_maliyeti) / yeni_adet
                         cuzdan["varliklar"][secili_varlik] = {"adet": yeni_adet, "maliyet": yeni_maliyet}
+                        
+                        db["_GLOBAL_"]["toplam_komisyon"] += komisyon_tutari
                         aktif_cuzdan_kaydet()
-                        st.success("Başarılı!")
-                        time.sleep(1); st.rerun() 
-                    else: st.error("Yetersiz bakiye!")
+                        st.success("İşlem Başarılı! Komisyon bağış havuzuna aktarıldı.")
+                        time.sleep(1.5); st.rerun() 
+                    else: st.error("Yetersiz bakiye (Komisyon dahil)!")
                 elif islem_tipi == "SAT":
                     mevcut_veri = cuzdan["varliklar"].get(secili_varlik, {"adet": 0.0, "maliyet": 0.0})
                     if mevcut_veri["adet"] >= islem_miktari:
                         yeni_adet = mevcut_veri["adet"] - islem_miktari
-                        cuzdan["nakit"] += islem_tutari
+                        cuzdan["nakit"] += toplam_islem_getirisi
                         if yeni_adet <= 0.000001: del cuzdan["varliklar"][secili_varlik]
                         else: cuzdan["varliklar"][secili_varlik]["adet"] = yeni_adet
+                        
+                        db["_GLOBAL_"]["toplam_komisyon"] += komisyon_tutari
                         aktif_cuzdan_kaydet()
-                        st.success("Başarılı!")
-                        time.sleep(1); st.rerun() 
+                        st.success("İşlem Başarılı! Komisyon bağış havuzuna aktarıldı.")
+                        time.sleep(1.5); st.rerun() 
                     else: st.error("Yetersiz adet!")
 
         with col_durum:
@@ -482,7 +518,7 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
         with st.spinner("Sıralama hesaplanıyor..."):
             tum_kullanici_varliklari = set()
             for k, v in db.items():
-                if "cuzdan" in v and "varliklar" in v["cuzdan"]:
+                if k != "_GLOBAL_" and "cuzdan" in v and "varliklar" in v["cuzdan"]:
                     for varlik_ismi in v["cuzdan"]["varliklar"]:
                         tum_kullanici_varliklari.add(varlik_ismi)
             
@@ -499,7 +535,7 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
             
             liderlik_listesi = []
             for k, v in db.items():
-                if "cuzdan" in v:
+                if k != "_GLOBAL_" and "cuzdan" in v:
                     kullanici_cuzdan = v["cuzdan"]
                     kullanici_toplam = kullanici_cuzdan.get("nakit", 1000000.0)
                     
