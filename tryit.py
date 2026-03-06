@@ -56,14 +56,12 @@ if 'aktif_kullanici' not in st.session_state:
 
 db = db_yukle()
 
-# GİRİŞ EKRANI (Enter Tuşu Duyarlı)
 if st.session_state.aktif_kullanici is None:
     st.title("🛡️ Pro-Yatırım Kulübüne Hoş Geldiniz")
     st.markdown("Sanal 1.000.000 TL bakiye ile kendi fonunuzu yönetmek ve yapay zeka analizlerine ulaşmak için giriş yapın.")
     tab_giris, tab_kayit = st.tabs(["🔑 Giriş Yap", "📝 Kayıt Ol"])
     
     with tab_giris:
-        # Form mantığı ile Enter tuşunu aktifleştirdik
         with st.form("giris_formu"):
             g_kullanici = st.text_input("Kullanıcı Adı")
             g_sifre = st.text_input("Şifre", type="password")
@@ -111,6 +109,7 @@ madenler_emtia = {"Altın (Ons)": "GC=F", "Gümüş (Ons)": "SI=F", "Bakır": "H
 
 tum_varliklar_mega = {**bist_genis, **kripto, **madenler_emtia}
 
+# --- SOL MENÜ VE UYGULAMA MODU ---
 st.sidebar.header("🕹️ Uygulama Modu")
 uygulama_modu = st.sidebar.radio("Mod Seçiniz:", ["🔍 Algoritmik Piyasa Tarama", "💼 Sanal Portföy (Oyun)"])
 st.sidebar.markdown("---")
@@ -118,6 +117,17 @@ st.sidebar.markdown("---")
 if st.sidebar.button("🚪 Çıkış Yap", use_container_width=True):
     st.session_state.aktif_kullanici = None
     st.rerun()
+
+# --- YENİ EKLENEN: HESAP SİLME BÖLÜMÜ ---
+with st.sidebar.expander("⚙️ Hesap Ayarları", expanded=False):
+    st.markdown("<span style='font-size: 14px; color: #ff4444;'>Dikkat: Bu işlem kalıcıdır ve tüm portföy/geçmiş verileriniz silinir.</span>", unsafe_allow_html=True)
+    sil_onay = st.checkbox("Silme işlemini onaylıyorum")
+    if st.button("❌ Hesabımı Sil", use_container_width=True, disabled=not sil_onay):
+        if aktif_kullanici in db:
+            del db[aktif_kullanici]
+            db_kaydet(db)
+        st.session_state.aktif_kullanici = None
+        st.rerun()
 
 st.sidebar.markdown("---")
 st.sidebar.warning("**⚠️ YASAL UYARI (YTD)**\nBurada yer alan yatırım bilgi, yorum ve yapay zeka tahminleri yatırım danışmanlığı kapsamında değildir. Sistem tarafından üretilen sinyaller kesin getiri vaat etmez.")
@@ -368,96 +378,155 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                     st.error("Haber servisine ulaşılamıyor.")
 
 elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
-    toplam_varlik_degeri = 0
-    guncel_fiyatlar = {}
+    tab_portfoy, tab_liderlik = st.tabs(["💼 Portföyüm", "🏆 Liderlik Tablosu (En İyiler)"])
     
-    if cuzdan["varliklar"]:
-        for varlik_ismi, v_veri in list(cuzdan["varliklar"].items()):
-            if isinstance(v_veri, (int, float)): 
-                cuzdan["varliklar"][varlik_ismi] = {"adet": v_veri, "maliyet": 0.0}
-                aktif_cuzdan_kaydet()
-                adet = v_veri
-            else: adet = v_veri["adet"]
-                
-            sembol = tum_varliklar_mega.get(varlik_ismi)
-            if sembol:
-                try:
-                    fiyat = float(yf.Ticker(sembol).history(period="1d")['Close'].iloc[-1])
-                    if not sembol.endswith(".IS"): fiyat *= usd_kuru
-                    guncel_fiyatlar[varlik_ismi] = fiyat
-                    toplam_varlik_degeri += (fiyat * adet)
-                except: guncel_fiyatlar[varlik_ismi] = 0.0
-
-    toplam_portfoy = cuzdan["nakit"] + toplam_varlik_degeri
-    
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Toplam Portföy", f"{toplam_portfoy:,.2f} ₺", f"% {((toplam_portfoy - 1000000.0) / 1000000.0) * 100:.2f}")
-    col2.metric("Boş Nakit", f"{cuzdan['nakit']:,.2f} ₺")
-    col3.metric("Yatırımdaki Varlıklar", f"{toplam_varlik_degeri:,.2f} ₺")
-    st.markdown("---")
-
-    col_islem, col_durum = st.columns([1, 2])
-    
-    with col_islem:
-        islem_tipi = st.radio("İşlem Yönü:", ["AL", "SAT"], horizontal=True)
-        secili_varlik = st.selectbox("Varlık Seçin:", list(tum_varliklar_mega.keys()))
-        sembol_islem = tum_varliklar_mega[secili_varlik]
+    with tab_portfoy:
+        toplam_varlik_degeri = 0
+        guncel_fiyatlar = {}
         
-        try:
-            anlik_fiyat = float(yf.Ticker(sembol_islem).history(period="1d")['Close'].iloc[-1])
-            if not sembol_islem.endswith(".IS"): anlik_fiyat *= usd_kuru
-            st.write(f"Birim Fiyat: **{anlik_fiyat:,.2f} ₺**")
-        except:
-            anlik_fiyat = 0
-            st.warning("Fiyat çekilemedi.")
-
-        islem_miktari = st.number_input("Adet / Miktar:", min_value=0.01, step=1.0)
-        islem_tutari = islem_miktari * anlik_fiyat
-        st.write(f"Tutar: **{islem_tutari:,.2f} ₺**")
-
-        if st.button(f"Onayla ({islem_tipi})", use_container_width=True) and anlik_fiyat > 0:
-            if islem_tipi == "AL":
-                if cuzdan["nakit"] >= islem_tutari:
-                    cuzdan["nakit"] -= islem_tutari
-                    mevcut_veri = cuzdan["varliklar"].get(secili_varlik, {"adet": 0.0, "maliyet": 0.0})
-                    yeni_adet = mevcut_veri["adet"] + islem_miktari
-                    yeni_maliyet = ((mevcut_veri["adet"] * mevcut_veri["maliyet"]) + islem_tutari) / yeni_adet
-                    cuzdan["varliklar"][secili_varlik] = {"adet": yeni_adet, "maliyet": yeni_maliyet}
-                    aktif_cuzdan_kaydet()
-                    st.success("Başarılı!")
-                    time.sleep(1); st.rerun() 
-                else: st.error("Yetersiz bakiye!")
-            elif islem_tipi == "SAT":
-                mevcut_veri = cuzdan["varliklar"].get(secili_varlik, {"adet": 0.0, "maliyet": 0.0})
-                if mevcut_veri["adet"] >= islem_miktari:
-                    yeni_adet = mevcut_veri["adet"] - islem_miktari
-                    cuzdan["nakit"] += islem_tutari
-                    if yeni_adet <= 0.000001: del cuzdan["varliklar"][secili_varlik]
-                    else: cuzdan["varliklar"][secili_varlik]["adet"] = yeni_adet
-                    aktif_cuzdan_kaydet()
-                    st.success("Başarılı!")
-                    time.sleep(1); st.rerun() 
-                else: st.error("Yetersiz adet!")
-
-    with col_durum:
-        col_b, col_y = st.columns([3, 1])
-        with col_b: st.subheader("Cüzdan")
-        with col_y: 
-            if st.button("🔄 Yenile", use_container_width=True): st.rerun()
-                
         if cuzdan["varliklar"]:
-            liste = []
-            for v, d in cuzdan["varliklar"].items():
-                gf = guncel_fiyatlar.get(v, 0)
-                kz_tl = (d["adet"] * gf) - (d["adet"] * d["maliyet"])
-                kz_yuzde = ((gf - d["maliyet"]) / d["maliyet"] * 100) if d["maliyet"] > 0 else 0
-                liste.append({"Varlık": v, "Adet": d["adet"], "Maliyet (₺)": d["maliyet"], "Fiyat (₺)": gf, "Değer (₺)": d["adet"] * gf, "K/Z (₺)": kz_tl, "% K/Z": kz_yuzde})
+            for varlik_ismi, v_veri in list(cuzdan["varliklar"].items()):
+                if isinstance(v_veri, (int, float)): 
+                    cuzdan["varliklar"][varlik_ismi] = {"adet": v_veri, "maliyet": 0.0}
+                    aktif_cuzdan_kaydet()
+                    adet = v_veri
+                else: adet = v_veri["adet"]
+                    
+                sembol = tum_varliklar_mega.get(varlik_ismi)
+                if sembol:
+                    try:
+                        fiyat = float(yf.Ticker(sembol).history(period="1d")['Close'].iloc[-1])
+                        if not sembol.endswith(".IS"): fiyat *= usd_kuru
+                        guncel_fiyatlar[varlik_ismi] = fiyat
+                        toplam_varlik_degeri += (fiyat * adet)
+                    except: guncel_fiyatlar[varlik_ismi] = 0.0
+
+        toplam_portfoy = cuzdan["nakit"] + toplam_varlik_degeri
+        
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Toplam Portföy", f"{toplam_portfoy:,.2f} ₺", f"% {((toplam_portfoy - 1000000.0) / 1000000.0) * 100:.2f}")
+        col2.metric("Boş Nakit", f"{cuzdan['nakit']:,.2f} ₺")
+        col3.metric("Yatırımdaki Varlıklar", f"{toplam_varlik_degeri:,.2f} ₺")
+        st.markdown("---")
+
+        col_islem, col_durum = st.columns([1, 2])
+        
+        with col_islem:
+            islem_tipi = st.radio("İşlem Yönü:", ["AL", "SAT"], horizontal=True)
+            secili_varlik = st.selectbox("Varlık Seçin:", list(tum_varliklar_mega.keys()))
+            sembol_islem = tum_varliklar_mega[secili_varlik]
             
-            df_p = pd.DataFrame(liste).sort_values("Değer (₺)", ascending=False)
-            def renk_ver(val):
-                try: return 'color: #00ff00; font-weight:bold;' if float(val) > 0 else 'color: #ff4444; font-weight:bold;' if float(val) < 0 else ''
-                except: return ''
+            try:
+                anlik_fiyat = float(yf.Ticker(sembol_islem).history(period="1d")['Close'].iloc[-1])
+                if not sembol_islem.endswith(".IS"): anlik_fiyat *= usd_kuru
+                st.write(f"Birim Fiyat: **{anlik_fiyat:,.2f} ₺**")
+            except:
+                anlik_fiyat = 0
+                st.warning("Fiyat çekilemedi.")
+
+            islem_miktari = st.number_input("Adet / Miktar:", min_value=0.01, step=1.0)
+            islem_tutari = islem_miktari * anlik_fiyat
+            st.write(f"Tutar: **{islem_tutari:,.2f} ₺**")
+
+            if st.button(f"Onayla ({islem_tipi})", use_container_width=True) and anlik_fiyat > 0:
+                if islem_tipi == "AL":
+                    if cuzdan["nakit"] >= islem_tutari:
+                        cuzdan["nakit"] -= islem_tutari
+                        mevcut_veri = cuzdan["varliklar"].get(secili_varlik, {"adet": 0.0, "maliyet": 0.0})
+                        yeni_adet = mevcut_veri["adet"] + islem_miktari
+                        yeni_maliyet = ((mevcut_veri["adet"] * mevcut_veri["maliyet"]) + islem_tutari) / yeni_adet
+                        cuzdan["varliklar"][secili_varlik] = {"adet": yeni_adet, "maliyet": yeni_maliyet}
+                        aktif_cuzdan_kaydet()
+                        st.success("Başarılı!")
+                        time.sleep(1); st.rerun() 
+                    else: st.error("Yetersiz bakiye!")
+                elif islem_tipi == "SAT":
+                    mevcut_veri = cuzdan["varliklar"].get(secili_varlik, {"adet": 0.0, "maliyet": 0.0})
+                    if mevcut_veri["adet"] >= islem_miktari:
+                        yeni_adet = mevcut_veri["adet"] - islem_miktari
+                        cuzdan["nakit"] += islem_tutari
+                        if yeni_adet <= 0.000001: del cuzdan["varliklar"][secili_varlik]
+                        else: cuzdan["varliklar"][secili_varlik]["adet"] = yeni_adet
+                        aktif_cuzdan_kaydet()
+                        st.success("Başarılı!")
+                        time.sleep(1); st.rerun() 
+                    else: st.error("Yetersiz adet!")
+
+        with col_durum:
+            col_b, col_y = st.columns([3, 1])
+            with col_b: st.subheader("Cüzdan")
+            with col_y: 
+                if st.button("🔄 Yenile", use_container_width=True): st.rerun()
+                    
+            if cuzdan["varliklar"]:
+                liste = []
+                for v, d in cuzdan["varliklar"].items():
+                    gf = guncel_fiyatlar.get(v, 0)
+                    kz_tl = (d["adet"] * gf) - (d["adet"] * d["maliyet"])
+                    kz_yuzde = ((gf - d["maliyet"]) / d["maliyet"] * 100) if d["maliyet"] > 0 else 0
+                    liste.append({"Varlık": v, "Adet": d["adet"], "Maliyet (₺)": d["maliyet"], "Fiyat (₺)": gf, "Değer (₺)": d["adet"] * gf, "K/Z (₺)": kz_tl, "% K/Z": kz_yuzde})
                 
-            st.dataframe(df_p.style.map(renk_ver, subset=['K/Z (₺)', '% K/Z']).format({"Adet": "{:,.4f}", "Maliyet (₺)": "{:,.2f}", "Fiyat (₺)": "{:,.2f}", "Değer (₺)": "{:,.2f}", "K/Z (₺)": "{:,.2f}", "% K/Z": "% {:,.2f}"}), use_container_width=True)
-            if st.button("🗑️ Sıfırla"): cuzdan["nakit"], cuzdan["varliklar"] = 1000000.0, {}; aktif_cuzdan_kaydet(); st.rerun()
-        else: st.info("Cüzdan boş.")
+                df_p = pd.DataFrame(liste).sort_values("Değer (₺)", ascending=False)
+                def renk_ver(val):
+                    try: return 'color: #00ff00; font-weight:bold;' if float(val) > 0 else 'color: #ff4444; font-weight:bold;' if float(val) < 0 else ''
+                    except: return ''
+                    
+                st.dataframe(df_p.style.map(renk_ver, subset=['K/Z (₺)', '% K/Z']).format({"Adet": "{:,.4f}", "Maliyet (₺)": "{:,.2f}", "Fiyat (₺)": "{:,.2f}", "Değer (₺)": "{:,.2f}", "K/Z (₺)": "{:,.2f}", "% K/Z": "% {:,.2f}"}), use_container_width=True)
+                if st.button("🗑️ Sıfırla"): cuzdan["nakit"], cuzdan["varliklar"] = 1000000.0, {}; aktif_cuzdan_kaydet(); st.rerun()
+            else: st.info("Cüzdan boş.")
+
+    with tab_liderlik:
+        st.subheader("🏆 En İyi Fon Yöneticileri")
+        st.write("Sistemdeki tüm yatırımcıların toplam fon büyüklüklerine göre rekabet sıralaması.")
+        
+        with st.spinner("Sıralama hesaplanıyor..."):
+            tum_kullanici_varliklari = set()
+            for k, v in db.items():
+                if "cuzdan" in v and "varliklar" in v["cuzdan"]:
+                    for varlik_ismi in v["cuzdan"]["varliklar"]:
+                        tum_kullanici_varliklari.add(varlik_ismi)
+            
+            liderlik_fiyatlar = {}
+            for varlik_ismi in tum_kullanici_varliklari:
+                sembol = tum_varliklar_mega.get(varlik_ismi)
+                if sembol:
+                    try:
+                        fiyat = float(yf.Ticker(sembol).history(period="1d")['Close'].iloc[-1])
+                        if not sembol.endswith(".IS"): fiyat *= usd_kuru
+                        liderlik_fiyatlar[varlik_ismi] = fiyat
+                    except:
+                        liderlik_fiyatlar[varlik_ismi] = 0.0
+            
+            liderlik_listesi = []
+            for k, v in db.items():
+                if "cuzdan" in v:
+                    kullanici_cuzdan = v["cuzdan"]
+                    kullanici_toplam = kullanici_cuzdan.get("nakit", 1000000.0)
+                    
+                    if "varliklar" in kullanici_cuzdan:
+                        for v_isim, v_veri in kullanici_cuzdan["varliklar"].items():
+                            adet = v_veri if isinstance(v_veri, (int, float)) else v_veri.get("adet", 0)
+                            kullanici_toplam += adet * liderlik_fiyatlar.get(v_isim, 0.0)
+                            
+                    liderlik_listesi.append({"Kullanici": k, "Toplam": kullanici_toplam})
+            
+            liderlik_listesi = sorted(liderlik_listesi, key=lambda x: x["Toplam"], reverse=True)
+            
+            gosterim_listesi = []
+            for i, user_data in enumerate(liderlik_listesi):
+                bakiye_str = str(int(user_data["Toplam"]))
+                maskeli_bakiye = bakiye_str[0] + ("*" * (len(bakiye_str) - 1)) + " ₺"
+                
+                sira = str(i + 1)
+                if i == 0: sira = "🥇 1"
+                elif i == 1: sira = "🥈 2"
+                elif i == 2: sira = "🥉 3"
+                
+                gosterim_listesi.append({
+                    "Sıra": sira,
+                    "Yatırımcı": user_data["Kullanici"].upper(),
+                    "Gizli Kasa Büyüklüğü": maskeli_bakiye
+                })
+                
+            st.dataframe(pd.DataFrame(gosterim_listesi).style.hide(axis="index"), use_container_width=True)
+            st.info("💡 **Not:** Rekabet gizliliği amacıyla sadece kasaların basamak büyüklükleri gösterilmektedir.")
