@@ -20,7 +20,7 @@ except ImportError:
 
 st.set_page_config(page_title="Portföy Analiz ve Yönetimi", layout="wide", page_icon="📊")
 
-# --- GELİŞMİŞ UI / UX TASARIMI (CSS MÜHENDİSLİĞİ) ---
+# --- GELİŞMİŞ UI / UX TASARIMI (KUTULARI EŞİTLEYEN CSS MÜHENDİSLİĞİ) ---
 st.markdown("""
 <style>
     div[data-testid="metric-container"] {background-color: #1e1e1e; border: 1px solid #333; padding: 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0, 255, 255, 0.05); transition: transform 0.3s;}
@@ -30,13 +30,7 @@ st.markdown("""
     .bagis-panosu {text-align: center; padding: 15px; background: linear-gradient(135deg, rgba(255,215,0,0.1) 0%, rgba(255,140,0,0.1) 100%); border-radius: 12px; border: 1px solid rgba(255,215,0,0.3); margin-bottom: 20px;}
     .bagis-sayi {color: #FFD700; font-size: 24px; font-weight: bold; text-shadow: 0 0 10px rgba(255,215,0,0.5);}
 
-    /* KUTULARIN BOYUTLARINI VE HİZALARINI %100 SABİTLEME */
-    div.stRadio div[role="radiogroup"] {
-        display: flex !important;
-        flex-direction: column !important;
-        width: 100% !important;
-        gap: 10px !important;
-    }
+    /* TÜM RADIO BUTONLARINI MODERN KARTLARA ÇEVİRME */
     div.stRadio div[role="radiogroup"] > label {
         width: 100% !important;
         min-height: 45px !important;
@@ -52,6 +46,7 @@ st.markdown("""
         cursor: pointer !important;
         margin: 0 !important;
     }
+    /* Orijinal yuvarlağı gizle */
     div.stRadio div[role="radiogroup"] > label > div:first-child {
         display: none !important;
     }
@@ -65,13 +60,49 @@ st.markdown("""
         background-color: #222 !important;
         box-shadow: 0 4px 10px rgba(0, 255, 255, 0.1) !important;
     }
-    div.stRadio div[role="radiogroup"] > label:has(input:checked) {
+    
+    /* SOL MENÜ DÜZENİ (Alt Alta) */
+    [data-testid="stSidebar"] div.stRadio div[role="radiogroup"] {
+        display: flex !important;
+        flex-direction: column !important;
+        width: 100% !important;
+        gap: 10px !important;
+    }
+    [data-testid="stSidebar"] div.stRadio div[role="radiogroup"] > label:has(input:checked) {
         background: linear-gradient(90deg, rgba(0,255,255,0.15) 0%, rgba(0,255,255,0.02) 100%) !important;
         border-color: #00ffff !important;
         border-left: 4px solid #00ffff !important; 
     }
-    div.stRadio div[role="radiogroup"] > label:has(input:checked) p {
+    [data-testid="stSidebar"] div.stRadio div[role="radiogroup"] > label:has(input:checked) p {
         color: #00ffff !important;
+        font-weight: bold !important;
+    }
+
+    /* ANA EKRAN DÜZENİ (AL/SAT Butonları Yan Yana) */
+    [data-testid="stMainBlockContainer"] div.stRadio div[role="radiogroup"] {
+        display: flex !important;
+        flex-direction: row !important;
+        width: 100% !important;
+        gap: 15px !important;
+    }
+    /* AL Butonu Yeşile Dönsün */
+    [data-testid="stMainBlockContainer"] div.stRadio div[role="radiogroup"] > label:nth-child(1):has(input:checked) {
+        background: linear-gradient(90deg, rgba(0,255,0,0.15) 0%, rgba(0,255,0,0.02) 100%) !important;
+        border-color: #00ff00 !important;
+        border-left: 4px solid #00ff00 !important; 
+    }
+    [data-testid="stMainBlockContainer"] div.stRadio div[role="radiogroup"] > label:nth-child(1):has(input:checked) p {
+        color: #00ff00 !important;
+        font-weight: bold !important;
+    }
+    /* SAT Butonu Kırmızıya Dönsün */
+    [data-testid="stMainBlockContainer"] div.stRadio div[role="radiogroup"] > label:nth-child(2):has(input:checked) {
+        background: linear-gradient(90deg, rgba(255,68,68,0.15) 0%, rgba(255,68,68,0.02) 100%) !important;
+        border-color: #ff4444 !important;
+        border-left: 4px solid #ff4444 !important; 
+    }
+    [data-testid="stMainBlockContainer"] div.stRadio div[role="radiogroup"] > label:nth-child(2):has(input:checked) p {
+        color: #ff4444 !important;
         font-weight: bold !important;
     }
 </style>
@@ -426,7 +457,6 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
             with col1:
                 grafik_veri = yf.Ticker(secilen_sembol).history(period="6mo")
                 if not grafik_veri.empty:
-                    # --- MONTE CARLO SEKME YERLEŞİMİ GERİ EKLENDİ ---
                     tab1, tab2, tab3 = st.tabs(["🤖 AI Trend", "🎲 Monte Carlo", "⏪ Backtest"])
                     with tab1:
                         df_ml = grafik_veri[['Close']].dropna().copy()
@@ -440,7 +470,6 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                         fig1.add_trace(go.Bar(x=grafik_veri.index, y=grafik_veri['Volume'], marker_color=['green' if c >= o else 'red' for o, c in zip(grafik_veri['Open'], grafik_veri['Close'])]), row=2, col=1)
                         fig1.update_layout(xaxis_rangeslider_visible=False, height=500, template="plotly_dark", margin=dict(t=10, b=10))
                         st.plotly_chart(fig1, use_container_width=True)
-                    # --- MONTE CARLO GERİ GELDİ ---
                     with tab2:
                         log_returns = np.log(1 + grafik_veri['Close'].pct_change()).dropna()
                         u, var, stdev = log_returns.mean(), log_returns.var(), log_returns.std()
