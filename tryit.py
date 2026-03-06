@@ -24,7 +24,6 @@ def cuzdan_yukle():
             if "izleme_listesi" not in veri:
                 veri["izleme_listesi"] = ["Türk Hava Yolları", "Bitcoin", "Altın (Ons)"]
             return veri
-    # İlk kez giriyorsa varsayılan verileri oluştur (Artık 1 Milyon TL!)
     return {"nakit": 1000000.0, "varliklar": {}, "izleme_listesi": ["Türk Hava Yolları", "Bitcoin", "Altın (Ons)"]}
 
 def cuzdan_kaydet(veri):
@@ -111,10 +110,19 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
     aktif_varliklar = {}
     if piyasa_secimi == "👤 Kendi İzleme Listem":
         st.sidebar.info("Buradaki seçimleriniz otomatik olarak kaydedilir:")
-        kayitli_liste = [v for v in cuzdan.get("izleme_listesi", []) if v in tum_varliklar_mega]
-        secilen_isimler = st.sidebar.multiselect("Varlıkları Seçin:", options=list(tum_varliklar_mega.keys()), default=kayitli_liste)
         
-        if set(secilen_isimler) != set(kayitli_liste):
+        # Streamlit Çift Tıklama Bug'ı Çözümü
+        if "ilk_liste" not in st.session_state:
+            st.session_state.ilk_liste = [v for v in cuzdan.get("izleme_listesi", []) if v in tum_varliklar_mega]
+            
+        secilen_isimler = st.sidebar.multiselect(
+            "Varlıkları Seçin:", 
+            options=list(tum_varliklar_mega.keys()), 
+            default=st.session_state.ilk_liste
+        )
+        
+        if set(secilen_isimler) != set(st.session_state.ilk_liste):
+            st.session_state.ilk_liste = secilen_isimler
             cuzdan["izleme_listesi"] = secilen_isimler
             cuzdan_kaydet(cuzdan)
             
@@ -338,7 +346,6 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                             l = h.get('link') or h.get('url') or h.get('content', {}).get('clickThroughUrl', {}).get('url', '#')
                             st.markdown(f"**[{t}]({l})**"); st.markdown("---")
                 except: st.info("Haber bulunamadı.")
-
 
 # =========================================================================================
 # MOD 2: SANAL PORTFÖY (PAPER TRADING OYUNU)
