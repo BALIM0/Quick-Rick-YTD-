@@ -24,7 +24,8 @@ def cuzdan_yukle():
             if "izleme_listesi" not in veri:
                 veri["izleme_listesi"] = ["Türk Hava Yolları", "Bitcoin", "Altın (Ons)"]
             return veri
-    return {"nakit": 100000.0, "varliklar": {}, "izleme_listesi": ["Türk Hava Yolları", "Bitcoin", "Altın (Ons)"]}
+    # İlk kez giriyorsa varsayılan verileri oluştur (Artık 1 Milyon TL!)
+    return {"nakit": 1000000.0, "varliklar": {}, "izleme_listesi": ["Türk Hava Yolları", "Bitcoin", "Altın (Ons)"]}
 
 def cuzdan_kaydet(veri):
     with open(DOSYA_ADI, "w", encoding="utf-8") as f:
@@ -210,7 +211,7 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                 finally:
                     islenen += 1
                     ilerleme_cubugu.progress(min(islenen / toplam_varlik, 1.0))
-                    if toplam_varlik > 100: time.sleep(0.05) # Rate limit koruması
+                    if toplam_varlik > 100: time.sleep(0.05)
 
             durum_metni.empty() 
             ilerleme_cubugu.empty() 
@@ -344,7 +345,7 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
 # =========================================================================================
 elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
     st.header("💼 Sanal Portföy Yönetimi")
-    st.write("Sanal 100.000 TL bakiye ile yatırım stratejilerinizi risksiz bir şekilde test edin!")
+    st.write("Sanal 1.000.000 TL bakiye ile yatırım stratejilerinizi risksiz bir şekilde test edin!")
     
     toplam_varlik_degeri = 0
     guncel_fiyatlar = {}
@@ -362,7 +363,7 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                     guncel_fiyatlar[varlik_ismi] = 0.0
 
     toplam_portfoy_buyuklugu = cuzdan["nakit"] + toplam_varlik_degeri
-    kar_zarar_yuzdesi = ((toplam_portfoy_buyuklugu - 100000.0) / 100000.0) * 100
+    kar_zarar_yuzdesi = ((toplam_portfoy_buyuklugu - 1000000.0) / 1000000.0) * 100
 
     col1, col2, col3 = st.columns(3)
     col1.metric("Toplam Portföy Değeri", f"{toplam_portfoy_buyuklugu:,.2f} ₺", f"% {kar_zarar_yuzdesi:.2f}")
@@ -415,8 +416,8 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
         if cuzdan["varliklar"]:
             portfoy_listesi = [{"Varlık": v, "Adet": round(a, 4), "Güncel Fiyat": round(guncel_fiyatlar.get(v, 0), 2), "Toplam Değer (₺)": round(a * guncel_fiyatlar.get(v, 0), 2)} for v, a in cuzdan["varliklar"].items()]
             st.dataframe(pd.DataFrame(portfoy_listesi).sort_values(by="Toplam Değer (₺)", ascending=False), use_container_width=True)
-            if st.button("🗑️ Portföyü Sıfırla"):
-                cuzdan_kaydet({"nakit": 100000.0, "varliklar": {}, "izleme_listesi": cuzdan.get("izleme_listesi", [])})
+            if st.button("🗑️ Portföyü Sıfırla (Bastan Başla)"):
+                cuzdan_kaydet({"nakit": 1000000.0, "varliklar": {}, "izleme_listesi": cuzdan.get("izleme_listesi", [])})
                 st.rerun()
         else:
             st.info("Portföyünüz şu an boş.")
