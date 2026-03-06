@@ -47,7 +47,6 @@ def db_yukle():
     if os.path.exists(DB_DOSYASI):
         with open(DB_DOSYASI, "r", encoding="utf-8") as f:
             veri = json.load(f)
-            # GLOBAL HAVUZ KONTROLÜ (Eski sistemleri onarmak için)
             if "_GLOBAL_" not in veri:
                 veri["_GLOBAL_"] = {"toplam_komisyon": 0.0}
             return veri
@@ -62,6 +61,7 @@ if 'aktif_kullanici' not in st.session_state:
 
 db = db_yukle()
 
+# --- GİRİŞ VE KAYIT EKRANI ---
 if st.session_state.aktif_kullanici is None:
     st.title("🛡️ Pro-Yatırım Kulübüne Hoş Geldiniz")
     st.markdown("Sanal 1.000.000 TL bakiye ile kendi fonunuzu yönetmek ve yapay zeka analizlerine ulaşmak için giriş yapın.")
@@ -69,7 +69,8 @@ if st.session_state.aktif_kullanici is None:
     
     with tab_giris:
         with st.form("giris_formu"):
-            g_kullanici = st.text_input("Kullanıcı Adı")
+            st.info("💡 Lütfen kayıt olurken belirlediğiniz gizli 'Kullanıcı Adınızı' giriniz (Takma Adınızı değil).")
+            g_kullanici = st.text_input("Kullanıcı Adı (Gizli ID)")
             g_sifre = st.text_input("Şifre", type="password")
             giris_buton = st.form_submit_button("Giriş Yap", use_container_width=True)
             
@@ -82,30 +83,43 @@ if st.session_state.aktif_kullanici is None:
                 
     with tab_kayit:
         with st.form("kayit_formu"):
-            k_kullanici = st.text_input("Yeni Kullanıcı Adı")
+            k_kullanici = st.text_input("Sisteme Giriş İçin Kullanıcı Adı (Kimse Görmeyecek)")
+            k_nickname = st.text_input("Liderlik Tablosu İçin Takma Ad (Nickname - Herkes Görecek)")
             k_sifre = st.text_input("Yeni Şifre", type="password")
             kayit_buton = st.form_submit_button("Hesap Oluştur", use_container_width=True)
             
         if kayit_buton:
+            mevcut_nicknameler = [v.get("nickname", "").lower() for k, v in db.items() if k != "_GLOBAL_"]
+            
             if k_kullanici in db or k_kullanici == "_GLOBAL_":
-                st.error("Bu kullanıcı adı zaten alınmış veya geçersiz!")
-            elif len(k_kullanici) < 3 or len(k_sifre) < 4:
-                st.warning("Kullanıcı adı en az 3, şifre en az 4 karakter olmalıdır.")
+                st.error("❌ Bu Gizli Kullanıcı Adı zaten alınmış!")
+            elif k_nickname.lower() in mevcut_nicknameler:
+                st.error("❌ Bu Takma Ad (Nickname) başka bir yatırımcı tarafından kullanılıyor!")
+            elif k_kullanici.lower() == k_nickname.lower():
+                st.error("🛡️ Güvenlik İhlali: Kullanıcı adı ile Takma Ad aynı olamaz. Lütfen farklı bir takma ad belirleyin.")
+            elif len(k_kullanici) < 3 or len(k_sifre) < 4 or len(k_nickname) < 3:
+                st.warning("Kullanıcı adı/Takma ad en az 3, şifre en az 4 karakter olmalıdır.")
             else:
-                db[k_kullanici] = {"sifre": sifre_sifrele(k_sifre), "cuzdan": {"nakit": 1000000.0, "varliklar": {}, "izleme_listesi": ["Türk Hava Yolları", "Bitcoin", "Altın (Ons)"]}}
+                db[k_kullanici] = {
+                    "sifre": sifre_sifrele(k_sifre), 
+                    "nickname": k_nickname, 
+                    "son_isim_degistirme": 0, # İsim değiştirme zamanlayıcısı
+                    "cuzdan": {"nakit": 1000000.0, "varliklar": {}, "izleme_listesi": ["Türk Hava Yolları", "Bitcoin", "Altın (Ons)"]}
+                }
                 db_kaydet(db)
-                st.success("Hesabınız oluşturuldu! Şimdi giriş yapabilirsiniz.")
+                st.success("✅ Hesabınız oluşturuldu! Şimdi 'Giriş Yap' sekmesinden giriş yapabilirsiniz.")
     st.stop()
 
 aktif_kullanici = st.session_state.aktif_kullanici
 cuzdan = db[aktif_kullanici]["cuzdan"]
+aktif_nickname = db[aktif_kullanici].get("nickname", aktif_kullanici)
 
 def aktif_cuzdan_kaydet():
     db[aktif_kullanici]["cuzdan"] = cuzdan
     db_kaydet(db)
 
 st.title("🛡️ Profesyonel Algoritmik Yatırım Karargahı")
-st.caption(f"👤 Fon Yöneticisi: **{aktif_kullanici.upper()}** | 💵 Güncel Kur (USD/TRY): **{guncel_kur_getir():.2f} ₺**")
+st.caption(f"👤 Fon Yöneticisi: **{aktif_nickname.upper()}** | 💵 Güncel Kur (USD/TRY): **{guncel_kur_getir():.2f} ₺**")
 
 bist_30 = {"Akbank": "AKBNK.IS", "Alarko": "ALARK.IS", "Aselsan": "ASELS.IS", "Astor": "ASTOR.IS", "BİM": "BIMAS.IS", "Borusan": "BRSAN.IS", "Coca Cola": "CCOLA.IS", "Emlak Konut": "EKGYO.IS", "Enka": "ENKAI.IS", "Ereğli": "EREGL.IS", "Ford": "FROTO.IS", "Garanti": "GARAN.IS", "Gübre Fab": "GUBRF.IS", "Hektaş": "HEKTS.IS", "İş Bankası": "ISCTR.IS", "Koç Hol": "KCHOL.IS", "Kontrolmatik": "KONTR.IS", "Koza Altın": "KOZAL.IS", "Kardemir": "KRDMD.IS", "Odaş": "ODAS.IS", "Petkim": "PETKM.IS", "Pegasus": "PGSUS.IS", "Sabancı Hol": "SAHOL.IS", "Sasa": "SASA.IS", "Şişecam": "SISE.IS", "Turkcell": "TCELL.IS", "THY": "THYAO.IS", "Tofaş": "TOASO.IS", "Tüpraş": "TUPRS.IS", "Yapı Kredi": "YKBNK.IS"}
 bist_100 = {**bist_30, **{"Alfa Solar": "ALFAS.IS", "Arçelik": "ARCLK.IS", "Brisa": "BRISA.IS", "Çimsa": "CIMSA.IS", "CW Enerji": "CWENE.IS", "Doğuş Oto": "DOAS.IS", "Doğan Hol": "DOHOL.IS", "Eczacıbaşı": "ECILC.IS", "Ege Endüstri": "EGEEN.IS", "Enerjisa": "ENJSA.IS", "Europower": "EUPWR.IS", "Girişim Elk": "GESAN.IS", "Halkbank": "HALKB.IS", "İskenderun D.": "ISDMR.IS", "İş GYO": "ISGYO.IS", "İş Yatırım": "ISMEN.IS", "Konya Çimento": "KONYA.IS", "Kordsa": "KORDS.IS", "Koza Anadolu": "KOZAA.IS", "Mavi": "MAVI.IS", "Migros": "MGROS.IS", "Mia Teknoloji": "MIATK.IS", "Otokar": "OTKAR.IS", "Oyak Çimento": "OYAKC.IS", "Qua Granite": "QUAGR.IS", "Şekerbank": "SKBNK.IS", "Smart Güneş": "SMRTG.IS", "Şok Market": "SOKM.IS", "TAV": "TAVHL.IS", "Tekfen": "TKFEN.IS", "TSKB": "TSKB.IS", "Türk Telekom": "TTKOM.IS", "Türk Traktör": "TTRAK.IS", "Tukaş": "TUKAS.IS", "Ülker": "ULKER.IS", "Vakıfbank": "VAKBN.IS", "Vestel Beyaz": "VESBE.IS", "Vestel": "VESTL.IS", "Yeo Teknoloji": "YEOTK.IS", "Zorlu Enerji": "ZOREN.IS"}}
@@ -123,15 +137,70 @@ if st.sidebar.button("🚪 Çıkış Yap", use_container_width=True):
     st.session_state.aktif_kullanici = None
     st.rerun()
 
+# --- YENİ EKLENEN: GELİŞMİŞ HESAP AYARLARI PANELİ ---
 with st.sidebar.expander("⚙️ Hesap Ayarları", expanded=False):
-    st.markdown("<span style='font-size: 14px; color: #ff4444;'>Dikkat: Bu işlem kalıcıdır ve tüm portföy/geçmiş verileriniz silinir.</span>", unsafe_allow_html=True)
-    sil_onay = st.checkbox("Silme işlemini onaylıyorum")
-    if st.button("❌ Hesabımı Sil", use_container_width=True, disabled=not sil_onay):
-        if aktif_kullanici in db:
-            del db[aktif_kullanici]
-            db_kaydet(db)
-        st.session_state.aktif_kullanici = None
-        st.rerun()
+    tab_sifre, tab_isim, tab_sil = st.tabs(["🔑 Şifre", "🏷️ İsim", "❌ Sil"])
+    
+    with tab_sifre:
+        with st.form("sifre_degistir_form"):
+            eski_sifre = st.text_input("Mevcut Şifre", type="password")
+            yeni_sifre = st.text_input("Yeni Şifre", type="password")
+            yeni_sifre_tekrar = st.text_input("Yeni Şifre (Tekrar)", type="password")
+            btn_sifre = st.form_submit_button("Güncelle", use_container_width=True)
+            
+            if btn_sifre:
+                if db[aktif_kullanici]["sifre"] != sifre_sifrele(eski_sifre):
+                    st.error("❌ Mevcut şifreniz yanlış!")
+                elif yeni_sifre != yeni_sifre_tekrar:
+                    st.error("❌ Yeni şifreler eşleşmiyor!")
+                elif len(yeni_sifre) < 4:
+                    st.warning("⚠️ Şifre en az 4 karakter olmalı.")
+                else:
+                    db[aktif_kullanici]["sifre"] = sifre_sifrele(yeni_sifre)
+                    db_kaydet(db)
+                    st.success("✅ Şifre güncellendi!")
+                    
+    with tab_isim:
+        su_an = time.time()
+        son_degisim = db[aktif_kullanici].get("son_isim_degistirme", 0)
+        # 7 Günlük bekleme süresi hesabı
+        kalan_saniye = (7 * 24 * 60 * 60) - (su_an - son_degisim)
+        
+        if kalan_saniye > 0:
+            kalan_gun = int(kalan_saniye // (24 * 3600))
+            kalan_saat = int((kalan_saniye % (24 * 3600)) // 3600)
+            st.info(f"⏳ Takma adınızı değiştirmek için **{kalan_gun} gün {kalan_saat} saat** beklemelisiniz.")
+        else:
+            with st.form("isim_degistir_form"):
+                st.caption("Sadece Liderlik Tablosunda görünür.")
+                yeni_isim = st.text_input("Yeni Takma Ad (Nickname)")
+                btn_isim = st.form_submit_button("İsmi Güncelle", use_container_width=True)
+                
+                if btn_isim:
+                    mevcut_nicknameler = [v.get("nickname", "").lower() for k, v in db.items() if k != "_GLOBAL_"]
+                    if yeni_isim.lower() in mevcut_nicknameler:
+                        st.error("❌ Bu isim kullanılıyor!")
+                    elif yeni_isim.lower() == aktif_kullanici.lower():
+                        st.error("❌ Güvenlik: Giriş ID'niz ile aynı olamaz!")
+                    elif len(yeni_isim) < 3:
+                        st.warning("⚠️ En az 3 karakter olmalı.")
+                    else:
+                        db[aktif_kullanici]["nickname"] = yeni_isim
+                        db[aktif_kullanici]["son_isim_degistirme"] = su_an
+                        db_kaydet(db)
+                        st.success("✅ İsim güncellendi!")
+                        time.sleep(1)
+                        st.rerun()
+
+    with tab_sil:
+        st.markdown("<span style='font-size: 13px; color: #ff4444;'>Dikkat: Bu işlem kalıcıdır ve tüm portföy/geçmiş verileriniz silinir.</span>", unsafe_allow_html=True)
+        sil_onay = st.checkbox("Silme işlemini onaylıyorum")
+        if st.button("❌ Hesabımı Sil", use_container_width=True, disabled=not sil_onay):
+            if aktif_kullanici in db:
+                del db[aktif_kullanici]
+                db_kaydet(db)
+            st.session_state.aktif_kullanici = None
+            st.rerun()
 
 st.sidebar.markdown("---")
 st.sidebar.warning("**⚠️ YASAL UYARI (YTD)**\nBurada yer alan yatırım bilgi, yorum ve yapay zeka tahminleri yatırım danışmanlığı kapsamında değildir. Sistem tarafından üretilen sinyaller kesin getiri vaat etmez.")
@@ -382,7 +451,6 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                     st.error("Haber servisine ulaşılamıyor.")
 
 elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
-    # --- YENİ: TOPLUMSAL BAĞIŞ PANOSU ---
     toplam_komisyon = db["_GLOBAL_"].get("toplam_komisyon", 0.0)
     st.markdown(f"<div class='bagis-panosu'>🌟 <b>Komisyon Olarak Bağışlanan Toplam Tutar:</b> <br><span class='bagis-sayi'>{toplam_komisyon:,.2f} ₺</span></div>", unsafe_allow_html=True)
 
@@ -424,7 +492,6 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
             secili_varlik = st.selectbox("Varlık Seçin:", list(tum_varliklar_mega.keys()))
             sembol_islem = tum_varliklar_mega[secili_varlik]
             
-            # KOMİSYON ORANI BELİRLEME
             if secili_varlik in bist_genis:
                 komisyon_orani = 0.0015
                 komisyon_metni = "%0.15 (Hisse)"
@@ -446,18 +513,15 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
             islem_miktari = st.number_input("Adet / Miktar:", min_value=0.01, step=1.0)
             islem_tutari = islem_miktari * anlik_fiyat
             
-            # KOMİSYON HESAPLAMASI VE GÖSTERİMİ
             komisyon_tutari = islem_tutari * komisyon_orani
-            toplam_islem_maliyeti = islem_tutari + komisyon_tutari # Alırken kasadan çıkan
-            toplam_islem_getirisi = islem_tutari - komisyon_tutari # Satarken kasaya giren
+            toplam_islem_maliyeti = islem_tutari + komisyon_tutari 
+            toplam_islem_getirisi = islem_tutari - komisyon_tutari 
 
             st.write(f"İşlem Hacmi: **{islem_tutari:,.2f} ₺**")
             st.write(f"Komisyon ({komisyon_metni}): **{komisyon_tutari:,.2f} ₺**")
             
-            if islem_tipi == "AL":
-                st.info(f"Kasadan Çıkacak: **{toplam_islem_maliyeti:,.2f} ₺**")
-            else:
-                st.success(f"Kasaya Girecek: **{toplam_islem_getirisi:,.2f} ₺**")
+            if islem_tipi == "AL": st.info(f"Kasadan Çıkacak: **{toplam_islem_maliyeti:,.2f} ₺**")
+            else: st.success(f"Kasaya Girecek: **{toplam_islem_getirisi:,.2f} ₺**")
 
             if st.button(f"Siparişi Onayla", use_container_width=True) and anlik_fiyat > 0:
                 if islem_tipi == "AL":
@@ -465,7 +529,6 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                         cuzdan["nakit"] -= toplam_islem_maliyeti
                         mevcut_veri = cuzdan["varliklar"].get(secili_varlik, {"adet": 0.0, "maliyet": 0.0})
                         yeni_adet = mevcut_veri["adet"] + islem_miktari
-                        # Yeni maliyet = (Eski Toplam Maliyet + Yeni İşlem Hacmi + Komisyon) / Yeni Adet
                         yeni_maliyet = ((mevcut_veri["adet"] * mevcut_veri["maliyet"]) + toplam_islem_maliyeti) / yeni_adet
                         cuzdan["varliklar"][secili_varlik] = {"adet": yeni_adet, "maliyet": yeni_maliyet}
                         
@@ -508,7 +571,6 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                     except: return ''
                     
                 st.dataframe(df_p.style.map(renk_ver, subset=['K/Z (₺)', '% K/Z']).format({"Adet": "{:,.4f}", "Maliyet (₺)": "{:,.2f}", "Fiyat (₺)": "{:,.2f}", "Değer (₺)": "{:,.2f}", "K/Z (₺)": "{:,.2f}", "% K/Z": "% {:,.2f}"}), use_container_width=True)
-                if st.button("🗑️ Sıfırla"): cuzdan["nakit"], cuzdan["varliklar"] = 1000000.0, {}; aktif_cuzdan_kaydet(); st.rerun()
             else: st.info("Cüzdan boş.")
 
     with tab_liderlik:
@@ -544,7 +606,8 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                             adet = v_veri if isinstance(v_veri, (int, float)) else v_veri.get("adet", 0)
                             kullanici_toplam += adet * liderlik_fiyatlar.get(v_isim, 0.0)
                             
-                    liderlik_listesi.append({"Kullanici": k, "Toplam": kullanici_toplam})
+                    gosterilecek_isim = v.get("nickname", k)
+                    liderlik_listesi.append({"Kullanici": gosterilecek_isim, "Toplam": kullanici_toplam})
             
             liderlik_listesi = sorted(liderlik_listesi, key=lambda x: x["Toplam"], reverse=True)
             
@@ -560,9 +623,9 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                 
                 gosterim_listesi.append({
                     "Sıra": sira,
-                    "Yatırımcı": user_data["Kullanici"].upper(),
+                    "Yatırımcı (Takma Ad)": user_data["Kullanici"].upper(),
                     "Gizli Kasa Büyüklüğü": maskeli_bakiye
                 })
                 
             st.dataframe(pd.DataFrame(gosterim_listesi).style.hide(axis="index"), use_container_width=True)
-            st.info("💡 **Not:** Rekabet gizliliği amacıyla sadece kasaların basamak büyüklükleri gösterilmektedir.")
+            st.info("💡 **Not:** Güvenlik ve rekabet gizliliği amacıyla kullanıcıların gerçek giriş ID'leri değil takma adları gösterilmektedir. Kasa bakiyeleri ise maskelenmiştir.")
