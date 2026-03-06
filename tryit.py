@@ -121,10 +121,18 @@ madenler_emtia = {
 
 tum_varliklar_mega = {**bist_genis, **kripto, **madenler_emtia}
 
-# --- SOL MENÜ ---
+# --- SOL MENÜ VE UYGULAMA MODU ---
 st.sidebar.header("🕹️ Uygulama Modu")
 uygulama_modu = st.sidebar.radio("Mod Seçiniz:", ["🔍 Algoritmik Piyasa Tarama", "💼 Sanal Portföy (Oyun)"])
 st.sidebar.markdown("---")
+
+# =========================================================================================
+# --- YASAL UYARI (DISCLAIMER) EKLENDİ ---
+# =========================================================================================
+st.sidebar.warning("""
+**⚠️ YASAL UYARI (YTD)**
+Burada yer alan yatırım bilgi, yorum, algoritma sonuçları ve yapay zeka tahminleri **yatırım danışmanlığı kapsamında değildir.** Bu uygulama tamamen matematiksel simülasyon, eğitim ve test amacıyla geliştirilmiştir. Sistem tarafından üretilen "AL/SAT" sinyalleri veya portföy dağılımları kesin getiri vaat etmez. Bu verilere dayanarak yapılacak işlemlerden doğabilecek maddi/manevi zararlardan geliştirici sorumlu tutulamaz.
+""")
 
 # =========================================================================================
 # MOD 1: ALGORİTMİK PİYASA TARAMA
@@ -294,7 +302,6 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
         # FERAH TASARIM: Portföy Modülleri
         if piyasa_secimi == "👤 Kendi İzleme Listem" and not st.session_state.ozel_portfoy_verisi.empty:
             
-            # 1. Markowitz Portföy Optimizasyonu
             with st.expander("⚖️ Markowitz Optimum Portföy Dağılımını Göster", expanded=False):
                 st.write("Sistem, seçtiğiniz varlıkların geçmiş korelasyonlarını analiz ederek riski minimumda tutan altın oranları hesapladı.")
                 df_port = st.session_state.ozel_portfoy_verisi.ffill().dropna()
@@ -325,7 +332,6 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                 else:
                     st.warning("Geçmiş veri optimizasyon için yeterli değil.")
                     
-            # 2. YENİ: İstatistiksel Korelasyon Matrisi
             with st.expander("🗺️ Varlık Korelasyon Matrisi (Isı Haritası)", expanded=False):
                 st.write("Varlıkların birbirleriyle olan istatistiksel ilişkisi. **+1** birlikte hareket ettiklerini, **-1** zıt hareket ettiklerini gösterir.")
                 df_port_corr = st.session_state.ozel_portfoy_verisi.ffill().dropna()
