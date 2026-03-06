@@ -42,7 +42,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.title("🛡️ Profesyonel Algoritmik Yatırım Karargahı")
+st.title("🛡️ Portföy Düzenleyici 🛡️")
 
 # --- VERİTABANI (JSON) FONKSİYONLARI ---
 DOSYA_ADI = "sanal_cuzdan.json"
@@ -548,3 +548,4 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                 st.rerun()
         else:
             st.info("Portföyünüz şu an boş. Sol taraftan işlem yaparak yatırım yapmaya başlayabilirsiniz!")
+
