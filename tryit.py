@@ -56,15 +56,20 @@ if 'aktif_kullanici' not in st.session_state:
 
 db = db_yukle()
 
+# GİRİŞ EKRANI (Enter Tuşu Duyarlı)
 if st.session_state.aktif_kullanici is None:
     st.title("🛡️ Pro-Yatırım Kulübüne Hoş Geldiniz")
     st.markdown("Sanal 1.000.000 TL bakiye ile kendi fonunuzu yönetmek ve yapay zeka analizlerine ulaşmak için giriş yapın.")
     tab_giris, tab_kayit = st.tabs(["🔑 Giriş Yap", "📝 Kayıt Ol"])
     
     with tab_giris:
-        g_kullanici = st.text_input("Kullanıcı Adı", key="g_isim")
-        g_sifre = st.text_input("Şifre", type="password", key="g_sifre")
-        if st.button("Giriş Yap", use_container_width=True):
+        # Form mantığı ile Enter tuşunu aktifleştirdik
+        with st.form("giris_formu"):
+            g_kullanici = st.text_input("Kullanıcı Adı")
+            g_sifre = st.text_input("Şifre", type="password")
+            giris_buton = st.form_submit_button("Giriş Yap", use_container_width=True)
+            
+        if giris_buton:
             if g_kullanici in db and db[g_kullanici]["sifre"] == sifre_sifrele(g_sifre):
                 st.session_state.aktif_kullanici = g_kullanici
                 st.rerun()
@@ -72,9 +77,12 @@ if st.session_state.aktif_kullanici is None:
                 st.error("Kullanıcı adı veya şifre hatalı!")
                 
     with tab_kayit:
-        k_kullanici = st.text_input("Yeni Kullanıcı Adı", key="k_isim")
-        k_sifre = st.text_input("Yeni Şifre", type="password", key="k_sifre")
-        if st.button("Hesap Oluştur", use_container_width=True):
+        with st.form("kayit_formu"):
+            k_kullanici = st.text_input("Yeni Kullanıcı Adı")
+            k_sifre = st.text_input("Yeni Şifre", type="password")
+            kayit_buton = st.form_submit_button("Hesap Oluştur", use_container_width=True)
+            
+        if kayit_buton:
             if k_kullanici in db:
                 st.error("Bu kullanıcı adı zaten alınmış!")
             elif len(k_kullanici) < 3 or len(k_sifre) < 4:
@@ -321,14 +329,12 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                         fig3.update_layout(height=400, template="plotly_dark", margin=dict(t=10, b=10))
                         st.plotly_chart(fig3, use_container_width=True)
             with col2:
-                # HABER VE DUYGU ANALİZİ (TAMİR EDİLDİ)
                 st.write("### 🧠 Piyasa Psikolojisi")
                 try:
                     haberler = yf.Ticker(secilen_sembol).news
                     if haberler:
                         toplam_duygu, gecerli_haber = 0, 0
                         for h in haberler[:10]:
-                            # Yahoo'nun farklı haber formatlarını yakalayan Zırhlı (Robust) yapı
                             baslik = h.get('title') or h.get('content', {}).get('title', '')
                             if baslik and baslik != "Başlık Yok": 
                                 toplam_duygu += TextBlob(baslik).sentiment.polarity
