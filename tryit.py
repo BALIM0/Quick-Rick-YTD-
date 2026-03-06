@@ -291,8 +291,10 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
             
         st.markdown("---")
         
-        # FERAH TASARIM: Markowitz Portföy Optimizasyonu
+        # FERAH TASARIM: Portföy Modülleri
         if piyasa_secimi == "👤 Kendi İzleme Listem" and not st.session_state.ozel_portfoy_verisi.empty:
+            
+            # 1. Markowitz Portföy Optimizasyonu
             with st.expander("⚖️ Markowitz Optimum Portföy Dağılımını Göster", expanded=False):
                 st.write("Sistem, seçtiğiniz varlıkların geçmiş korelasyonlarını analiz ederek riski minimumda tutan altın oranları hesapladı.")
                 df_port = st.session_state.ozel_portfoy_verisi.ffill().dropna()
@@ -322,6 +324,21 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                         st.write(f"**Sharpe Oranı:** {round(results[2,max_sharpe_idx], 2)}")
                 else:
                     st.warning("Geçmiş veri optimizasyon için yeterli değil.")
+                    
+            # 2. YENİ: İstatistiksel Korelasyon Matrisi
+            with st.expander("🗺️ Varlık Korelasyon Matrisi (Isı Haritası)", expanded=False):
+                st.write("Varlıkların birbirleriyle olan istatistiksel ilişkisi. **+1** birlikte hareket ettiklerini, **-1** zıt hareket ettiklerini gösterir.")
+                df_port_corr = st.session_state.ozel_portfoy_verisi.ffill().dropna()
+                returns_corr = df_port_corr.pct_change().dropna()
+                if len(returns_corr) > 10 and len(returns_corr.columns) > 1:
+                    corr_matrix = returns_corr.corr()
+                    fig_corr = px.imshow(corr_matrix, text_auto=".2f", aspect="auto", 
+                                         color_continuous_scale="RdYlGn", 
+                                         title="Korelasyon Isı Haritası", template="plotly_dark")
+                    st.plotly_chart(fig_corr, use_container_width=True)
+                    st.info("💡 **Nasıl Okunur?** Yeşil renkler hisselerin/coinlerin aynı anda yükselip düştüğünü (aynı risk grubu), Kırmızı renkler ise biri düşerken diğerinin yükseldiğini (risk dengeleyici ters korelasyon) gösterir.")
+                else:
+                    st.warning("Korelasyon hesaplamak için en az 2 varlık ve yeterli geçmiş veri gerekiyor.")
         
         # Grafikler ve Sekmeler
         st.write("### 🤖 Gelişmiş Analiz Paneli")
@@ -388,14 +405,13 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                             fig3.update_layout(height=450, template="plotly_dark", margin=dict(t=10, b=10))
                             st.plotly_chart(fig3, use_container_width=True)
             with col2:
-                # --- YENİ EKLENEN: NLP DUYGU ANALİZİ (SENTIMENT) ---
-                st.write("### 🧠 Piyasa Psikolojisi (Yapay Zeka)")
+                # NLP DUYGU ANALİZİ
+                st.write("### 🧠 Piyasa Psikolojisi")
                 try:
                     haberler = yf.Ticker(secilen_sembol).news
                     if haberler:
                         toplam_duygu = 0
                         gecerli_haber = 0
-                        
                         for h in haberler[:10]:
                             baslik = h.get('title') or h.get('content', {}).get('title', '')
                             if baslik:
@@ -405,11 +421,8 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                         
                         if gecerli_haber > 0:
                             ortalama_duygu = toplam_duygu / gecerli_haber
-                            
-                            # Gösterge (Gauge) Grafiği
                             fig_gauge = go.Figure(go.Indicator(
-                                mode = "gauge+number",
-                                value = ortalama_duygu,
+                                mode = "gauge+number", value = ortalama_duygu,
                                 domain = {'x': [0, 1], 'y': [0, 1]},
                                 title = {'text': "Medya Hissi (Sentiment)", 'font': {'size': 16, 'color': 'white'}},
                                 gauge = {
@@ -417,26 +430,23 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                                     'bar': {'color': "white", 'thickness': 0.25},
                                     'bgcolor': "rgba(0,0,0,0)",
                                     'steps': [
-                                        {'range': [-1, -0.2], 'color': "rgba(255, 68, 68, 0.6)"}, # Kırmızı (Ayı)
-                                        {'range': [-0.2, 0.2], 'color': "rgba(150, 150, 150, 0.4)"}, # Gri (Nötr)
-                                        {'range': [0.2, 1], 'color': "rgba(0, 200, 83, 0.6)"} # Yeşil (Boğa)
+                                        {'range': [-1, -0.2], 'color': "rgba(255, 68, 68, 0.6)"}, 
+                                        {'range': [-0.2, 0.2], 'color': "rgba(150, 150, 150, 0.4)"}, 
+                                        {'range': [0.2, 1], 'color': "rgba(0, 200, 83, 0.6)"} 
                                     ],
                                 }
                             ))
                             fig_gauge.update_layout(height=250, margin=dict(l=20, r=20, t=40, b=20), template="plotly_dark")
                             st.plotly_chart(fig_gauge, use_container_width=True)
-                            
-                            if ortalama_duygu > 0.2: st.success("📈 **AI Yorumu:** Haber akışı şu an **POZİTİF (Boğa)** yönde.")
-                            elif ortalama_duygu < -0.2: st.error("📉 **AI Yorumu:** Haber akışı şu an **NEGATİF (Ayı)** yönde.")
-                            else: st.info("⚖️ **AI Yorumu:** Haber akışı dengeli, **NÖTR (Belirsiz)**.")
-                    else:
-                        st.info("Haber bulunamadığı için duygu analizi yapılamadı.")
-                except Exception as e:
-                    st.warning("NLP Motoru başlatılamadı. (TextBlob yüklü olmayabilir)")
+                            if ortalama_duygu > 0.2: st.success("📈 **POZİTİF (Boğa)** Haber Akışı")
+                            elif ortalama_duygu < -0.2: st.error("📉 **NEGATİF (Ayı)** Haber Akışı")
+                            else: st.info("⚖️ **NÖTR (Belirsiz)** Haber Akışı")
+                    else: st.info("Haber bulunamadığı için analiz yapılamadı.")
+                except Exception as e: st.warning("NLP Motoru başlatılamadı. (TextBlob yüklü olmayabilir)")
                 
                 st.markdown("---")
                 
-                # FERAH TASARIM: Haberler için Açılır-Kapanır Panel
+                # Haber Paneli
                 with st.expander("📰 Son Dakika Haberlerini Oku", expanded=True):
                     try:
                         if haberler:
@@ -445,8 +455,7 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                                 if t != "Başlık Yok":
                                     l = h.get('link') or h.get('url') or h.get('content', {}).get('clickThroughUrl', {}).get('url', '#')
                                     st.markdown(f"🔗 **[{t}]({l})**"); st.markdown("---")
-                        else:
-                            st.info("Haber bulunamadı.")
+                        else: st.info("Haber bulunamadı.")
                     except: st.error("Haber servisi yüklenemedi.")
 
 # =========================================================================================
