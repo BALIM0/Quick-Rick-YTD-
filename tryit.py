@@ -8,6 +8,7 @@ from plotly.subplots import make_subplots
 from sklearn.linear_model import LinearRegression
 import json
 import os
+import time
 
 # --- SAYFA AYARLARI ---
 st.set_page_config(page_title="Pro-Yatırım Terminali", layout="wide", page_icon="📈")
@@ -20,50 +21,75 @@ def cuzdan_yukle():
     if os.path.exists(DOSYA_ADI):
         with open(DOSYA_ADI, "r", encoding="utf-8") as f:
             veri = json.load(f)
-            # Eğer eski dosyada izleme listesi yoksa, çökmemesi için otomatik ekle
             if "izleme_listesi" not in veri:
                 veri["izleme_listesi"] = ["Türk Hava Yolları", "Bitcoin", "Altın (Ons)"]
             return veri
-    # İlk kez giriyorsa varsayılan verileri oluştur
-    return {
-        "nakit": 100000.0, 
-        "varliklar": {}, 
-        "izleme_listesi": ["Türk Hava Yolları", "Bitcoin", "Altın (Ons)"]
-    }
+    return {"nakit": 100000.0, "varliklar": {}, "izleme_listesi": ["Türk Hava Yolları", "Bitcoin", "Altın (Ons)"]}
 
 def cuzdan_kaydet(veri):
     with open(DOSYA_ADI, "w", encoding="utf-8") as f:
         json.dump(veri, f, indent=4)
 
-# Uygulama başlarken hafızayı (JSON) yükle
 cuzdan = cuzdan_yukle()
 
-# --- PİYASA SÖZLÜKLERİ (TÜM VARLIKLAR) ---
-bist_100 = {
-    "Akbank": "AKBNK.IS", "Alarko Holding": "ALARK.IS", "Alfa Solar": "ALFAS.IS", "Arçelik": "ARCLK.IS", 
-    "Aselsan": "ASELS.IS", "Astor Enerji": "ASTOR.IS", "BİM Mağazalar": "BIMAS.IS", "Brisa": "BRISA.IS", 
-    "Borusan": "BRSAN.IS", "Coca Cola İçecek": "CCOLA.IS", "Çimsa": "CIMSA.IS", "CW Enerji": "CWENE.IS", 
-    "Doğuş Otomotiv": "DOAS.IS", "Doğan Holding": "DOHOL.IS", "Eczacıbaşı İlaç": "ECILC.IS", 
-    "Ege Endüstri": "EGEEN.IS", "Emlak Konut GYO": "EKGYO.IS", "Enerjisa": "ENJSA.IS", "Enka İnşaat": "ENKAI.IS", 
-    "Erdemir (Ereğli)": "EREGL.IS", "Europower Enerji": "EUPWR.IS", "Ford Otosan": "FROTO.IS", 
-    "Garanti BBVA": "GARAN.IS", "Girişim Elektrik": "GESAN.IS", "Gübre Fabrikaları": "GUBRF.IS", 
-    "Halkbank": "HALKB.IS", "Hektaş": "HEKTS.IS", "İş Bankası (C)": "ISCTR.IS", "İskenderun Demir Çelik": "ISDMR.IS", 
-    "İş GYO": "ISGYO.IS", "İş Yatırım": "ISMEN.IS", "Koç Holding": "KCHOL.IS", "Kontrolmatik": "KONTR.IS", 
-    "Konya Çimento": "KONYA.IS", "Kordsa": "KORDS.IS", "Koza Anadolu": "KOZAA.IS", "Koza Altın": "KOZAL.IS", 
-    "Kardemir (D)": "KRDMD.IS", "Mavi Giyim": "MAVI.IS", "Migros": "MGROS.IS", "Mia Teknoloji": "MIATK.IS", 
-    "Odaş Elektrik": "ODAS.IS", "Otokar": "OTKAR.IS", "Oyak Çimento": "OYAKC.IS", "Petkim": "PETKM.IS", 
-    "Pegasus": "PGSUS.IS", "Qua Granite": "QUAGR.IS", "Sabancı Holding": "SAHOL.IS", "Sasa Polyester": "SASA.IS", 
-    "Şişecam": "SISE.IS", "Şekerbank": "SKBNK.IS", "Smart Güneş Tek.": "SMRTG.IS", "Şok Marketler": "SOKM.IS", 
-    "TAV Havalimanları": "TAVHL.IS", "Turkcell": "TCELL.IS", "Türk Hava Yolları": "THYAO.IS", 
-    "Tekfen Holding": "TKFEN.IS", "Tofaş": "TOASO.IS", "TSKB": "TSKB.IS", "Türk Telekom": "TTKOM.IS", 
-    "Türk Traktör": "TTRAK.IS", "Tukaş": "TUKAS.IS", "Tüpraş": "TUPRS.IS", "Ülker Bisküvi": "ULKER.IS", 
-    "Vakıfbank": "VAKBN.IS", "Vestel Beyaz Eşya": "VESBE.IS", "Vestel": "VESTL.IS", "Yeo Teknoloji": "YEOTK.IS", 
-    "Yapı Kredi": "YKBNK.IS", "Zorlu Enerji": "ZOREN.IS"
+# =========================================================================================
+# --- MEGA PİYASA SÖZLÜKLERİ ---
+# =========================================================================================
+bist_30 = {
+    "Akbank": "AKBNK.IS", "Alarko": "ALARK.IS", "Aselsan": "ASELS.IS", "Astor": "ASTOR.IS", 
+    "BİM": "BIMAS.IS", "Borusan": "BRSAN.IS", "Coca Cola": "CCOLA.IS", "Emlak Konut": "EKGYO.IS", 
+    "Enka": "ENKAI.IS", "Ereğli": "EREGL.IS", "Ford": "FROTO.IS", "Garanti": "GARAN.IS", 
+    "Gübre Fab": "GUBRF.IS", "Hektaş": "HEKTS.IS", "İş Bankası": "ISCTR.IS", "Koç Hol": "KCHOL.IS", 
+    "Kontrolmatik": "KONTR.IS", "Koza Altın": "KOZAL.IS", "Kardemir": "KRDMD.IS", "Odaş": "ODAS.IS", 
+    "Petkim": "PETKM.IS", "Pegasus": "PGSUS.IS", "Sabancı Hol": "SAHOL.IS", "Sasa": "SASA.IS", 
+    "Şişecam": "SISE.IS", "Turkcell": "TCELL.IS", "THY": "THYAO.IS", "Tofaş": "TOASO.IS", 
+    "Tüpraş": "TUPRS.IS", "Yapı Kredi": "YKBNK.IS"
 }
-kripto = {"Bitcoin": "BTC-USD", "Ethereum": "ETH-USD", "Solana": "SOL-USD", "Binance Coin": "BNB-USD", "Ripple (XRP)": "XRP-USD", "Cardano": "ADA-USD", "Avalanche (AVAX)": "AVAX-USD", "Dogecoin": "DOGE-USD", "Chainlink": "LINK-USD"}
-madenler = {"Altın (Ons)": "GC=F", "Gümüş (Ons)": "SI=F", "Bakır": "HG=F", "Platin": "PL=F", "Paladyum": "PA=F", "Ham Petrol (WTI)": "CL=F", "Doğal Gaz": "NG=F"}
 
-tum_varliklar_mega = {**bist_100, **kripto, **madenler}
+bist_100 = {**bist_30, **{
+    "Alfa Solar": "ALFAS.IS", "Arçelik": "ARCLK.IS", "Brisa": "BRISA.IS", "Çimsa": "CIMSA.IS", 
+    "CW Enerji": "CWENE.IS", "Doğuş Oto": "DOAS.IS", "Doğan Hol": "DOHOL.IS", "Eczacıbaşı": "ECILC.IS", 
+    "Ege Endüstri": "EGEEN.IS", "Enerjisa": "ENJSA.IS", "Europower": "EUPWR.IS", "Girişim Elk": "GESAN.IS", 
+    "Halkbank": "HALKB.IS", "İskenderun D.": "ISDMR.IS", "İş GYO": "ISGYO.IS", "İş Yatırım": "ISMEN.IS", 
+    "Konya Çimento": "KONYA.IS", "Kordsa": "KORDS.IS", "Koza Anadolu": "KOZAA.IS", "Mavi": "MAVI.IS", 
+    "Migros": "MGROS.IS", "Mia Teknoloji": "MIATK.IS", "Otokar": "OTKAR.IS", "Oyak Çimento": "OYAKC.IS", 
+    "Qua Granite": "QUAGR.IS", "Şekerbank": "SKBNK.IS", "Smart Güneş": "SMRTG.IS", "Şok Market": "SOKM.IS", 
+    "TAV": "TAVHL.IS", "Tekfen": "TKFEN.IS", "TSKB": "TSKB.IS", "Türk Telekom": "TTKOM.IS", 
+    "Türk Traktör": "TTRAK.IS", "Tukaş": "TUKAS.IS", "Ülker": "ULKER.IS", "Vakıfbank": "VAKBN.IS", 
+    "Vestel Beyaz": "VESBE.IS", "Vestel": "VESTL.IS", "Yeo Teknoloji": "YEOTK.IS", "Zorlu Enerji": "ZOREN.IS"
+}}
+
+bist_genis = {**bist_100, **{
+    "Agrotech": "AGROT.IS", "Akfen Yenilenebilir": "AKFYE.IS", "Anadolu Efes": "AEFES.IS", 
+    "Anadolu Sigorta": "ANSGR.IS", "Aygaz": "AYGAZ.IS", "Bera Holding": "BERA.IS", 
+    "Bien Seramik": "BIENY.IS", "Biotrend": "BIOEN.IS", "Borusan Yatırım": "BRYAT.IS", 
+    "Bülbüloğlu Vinç": "BVSAN.IS", "Can Termik": "CANTE.IS", "Çan2 Termik": "CANTE.IS", 
+    "CVK Maden": "CVKMD.IS", "Eksun Gıda": "EKSUN.IS", "Esenboğa Elektrik": "ESEN.IS", 
+    "Forte Bilgi": "FORTE.IS", "Galata Wind": "GWIND.IS", "GSD Holding": "GSDHO.IS", 
+    "Hat-San Gemi": "HATSN.IS", "İmaş Makina": "IMASM.IS", "İnfo Yatırım": "INFO.IS", 
+    "İzdemir Enerji": "IZENR.IS", "Kaleseramik": "KLSER.IS", "Kayseri Şeker": "KAYSE.IS", 
+    "Kocaer Çelik": "KCAER.IS", "Kuştur Kuşadası": "KSTUR.IS", "Margün Enerji": "MAGEN.IS", 
+    "Mercan Kimya": "MERCN.IS", "Naten": "NATEN.IS", "Oyak Yatırım": "OYYAT.IS", 
+    "Özsu Balık": "OZSUB.IS", "Penta": "PENTA.IS", "Reeder Teknoloji": "REEDR.IS", 
+    "Rubenis Tekstil": "RUBNS.IS", "SDT Uzay": "SDTTR.IS", "Tarkim": "TARKM.IS", 
+    "Tatlıpınar Enerji": "TATEN.IS", "Tezol": "TEZOL.IS", "VBT Yazılım": "VBTYZ.IS", 
+    "Ziraat GYO": "ZRGYO.IS"
+}}
+
+kripto = {
+    "Bitcoin": "BTC-USD", "Ethereum": "ETH-USD", "Solana": "SOL-USD", "Binance Coin": "BNB-USD", 
+    "Ripple (XRP)": "XRP-USD", "Cardano": "ADA-USD", "Avalanche": "AVAX-USD", "Dogecoin": "DOGE-USD", 
+    "Chainlink": "LINK-USD", "Polkadot": "DOT-USD", "Polygon": "MATIC-USD", "Shiba Inu": "SHIB-USD"
+}
+
+madenler_emtia = {
+    "Altın (Ons)": "GC=F", "Gümüş (Ons)": "SI=F", "Bakır": "HG=F", "Platin": "PL=F", 
+    "Paladyum": "PA=F", "Alüminyum": "ALI=F", "Ham Petrol (WTI)": "CL=F", "Brent Petrol": "BZ=F", 
+    "Doğal Gaz": "NG=F", "Isıtma Yakıtı": "HO=F", "Buğday": "ZW=F", "Mısır": "ZC=F", 
+    "Soya Fasulyesi": "ZS=F", "Kahve": "KC=F", "Şeker": "SB=F", "Pamuk": "CT=F", "Kakao": "CC=F"
+}
+
+tum_varliklar_mega = {**bist_genis, **kripto, **madenler_emtia}
 
 # --- SOL MENÜ ---
 st.sidebar.header("🕹️ Uygulama Modu")
@@ -76,36 +102,36 @@ st.sidebar.markdown("---")
 if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
     st.sidebar.header("⚙️ Tarama Ayarları")
     vade_secimi = st.sidebar.radio("1. Yatırım Vadesi:", ["⏱️ Kısa Vadeli (1-3 Ay / Al-Sat)", "📅 Uzun Vadeli (1+ Yıl / Yatırım)"])
-    piyasa_secimi = st.sidebar.radio("2. İncelenecek Piyasa:", ["🇹🇷 BIST 100 Hisseleri", "🪙 Majör Kripto Paralar", "⛏️ Değerli Madenler", "👤 Kendi İzleme Listem"])
+    piyasa_secimi = st.sidebar.radio("2. İncelenecek Piyasa:", [
+        "🇹🇷 BIST 30 (En Büyükler)", "🇹🇷 BIST 100", "🇹🇷 BIST Tüm (Genişletilmiş)", 
+        "🪙 Kripto Paralar", "⛏️ Tüm Emtia ve Madenler", "👤 Kendi İzleme Listem"
+    ])
 
     aktif_varliklar = {}
     if piyasa_secimi == "👤 Kendi İzleme Listem":
         st.sidebar.info("Buradaki seçimleriniz otomatik olarak kaydedilir:")
-        
-        # Sadece mega sözlükte olan geçerli isimleri varsayılan olarak yükle (Hata önleyici)
         kayitli_liste = [v for v in cuzdan.get("izleme_listesi", []) if v in tum_varliklar_mega]
+        secilen_isimler = st.sidebar.multiselect("Varlıkları Seçin:", options=list(tum_varliklar_mega.keys()), default=kayitli_liste)
         
-        secilen_isimler = st.sidebar.multiselect(
-            "Varlıkları Seçin:", 
-            options=list(tum_varliklar_mega.keys()), 
-            default=kayitli_liste
-        )
-        
-        # Eğer kullanıcı listede bir ekleme/çıkarma yaptıysa JSON dosyasına kaydet
         if set(secilen_isimler) != set(kayitli_liste):
             cuzdan["izleme_listesi"] = secilen_isimler
             cuzdan_kaydet(cuzdan)
             
         aktif_varliklar = {isim: tum_varliklar_mega[isim] for isim in secilen_isimler}
         
-    elif piyasa_secimi == "🇹🇷 BIST 100 Hisseleri": aktif_varliklar = bist_100
-    elif piyasa_secimi == "🪙 Majör Kripto Paralar": aktif_varliklar = kripto
-    else: aktif_varliklar = madenler
+    elif piyasa_secimi == "🇹🇷 BIST 30 (En Büyükler)": aktif_varliklar = bist_30
+    elif piyasa_secimi == "🇹🇷 BIST 100": aktif_varliklar = bist_100
+    elif piyasa_secimi == "🇹🇷 BIST Tüm (Genişletilmiş)": aktif_varliklar = bist_genis
+    elif piyasa_secimi == "🪙 Kripto Paralar": aktif_varliklar = kripto
+    else: aktif_varliklar = madenler_emtia
 
     if 'df_sonuc' not in st.session_state: st.session_state.df_sonuc = pd.DataFrame()
     if 'ozel_portfoy_verisi' not in st.session_state: st.session_state.ozel_portfoy_verisi = pd.DataFrame()
 
     if st.button("🚀 Algoritmayı Çalıştır"):
+        if len(aktif_varliklar) > 100:
+            st.warning("⚠️ Çok geniş bir piyasa seçtiniz. Verilerin çekilmesi 1-2 dakika sürebilir.")
+            
         sonuclar = []
         ilerleme_cubugu = st.progress(0.0)
         durum_metni = st.empty()
@@ -184,6 +210,7 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                 finally:
                     islenen += 1
                     ilerleme_cubugu.progress(min(islenen / toplam_varlik, 1.0))
+                    if toplam_varlik > 100: time.sleep(0.05) # Rate limit koruması
 
             durum_metni.empty() 
             ilerleme_cubugu.empty() 
@@ -201,6 +228,7 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
         else:
             st.warning("Lütfen sol menüden en az bir varlık seçin.")
 
+    # --- ANALİZ SONUÇLARI BÖLÜMÜ ---
     if not st.session_state.df_sonuc.empty:
         st.success("✅ Tarama Tamamlandı!")
         st.dataframe(st.session_state.df_sonuc, use_container_width=True)
@@ -236,6 +264,7 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                     st.write(f"**Sharpe Oranı:** {round(results[2,max_sharpe_idx], 2)}")
             st.markdown("---")
         
+        # Grafikler ve Sekmeler
         st.write("### 🤖 Gelişmiş Analiz ve 📰 Haber Akışı")
         liste = st.session_state.df_sonuc['Varlık Adı'].tolist()
         secilen_isim = st.selectbox("Detayları görmek istediğiniz varlığı seçin:", liste)
@@ -317,7 +346,6 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
     st.header("💼 Sanal Portföy Yönetimi")
     st.write("Sanal 100.000 TL bakiye ile yatırım stratejilerinizi risksiz bir şekilde test edin!")
     
-    # Anlık fiyatları çekip portföyün güncel değerini hesapla
     toplam_varlik_degeri = 0
     guncel_fiyatlar = {}
     
@@ -336,14 +364,12 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
     toplam_portfoy_buyuklugu = cuzdan["nakit"] + toplam_varlik_degeri
     kar_zarar_yuzdesi = ((toplam_portfoy_buyuklugu - 100000.0) / 100000.0) * 100
 
-    # Metrikleri Göster
     col1, col2, col3 = st.columns(3)
     col1.metric("Toplam Portföy Değeri", f"{toplam_portfoy_buyuklugu:,.2f} ₺", f"% {kar_zarar_yuzdesi:.2f}")
     col2.metric("Boş Nakit Bakiye", f"{cuzdan['nakit']:,.2f} ₺")
     col3.metric("Yatırımdaki Varlıklar", f"{toplam_varlik_degeri:,.2f} ₺")
     st.markdown("---")
 
-    # AL - SAT EKRANI
     col_islem, col_durum = st.columns([1, 1])
     
     with col_islem:
@@ -367,44 +393,30 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
             if islem_tipi == "AL":
                 if cuzdan["nakit"] >= islem_tutari:
                     cuzdan["nakit"] -= islem_tutari
-                    mevcut_adet = cuzdan["varliklar"].get(secili_varlik, 0)
-                    cuzdan["varliklar"][secili_varlik] = mevcut_adet + islem_miktari
+                    cuzdan["varliklar"][secili_varlik] = cuzdan["varliklar"].get(secili_varlik, 0) + islem_miktari
                     cuzdan_kaydet(cuzdan)
                     st.success(f"{islem_miktari} adet {secili_varlik} başarıyla alındı!")
                     st.rerun() 
-                else:
-                    st.error("Yetersiz bakiye!")
+                else: st.error("Yetersiz bakiye!")
                     
             elif islem_tipi == "SAT":
                 mevcut_adet = cuzdan["varliklar"].get(secili_varlik, 0)
                 if mevcut_adet >= islem_miktari:
                     cuzdan["varliklar"][secili_varlik] -= islem_miktari
                     cuzdan["nakit"] += islem_tutari
-                    if cuzdan["varliklar"][secili_varlik] <= 0:
-                        del cuzdan["varliklar"][secili_varlik]
+                    if cuzdan["varliklar"][secili_varlik] <= 0: del cuzdan["varliklar"][secili_varlik]
                     cuzdan_kaydet(cuzdan)
                     st.success(f"{islem_miktari} adet {secili_varlik} başarıyla satıldı!")
                     st.rerun() 
-                else:
-                    st.error(f"Elinde yeterli {secili_varlik} yok! (Mevcut: {mevcut_adet})")
+                else: st.error(f"Elinde yeterli {secili_varlik} yok! (Mevcut: {mevcut_adet})")
 
     with col_durum:
         st.subheader("📋 Elinizdeki Varlıklar")
         if cuzdan["varliklar"]:
-            portfoy_listesi = []
-            for v_isim, v_adet in cuzdan["varliklar"].items():
-                g_fiyat = guncel_fiyatlar.get(v_isim, 0)
-                toplam_deger = v_adet * g_fiyat
-                portfoy_listesi.append({
-                    "Varlık": v_isim, "Adet": round(v_adet, 4),
-                    "Güncel Fiyat": round(g_fiyat, 2), "Toplam Değer (₺)": round(toplam_deger, 2)
-                })
-            df_portfoy = pd.DataFrame(portfoy_listesi).sort_values(by="Toplam Değer (₺)", ascending=False)
-            st.dataframe(df_portfoy, use_container_width=True)
-            
-            if st.button("🗑️ Portföyü Sıfırla (Bastan Başla)"):
-                # Sıfırlarken izleme listesini silmiyoruz, sadece bakiyeyi ve varlıkları sıfırlıyoruz
+            portfoy_listesi = [{"Varlık": v, "Adet": round(a, 4), "Güncel Fiyat": round(guncel_fiyatlar.get(v, 0), 2), "Toplam Değer (₺)": round(a * guncel_fiyatlar.get(v, 0), 2)} for v, a in cuzdan["varliklar"].items()]
+            st.dataframe(pd.DataFrame(portfoy_listesi).sort_values(by="Toplam Değer (₺)", ascending=False), use_container_width=True)
+            if st.button("🗑️ Portföyü Sıfırla"):
                 cuzdan_kaydet({"nakit": 100000.0, "varliklar": {}, "izleme_listesi": cuzdan.get("izleme_listesi", [])})
                 st.rerun()
         else:
-            st.info("Portföyünüz şu an boş. Sol taraftan piyasa taraması yapıp buraya yatırım yapmaya başlayabilirsiniz!")
+            st.info("Portföyünüz şu an boş.")
