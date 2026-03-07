@@ -11,6 +11,7 @@ import json
 import os
 import time
 import hashlib
+import uuid
 
 try:
     from streamlit_autorefresh import st_autorefresh
@@ -30,9 +31,13 @@ st.markdown("""
     .bagis-panosu {text-align: center; padding: 15px; background: linear-gradient(135deg, rgba(255,215,0,0.1) 0%, rgba(255,140,0,0.1) 100%); border-radius: 12px; border: 1px solid rgba(255,215,0,0.3); margin-bottom: 20px;}
     .bagis-sayi {color: #FFD700; font-size: 24px; font-weight: bold; text-shadow: 0 0 10px rgba(255,215,0,0.5);}
 
-    /* TÜM RADIO BUTONLARINI MODERN KARTLARA ÇEVİRME */
-    div.stRadio div[role="radiogroup"] > label {
+    /* TÜM RADIO BUTONLARINI MODERN KARTLARA ÇEVİRME VE BOYUTLARINI SABİTLEME */
+    div.stRadio div[role="radiogroup"] {
+        display: flex !important;
         width: 100% !important;
+    }
+    div.stRadio div[role="radiogroup"] > label {
+        flex: 1 1 0px !important;
         min-height: 45px !important;
         display: flex !important;
         align-items: center !important;
@@ -63,9 +68,7 @@ st.markdown("""
     
     /* SOL MENÜ DÜZENİ (Alt Alta) */
     [data-testid="stSidebar"] div.stRadio div[role="radiogroup"] {
-        display: flex !important;
         flex-direction: column !important;
-        width: 100% !important;
         gap: 10px !important;
     }
     [data-testid="stSidebar"] div.stRadio div[role="radiogroup"] > label:has(input:checked) {
@@ -80,9 +83,7 @@ st.markdown("""
 
     /* ANA EKRAN DÜZENİ (AL/SAT Butonları Yan Yana) */
     [data-testid="stMainBlockContainer"] div.stRadio div[role="radiogroup"] {
-        display: flex !important;
         flex-direction: row !important;
-        width: 100% !important;
         gap: 15px !important;
     }
     /* AL Butonu Yeşile Dönsün */
@@ -126,8 +127,10 @@ def db_yukle():
             veri = json.load(f)
             if "_GLOBAL_" not in veri:
                 veri["_GLOBAL_"] = {"toplam_komisyon": 0.0}
+            if "_OTURUMLAR_" not in veri:
+                veri["_OTURUMLAR_"] = {}
             return veri
-    return {"_GLOBAL_": {"toplam_komisyon": 0.0}}
+    return {"_GLOBAL_": {"toplam_komisyon": 0.0}, "_OTURUMLAR_": {}}
 
 def db_kaydet(db):
     with open(DB_DOSYASI, "w", encoding="utf-8") as f:
@@ -137,6 +140,26 @@ if 'aktif_kullanici' not in st.session_state:
     st.session_state.aktif_kullanici = None
 
 db = db_yukle()
+
+# --- 10 DAKİKALIK OTURUM SÜRESİ KONTROLÜ ---
+su_an = time.time()
+silinecek_oturumlar = [t for t, v in db.get("_OTURUMLAR_", {}).items() if su_an > v.get("bitis", 0)]
+for t in silinecek_oturumlar:
+    del db["_OTURUMLAR_"][t]
+if silinecek_oturumlar:
+    db_kaydet(db)
+
+mevcut_token = st.query_params.get("oturum")
+
+if mevcut_token:
+    if mevcut_token in db.get("_OTURUMLAR_", {}):
+        st.session_state.aktif_kullanici = db["_OTURUMLAR_"][mevcut_token]["kullanici"]
+        db["_OTURUMLAR_"][mevcut_token]["bitis"] = su_an + 600
+        db_kaydet(db)
+    else:
+        st.warning("⏱️ Hareketsizlik sebebiyle oturum süreniz (10 dk) doldu. Lütfen tekrar giriş yapın.")
+        st.query_params.clear()
+        st.session_state.aktif_kullanici = None
 
 # --- GİRİŞ VE KAYIT EKRANI ---
 if st.session_state.aktif_kullanici is None:
@@ -152,7 +175,12 @@ if st.session_state.aktif_kullanici is None:
             giris_buton = st.form_submit_button("Giriş Yap", use_container_width=True)
             
         if giris_buton:
-            if g_kullanici in db and g_kullanici != "_GLOBAL_" and db[g_kullanici]["sifre"] == sifre_sifrele(g_sifre):
+            sistem_idleri = ["_GLOBAL_", "_OTURUMLAR_"]
+            if g_kullanici in db and g_kullanici not in sistem_idleri and db[g_kullanici]["sifre"] == sifre_sifrele(g_sifre):
+                yeni_token = str(uuid.uuid4())
+                db["_OTURUMLAR_"][yeni_token] = {"kullanici": g_kullanici, "bitis": su_an + 600}
+                db_kaydet(db)
+                st.query_params["oturum"] = yeni_token
                 st.session_state.aktif_kullanici = g_kullanici
                 st.rerun()
             else:
@@ -166,9 +194,10 @@ if st.session_state.aktif_kullanici is None:
             kayit_buton = st.form_submit_button("Hesap Oluştur", use_container_width=True)
             
         if kayit_buton:
-            mevcut_nicknameler = [v.get("nickname", "").lower() for k, v in db.items() if k != "_GLOBAL_"]
+            sistem_idleri = ["_GLOBAL_", "_OTURUMLAR_"]
+            mevcut_nicknameler = [v.get("nickname", "").lower() for k, v in db.items() if k not in sistem_idleri]
             
-            if k_kullanici in db or k_kullanici == "_GLOBAL_":
+            if k_kullanici in db or k_kullanici in sistem_idleri:
                 st.error("❌ Bu Gizli Kullanıcı Adı zaten alınmış!")
             elif k_nickname.lower() in mevcut_nicknameler:
                 st.error("❌ Bu Takma Ad (Nickname) başka bir yatırımcı tarafından kullanılıyor!")
@@ -181,7 +210,7 @@ if st.session_state.aktif_kullanici is None:
                     "sifre": sifre_sifrele(k_sifre), 
                     "nickname": k_nickname, 
                     "son_isim_degistirme": 0,
-                    "cuzdan": {"nakit": 1000000.0, "varliklar": {}, "izleme_listesi": ["Türk Hava Yolları", "Bitcoin", "Altın (Ons)"]}
+                    "cuzdan": {"nakit": 1000000.0, "varliklar": {}, "izleme_listesi": ["Türk Hava Yolları", "Bitcoin", "Altın (Ons)", "NVIDIA", "Apple"]}
                 }
                 db_kaydet(db)
                 st.success("✅ Hesabınız oluşturuldu! Şimdi 'Giriş Yap' sekmesinden giriş yapabilirsiniz.")
@@ -198,19 +227,28 @@ def aktif_cuzdan_kaydet():
 st.title("📊 Portföy Analiz ve Yönetimi")
 st.caption(f"👤 Fon Yöneticisi: **{aktif_nickname.upper()}** | 💵 Güncel Kur (USD/TRY): **{guncel_kur_getir():.2f} ₺**")
 
-bist_30 = {"Akbank": "AKBNK.IS", "Alarko": "ALARK.IS", "Aselsan": "ASELS.IS", "Astor": "ASTOR.IS", "BİM": "BIMAS.IS", "Borusan": "BRSAN.IS", "Coca Cola": "CCOLA.IS", "Emlak Konut": "EKGYO.IS", "Enka": "ENKAI.IS", "Ereğli": "EREGL.IS", "Ford": "FROTO.IS", "Garanti": "GARAN.IS", "Gübre Fab": "GUBRF.IS", "Hektaş": "HEKTS.IS", "İş Bankası": "ISCTR.IS", "Koç Hol": "KCHOL.IS", "Kontrolmatik": "KONTR.IS", "Koza Altın": "KOZAL.IS", "Kardemir": "KRDMD.IS", "Odaş": "ODAS.IS", "Petkim": "PETKM.IS", "Pegasus": "PGSUS.IS", "Sabancı Hol": "SAHOL.IS", "Sasa": "SASA.IS", "Şişecam": "SISE.IS", "Turkcell": "TCELL.IS", "THY": "THYAO.IS", "Tofaş": "TOASO.IS", "Tüpraş": "TUPRS.IS", "Yapı Kredi": "YKBNK.IS"}
+# =====================================================================================
+# GENİŞLETİLMİŞ VARLIK KÜTÜPHANELERİ
+# =====================================================================================
+bist_30 = {"Akbank": "AKBNK.IS", "Alarko": "ALARK.IS", "Aselsan": "ASELS.IS", "Astor": "ASTOR.IS", "BİM": "BIMAS.IS", "Borusan": "BRSAN.IS", "Coca-Cola İçecek": "CCOLA.IS", "Emlak Konut": "EKGYO.IS", "Enka": "ENKAI.IS", "Ereğli": "EREGL.IS", "Ford Otosan": "FROTO.IS", "Garanti": "GARAN.IS", "Gübre Fab": "GUBRF.IS", "Hektaş": "HEKTS.IS", "İş Bankası": "ISCTR.IS", "Koç Hol": "KCHOL.IS", "Kontrolmatik": "KONTR.IS", "Koza Altın": "KOZAL.IS", "Kardemir": "KRDMD.IS", "Odaş": "ODAS.IS", "Petkim": "PETKM.IS", "Pegasus": "PGSUS.IS", "Sabancı Hol": "SAHOL.IS", "Sasa": "SASA.IS", "Şişecam": "SISE.IS", "Turkcell": "TCELL.IS", "THY": "THYAO.IS", "Tofaş": "TOASO.IS", "Tüpraş": "TUPRS.IS", "Yapı Kredi": "YKBNK.IS"}
 bist_100 = {**bist_30, **{"Alfa Solar": "ALFAS.IS", "Arçelik": "ARCLK.IS", "Brisa": "BRISA.IS", "Çimsa": "CIMSA.IS", "CW Enerji": "CWENE.IS", "Doğuş Oto": "DOAS.IS", "Doğan Hol": "DOHOL.IS", "Eczacıbaşı": "ECILC.IS", "Ege Endüstri": "EGEEN.IS", "Enerjisa": "ENJSA.IS", "Europower": "EUPWR.IS", "Girişim Elk": "GESAN.IS", "Halkbank": "HALKB.IS", "İskenderun D.": "ISDMR.IS", "İş GYO": "ISGYO.IS", "İş Yatırım": "ISMEN.IS", "Konya Çimento": "KONYA.IS", "Kordsa": "KORDS.IS", "Koza Anadolu": "KOZAA.IS", "Mavi": "MAVI.IS", "Migros": "MGROS.IS", "Mia Teknoloji": "MIATK.IS", "Otokar": "OTKAR.IS", "Oyak Çimento": "OYAKC.IS", "Qua Granite": "QUAGR.IS", "Şekerbank": "SKBNK.IS", "Smart Güneş": "SMRTG.IS", "Şok Market": "SOKM.IS", "TAV": "TAVHL.IS", "Tekfen": "TKFEN.IS", "TSKB": "TSKB.IS", "Türk Telekom": "TTKOM.IS", "Türk Traktör": "TTRAK.IS", "Tukaş": "TUKAS.IS", "Ülker": "ULKER.IS", "Vakıfbank": "VAKBN.IS", "Vestel Beyaz": "VESBE.IS", "Vestel": "VESTL.IS", "Yeo Teknoloji": "YEOTK.IS", "Zorlu Enerji": "ZOREN.IS"}}
-bist_genis = {**bist_100, **{"Agrotech": "AGROT.IS", "Akfen Yenilenebilir": "AKFYE.IS", "Anadolu Efes": "AEFES.IS", "Anadolu Sigorta": "ANSGR.IS", "Aygaz": "AYGAZ.IS", "Bera Holding": "BERA.IS", "Bien Seramik": "BIENY.IS", "Biotrend": "BIOEN.IS", "Borusan Yatırım": "BRYAT.IS", "Bülbüloğlu Vinç": "BVSAN.IS", "Can Termik": "CANTE.IS", "Çan2 Termik": "CANTE.IS", "CVK Maden": "CVKMD.IS", "Eksun Gıda": "EKSUN.IS", "Esenboğa Elektrik": "ESEN.IS", "Forte Bilgi": "FORTE.IS", "Galata Wind": "GWIND.IS", "GSD Holding": "GSDHO.IS", "Hat-San Gemi": "HATSN.IS", "İmaş Makina": "IMASM.IS", "İnfo Yatırım": "INFO.IS", "İzdemir Enerji": "IZENR.IS", "Kaleseramik": "KLSER.IS", "Kayseri Şeker": "KAYSE.IS", "Kocaer Çelik": "KCAER.IS", "Kuştur Kuşadası": "KSTUR.IS", "Margün Enerji": "MAGEN.IS", "Mercan Kimya": "MERCN.IS", "Naten": "NATEN.IS", "Oyak Yatırım": "OYYAT.IS", "Özsu Balık": "OZSUB.IS", "Penta": "PENTA.IS", "Reeder Teknoloji": "REEDR.IS", "Rubenis Tekstil": "RUBNS.IS", "SDT Uzay": "SDTTR.IS", "Tarkim": "TARKM.IS", "Tatlıpınar Enerji": "TATEN.IS", "Tezol": "TEZOL.IS", "VBT Yazılım": "VBTYZ.IS", "Ziraat GYO": "ZRGYO.IS"}}
-kripto = {"Bitcoin": "BTC-USD", "Ethereum": "ETH-USD", "Solana": "SOL-USD", "Binance Coin": "BNB-USD", "Ripple (XRP)": "XRP-USD", "Cardano": "ADA-USD", "Avalanche": "AVAX-USD", "Dogecoin": "DOGE-USD", "Chainlink": "LINK-USD", "Polkadot": "DOT-USD", "Polygon": "MATIC-USD", "Shiba Inu": "SHIB-USD"}
-madenler_emtia = {"Altın (Ons)": "GC=F", "Gümüş (Ons)": "SI=F", "Bakır": "HG=F", "Platin": "PL=F", "Paladyum": "PA=F", "Alüminyum": "ALI=F", "Ham Petrol (WTI)": "CL=F", "Brent Petrol": "BZ=F", "Doğal Gaz": "NG=F", "Isıtma Yakıtı": "HO=F", "Buğday": "ZW=F", "Mısır": "ZC=F", "Soya Fasulyesi": "ZS=F", "Kahve": "KC=F", "Şeker": "SB=F", "Pamuk": "CT=F", "Kakao": "CC=F"}
+bist_genis = {**bist_100, **{"Agrotech": "AGROT.IS", "Akfen Yenilenebilir": "AKFYE.IS", "Anadolu Efes": "AEFES.IS", "Anadolu Sigorta": "ANSGR.IS", "Aygaz": "AYGAZ.IS", "Bera Holding": "BERA.IS", "Bien Seramik": "BIENY.IS", "Biotrend": "BIOEN.IS", "Borusan Yatırım": "BRYAT.IS", "Bülbüloğlu Vinç": "BVSAN.IS", "Can Termik": "CANTE.IS", "Çan2 Termik": "CANTE.IS", "CVK Maden": "CVKMD.IS", "Eksun Gıda": "EKSUN.IS", "Esenboğa Elektrik": "ESEN.IS", "Forte Bilgi": "FORTE.IS", "Galata Wind": "GWIND.IS", "GSD Holding": "GSDHO.IS", "Hat-San Gemi": "HATSN.IS", "İmaş Makina": "IMASM.IS", "İnfo Yatırım": "INFO.IS", "İzdemir Enerji": "IZENR.IS", "Kaleseramik": "KLSER.IS", "Kayseri Şeker": "KAYSE.IS", "Kocaer Çelik": "KCAER.IS", "Kuştur Kuşadası": "KSTUR.IS", "Margün Enerji": "MAGEN.IS", "Mercan Kimya": "MERCN.IS", "Naten": "NATEN.IS", "Oyak Yatırım": "OYYAT.IS", "Özsu Balık": "OZSUB.IS", "Penta": "PENTA.IS", "Reeder Teknoloji": "REEDR.IS", "Rubenis Tekstil": "RUBNS.IS", "SDT Uzay": "SDTTR.IS", "Tarkim": "TARKM.IS", "Tatlıpınar Enerji": "TATEN.IS", "Tezol": "TEZOL.IS", "VBT Yazılım": "VBTYZ.IS", "Ziraat GYO": "ZRGYO.IS", "Tab Gıda": "TABGD.IS", "Ebebek": "EBEBK.IS", "Fuzul GYO": "FZLGY.IS", "Aydem": "AYDEM.IS", "Söke Değirmencilik": "SOKE.IS", "Enerya": "ENSRV.IS", "Koton": "KOTON.IS", "Lilak Kağıt": "LILAK.IS", "Rönesans GYO": "RGYAS.IS", "Hareket Proje": "HRKET.IS", "Koç Metalurji": "KOCMT.IS"}}
+abd_hisseleri = {"Apple": "AAPL", "Microsoft": "MSFT", "NVIDIA": "NVDA", "Tesla": "TSLA", "Amazon": "AMZN", "Alphabet (Google)": "GOOGL", "Meta (Facebook)": "META", "AMD": "AMD", "Netflix": "NFLX", "Intel": "INTC", "Coca-Cola (ABD)": "KO", "PepsiCo": "PEP", "McDonald's": "MCD", "Boeing": "BA", "Ford Motor (ABD)": "F", "General Motors": "GM", "Uber": "UBER", "Airbnb": "ABNB", "Disney": "DIS", "Pfizer": "PFE", "Johnson & Johnson": "JNJ", "Visa": "V", "Mastercard": "MA", "JPMorgan Chase": "JPM", "Bank of America": "BAC", "Goldman Sachs": "GS", "Walmart": "WMT", "Nike": "NKE", "Starbucks": "SBUX", "Alibaba": "BABA"}
+kripto = {"Bitcoin": "BTC-USD", "Ethereum": "ETH-USD", "Solana": "SOL-USD", "Binance Coin": "BNB-USD", "Ripple (XRP)": "XRP-USD", "Cardano": "ADA-USD", "Avalanche": "AVAX-USD", "Dogecoin": "DOGE-USD", "Chainlink": "LINK-USD", "Polkadot": "DOT-USD", "Polygon (MATIC)": "MATIC-USD", "Shiba Inu": "SHIB-USD", "Litecoin": "LTC-USD", "TRON": "TRX-USD", "Bitcoin Cash": "BCH-USD", "Uniswap": "UNI-USD", "Cosmos": "ATOM-USD", "Monero": "XMR-USD", "Stellar": "XLM-USD", "Ethereum Classic": "ETC-USD", "VeChain": "VET-USD", "Filecoin": "FIL-USD", "Aave": "AAVE-USD", "Algorand": "ALGO-USD", "EOS": "EOS-USD", "The Sandbox": "SAND-USD", "Decentraland": "MANA-USD", "ApeCoin": "APE-USD", "Fantom": "FTM-USD"}
+madenler_emtia = {"Altın (Ons)": "GC=F", "Gümüş (Ons)": "SI=F", "Bakır": "HG=F", "Platin": "PL=F", "Paladyum": "PA=F", "Alüminyum": "ALI=F", "Ham Petrol (WTI)": "CL=F", "Brent Petrol": "BZ=F", "Doğal Gaz": "NG=F", "Isıtma Yakıtı": "HO=F", "Buğday": "ZW=F", "Mısır": "ZC=F", "Soya Fasulyesi": "ZS=F", "Kahve": "KC=F", "Şeker": "SB=F", "Pamuk": "CT=F", "Kakao": "CC=F", "Yulaf": "ZO=F", "Pirinç (Kaba)": "ZR=F", "Canlı Sığır": "LE=F", "Yağsız Domuz": "HE=F", "Kereste": "LBS=F"}
 
-tum_varliklar_mega = {**bist_genis, **kripto, **madenler_emtia}
+tum_varliklar_mega = {**bist_genis, **abd_hisseleri, **kripto, **madenler_emtia}
 
 st.sidebar.header("🕹️ Uygulama Modu")
 uygulama_modu = st.sidebar.radio("Mod Seçiniz:", ["🔍 Algoritmik Piyasa Tarama", "💼 Sanal Portföy (Oyun)"], label_visibility="collapsed")
 st.sidebar.markdown("---")
 
 if st.sidebar.button("🚪 Çıkış Yap", use_container_width=True):
+    mevcut_token = st.query_params.get("oturum")
+    if mevcut_token and mevcut_token in db.get("_OTURUMLAR_", {}):
+        del db["_OTURUMLAR_"][mevcut_token]
+        db_kaydet(db)
+    st.query_params.clear()
     st.session_state.aktif_kullanici = None
     st.rerun()
 
@@ -237,7 +275,6 @@ with st.sidebar.expander("⚙️ Hesap Ayarları", expanded=False):
                     st.success("✅ Şifre güncellendi!")
                     
     with tab_isim:
-        su_an = time.time()
         son_degisim = db[aktif_kullanici].get("son_isim_degistirme", 0)
         kalan_saniye = (7 * 24 * 60 * 60) - (su_an - son_degisim)
         
@@ -252,7 +289,8 @@ with st.sidebar.expander("⚙️ Hesap Ayarları", expanded=False):
                 btn_isim = st.form_submit_button("İsmi Güncelle", use_container_width=True)
                 
                 if btn_isim:
-                    mevcut_nicknameler = [v.get("nickname", "").lower() for k, v in db.items() if k != "_GLOBAL_"]
+                    sistem_idleri = ["_GLOBAL_", "_OTURUMLAR_"]
+                    mevcut_nicknameler = [v.get("nickname", "").lower() for k, v in db.items() if k not in sistem_idleri]
                     if yeni_isim.lower() in mevcut_nicknameler:
                         st.error("❌ Bu isim kullanılıyor!")
                     elif yeni_isim.lower() == aktif_kullanici.lower():
@@ -274,6 +312,7 @@ with st.sidebar.expander("⚙️ Hesap Ayarları", expanded=False):
             if aktif_kullanici in db:
                 del db[aktif_kullanici]
                 db_kaydet(db)
+            st.query_params.clear()
             st.session_state.aktif_kullanici = None
             st.rerun()
 
@@ -287,7 +326,7 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
     st.sidebar.markdown("<b>1. Yatırım Vadesi</b>", unsafe_allow_html=True)
     vade_secimi = st.sidebar.radio("Vade:", ["⏱️ Kısa Vadeli (1-3 Ay / Al-Sat)", "📅 Uzun Vadeli (1+ Yıl / Yatırım)"], label_visibility="collapsed")
     st.sidebar.markdown("<b>2. İncelenecek Piyasa</b>", unsafe_allow_html=True)
-    piyasa_secimi = st.sidebar.radio("Piyasa:", ["🇹🇷 BIST 30 (En Büyükler)", "🇹🇷 BIST 100", "🇹🇷 BIST Tüm (Genişletilmiş)", "🪙 Kripto Paralar", "⛏️ Tüm Emtia ve Madenler", "👤 Kendi İzleme Listem"], label_visibility="collapsed")
+    piyasa_secimi = st.sidebar.radio("Piyasa:", ["🇹🇷 BIST 30 (En Büyükler)", "🇹🇷 BIST 100", "🇹🇷 BIST Tüm (Genişletilmiş)", "🇺🇸 ABD Teknoloji ve Global", "🪙 Kripto Paralar", "⛏️ Tüm Emtia ve Madenler", "👤 Kendi İzleme Listem"], label_visibility="collapsed")
 
     aktif_varliklar = {}
     if piyasa_secimi == "👤 Kendi İzleme Listem":
@@ -303,6 +342,7 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
     elif piyasa_secimi == "🇹🇷 BIST 30 (En Büyükler)": aktif_varliklar = bist_30
     elif piyasa_secimi == "🇹🇷 BIST 100": aktif_varliklar = bist_100
     elif piyasa_secimi == "🇹🇷 BIST Tüm (Genişletilmiş)": aktif_varliklar = bist_genis
+    elif piyasa_secimi == "🇺🇸 ABD Teknoloji ve Global": aktif_varliklar = abd_hisseleri
     elif piyasa_secimi == "🪙 Kripto Paralar": aktif_varliklar = kripto
     else: aktif_varliklar = madenler_emtia
 
@@ -340,21 +380,30 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                     if vade_secimi == "⏱️ Kısa Vadeli (1-3 Ay / Al-Sat)":
                         tipik_fiyat = (veri['High'] + veri['Low'] + veri['Close']) / 3
                         para_akisi = tipik_fiyat * veri['Volume']
-                        pozitif_mf = pd.Series(np.where(tipik_fiyat > tipik_fiyat.shift(1), para_akisi, 0)).rolling(14).sum()
-                        negatif_mf = pd.Series(np.where(tipik_fiyat < tipik_fiyat.shift(1), para_akisi, 0)).rolling(14).sum()
+                        pozitif_akis = np.where(tipik_fiyat > tipik_fiyat.shift(1), para_akisi, 0)
+                        negatif_akis = np.where(tipik_fiyat < tipik_fiyat.shift(1), para_akisi, 0)
+                        pozitif_mf = pd.Series(pozitif_akis).rolling(window=14).sum()
+                        negatif_mf = pd.Series(negatif_akis).rolling(window=14).sum()
                         mfi = 100 - (100 / (1 + (pozitif_mf / negatif_mf)))
                         son_mfi = float(mfi.iloc[-1])
                         
                         delta = veri['Close'].diff()
-                        rsi = 100 - (100 / (1 + ((delta.where(delta > 0, 0)).rolling(14).mean() / (-delta.where(delta < 0, 0)).rolling(14).mean())))
+                        gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
+                        loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
+                        rsi = 100 - (100 / (1 + (gain / loss)))
                         son_rsi = float(rsi.iloc[-1])
                         
-                        macd = veri['Close'].ewm(span=12, adjust=False).mean() - veri['Close'].ewm(span=26, adjust=False).mean()
+                        ema_12 = veri['Close'].ewm(span=12, adjust=False).mean()
+                        ema_26 = veri['Close'].ewm(span=26, adjust=False).mean()
+                        macd = ema_12 - ema_26
                         macd_sinyal = macd.ewm(span=9, adjust=False).mean()
                         
-                        sma_20 = veri['Close'].rolling(20).mean()
-                        son_alt_bant = float(sma_20.iloc[-1] - (veri['Close'].rolling(20).std().iloc[-1] * 2))
-                        if not sembol.endswith(".IS"): son_alt_bant *= usd_kuru
+                        sma_20 = veri['Close'].rolling(window=20).mean()
+                        std_20 = veri['Close'].rolling(window=20).std()
+                        son_alt_bant = float(sma_20.iloc[-1] - (std_20.iloc[-1] * 2))
+                        
+                        if not sembol.endswith(".IS"):
+                            son_alt_bant *= usd_kuru
 
                         if son_mfi < 20: puan += 3; durum_notu.append("Hacim: Para Girişi")
                         elif son_mfi > 80: puan -= 2; durum_notu.append("Hacim: Para Çıkışı")
@@ -365,14 +414,21 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                         sonuclar.append({"Varlık": isim, "Fiyat (₺)": round(son_fiyat, 2), "RSI": round(son_rsi, 1), "MFI (Hacim)": round(son_mfi, 1), "Puan": puan, "Durum": " | ".join(durum_notu)})
 
                     else:
-                        sma_50 = veri['Close'].rolling(50).mean()
-                        sma_200 = veri['Close'].rolling(200).mean()
+                        sma_50 = veri['Close'].rolling(window=50).mean()
+                        sma_200 = veri['Close'].rolling(window=200).mean()
                         if len(veri) < 200 or pd.isna(sma_200.iloc[-1]): continue
                         
                         sma_200_deger = float(sma_200.iloc[-1])
-                        if not sembol.endswith(".IS"): sma_200_deger *= usd_kuru
+                        if not sembol.endswith(".IS"): 
+                            sma_200_deger *= usd_kuru
                             
-                        fk_orani = ticker.info.get('trailingPE', None)
+                        fk_orani = None
+                        if sembol.endswith(".IS") or sembol in abd_hisseleri.values():
+                            try:
+                                fk_orani = ticker.info.get('trailingPE', None)
+                            except:
+                                pass
+
                         if son_fiyat > sma_200_deger: puan += 3; durum_notu.append("Boğa Piyasası")
                         else: puan -= 2; durum_notu.append("Ayı Piyasası")
                         if float(sma_50.iloc[-1]) > float(sma_200.iloc[-1]): puan += 2; durum_notu.append("Altın Kesişim")
@@ -384,17 +440,20 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                             if fk_orani < 15: durum_notu.append("F/K Ucuz")
 
                         sonuclar.append({"Varlık": isim, "Fiyat (₺)": round(son_fiyat, 2), "200G Ort (₺)": round(sma_200_deger, 2), "F/K": fk_metni, "Puan": puan, "Durum": " | ".join(durum_notu)})
-                except: pass 
+                except Exception as e: 
+                    pass 
                 finally:
                     islenen += 1
                     ilerleme_cubugu.progress(min(islenen / toplam_varlik, 1.0))
+            
             durum_metni.empty() 
             ilerleme_cubugu.empty() 
             
             if sonuclar:
                 st.session_state.df_sonuc = pd.DataFrame(sonuclar).sort_values(by="Puan", ascending=False).reset_index(drop=True)
                 st.session_state.ozel_portfoy_verisi = pd.DataFrame(portfoy_fiyat_gecmisi) if piyasa_secimi == "👤 Kendi İzleme Listem" and len(portfoy_fiyat_gecmisi) > 1 else pd.DataFrame()
-            else: st.error("Geçerli veri bulunamadı.")
+            else: 
+                st.error("📉 Seçilen piyasada kriterlere uygun yeterli geçmiş veri bulunamadı.")
         else: st.warning("Lütfen sol menüden en az bir varlık seçin.")
 
     if not st.session_state.df_sonuc.empty:
@@ -457,7 +516,11 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
             with col1:
                 grafik_veri = yf.Ticker(secilen_sembol).history(period="6mo")
                 if not grafik_veri.empty:
-                    tab1, tab2, tab3 = st.tabs(["🤖 AI Trend", "🎲 Monte Carlo", "⏪ Backtest"])
+                    # =========================================================
+                    # YENİ: 6. SEKME (İSTATİSTİKSEL ARBİTRAJ) EKLENDİ
+                    # =========================================================
+                    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["🤖 AI Trend", "📊 Hacim Profili", "🎲 Monte Carlo", "⏪ Backtest", "🗓️ Mevsimsellik", "⚖️ İst. Arbitraj"])
+                    
                     with tab1:
                         df_ml = grafik_veri[['Close']].dropna().copy()
                         df_ml['Gunler'] = np.arange(len(df_ml))
@@ -470,7 +533,26 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                         fig1.add_trace(go.Bar(x=grafik_veri.index, y=grafik_veri['Volume'], marker_color=['green' if c >= o else 'red' for o, c in zip(grafik_veri['Open'], grafik_veri['Close'])]), row=2, col=1)
                         fig1.update_layout(xaxis_rangeslider_visible=False, height=500, template="plotly_dark", margin=dict(t=10, b=10))
                         st.plotly_chart(fig1, use_container_width=True)
+                        
                     with tab2:
+                        df_vp = grafik_veri[['Close', 'Volume', 'Open', 'High', 'Low']].copy()
+                        min_price = df_vp['Low'].min()
+                        max_price = df_vp['High'].max()
+                        if min_price != max_price:
+                            bins = np.linspace(min_price, max_price, 50)
+                            df_vp['Price_Bin'] = pd.cut(df_vp['Close'], bins=bins)
+                            vp_grouped = df_vp.dropna().groupby('Price_Bin')['Volume'].sum().reset_index()
+                            vp_grouped['Bin_Mid'] = vp_grouped['Price_Bin'].apply(lambda x: x.mid if pd.notnull(x) else 0)
+                            
+                            fig_vp = make_subplots(rows=1, cols=2, shared_yaxes=True, column_widths=[0.75, 0.25], horizontal_spacing=0.02)
+                            fig_vp.add_trace(go.Candlestick(x=df_vp.index, open=df_vp['Open'], high=df_vp['High'], low=df_vp['Low'], close=df_vp['Close'], name='Fiyat'), row=1, col=1)
+                            fig_vp.add_trace(go.Bar(x=vp_grouped['Volume'], y=vp_grouped['Bin_Mid'], orientation='h', name='Fiyat Hacmi', marker=dict(color='rgba(0, 255, 255, 0.6)')), row=1, col=2)
+                            fig_vp.update_layout(xaxis_rangeslider_visible=False, height=500, template="plotly_dark", margin=dict(t=10, b=10), showlegend=False)
+                            st.plotly_chart(fig_vp, use_container_width=True)
+                        else:
+                            st.info("Hacim profili çıkarılamadı.")
+
+                    with tab3:
                         log_returns = np.log(1 + grafik_veri['Close'].pct_change()).dropna()
                         u, var, stdev = log_returns.mean(), log_returns.var(), log_returns.std()
                         drift = u - (0.5 * var)
@@ -487,10 +569,13 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                         fig2.add_trace(go.Scatter(x=mc_tarihler, y=price_paths.mean(axis=1), mode='lines', name='Ortalama Beklenti', line=dict(color='red', width=3, dash='dash')))
                         fig2.update_layout(height=500, template="plotly_dark", margin=dict(t=10, b=10))
                         st.plotly_chart(fig2, use_container_width=True)
-                    with tab3:
+                        
+                    with tab4:
                         df_bt = grafik_veri[['Close']].copy()
                         delta_bt = df_bt['Close'].diff()
-                        df_bt['RSI'] = 100 - (100 / (1 + ((delta_bt.where(delta_bt > 0, 0)).rolling(14).mean() / (-delta_bt.where(delta_bt < 0, 0)).rolling(14).mean())))
+                        gain_bt = (delta_bt.where(delta_bt > 0, 0)).rolling(14).mean()
+                        loss_bt = (-delta_bt.where(delta_bt < 0, 0)).rolling(14).mean()
+                        df_bt['RSI'] = 100 - (100 / (1 + (gain_bt / loss_bt)))
                         nakit, adet, al_t, al_f, sat_t, sat_f = 10000, 0, [], [], [], []
                         for index, row in df_bt.iterrows():
                             if pd.isna(row['RSI']): continue
@@ -505,6 +590,85 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                         if sat_t: fig3.add_trace(go.Scatter(x=sat_t, y=sat_f, mode='markers', name='SAT', marker=dict(color='red', size=12, symbol='triangle-down')))
                         fig3.update_layout(height=400, template="plotly_dark", margin=dict(t=10, b=10))
                         st.plotly_chart(fig3, use_container_width=True)
+
+                    with tab5:
+                        with st.spinner("Mevsimsellik verisi hesaplanıyor (Son 5 Yıl)..."):
+                            try:
+                                seas_data = yf.Ticker(secilen_sembol).history(period="5y")
+                                if len(seas_data) > 100:
+                                    seas_data.index = pd.to_datetime(seas_data.index).tz_localize(None)
+                                    monthly_closes = seas_data['Close'].resample('ME').last()
+                                    monthly_returns = monthly_closes.pct_change() * 100
+                                    df_seas = pd.DataFrame({'Getiri': monthly_returns})
+                                    df_seas['Yıl'] = df_seas.index.year
+                                    df_seas['Ay'] = df_seas.index.month
+                                    ay_isimleri = {1: 'Oca', 2: 'Şub', 3: 'Mar', 4: 'Nis', 5: 'May', 6: 'Haz', 7: 'Tem', 8: 'Ağu', 9: 'Eyl', 10: 'Eki', 11: 'Kas', 12: 'Ara'}
+                                    heatmap_df = df_seas.pivot(index='Yıl', columns='Ay', values='Getiri').reindex(columns=range(1, 13))
+                                    heatmap_df.columns = [ay_isimleri.get(c, str(c)) for c in heatmap_df.columns]
+                                    heatmap_df = heatmap_df.dropna(how='all')
+                                    
+                                    fig_heat = px.imshow(heatmap_df, text_auto=".2f", aspect="auto", color_continuous_scale=["#ff4444", "#1a1a1a", "#00ff00"], color_continuous_midpoint=0, labels=dict(x="Aylar", y="Yıllar", color="Getiri (%)"))
+                                    fig_heat.update_layout(template="plotly_dark", margin=dict(t=40, b=10))
+                                    fig_heat.update_traces(textfont=dict(color="white", weight="bold"))
+                                    st.plotly_chart(fig_heat, use_container_width=True)
+                                    
+                                    avg_ret = heatmap_df.mean()
+                                    st.info(f"💡 Tarihsel olarak **en çok kazandıran ay: {avg_ret.idxmax()}** (Ort. %{avg_ret.max():.2f}) | **En riskli ay: {avg_ret.idxmin()}** (Ort. %{avg_ret.min():.2f})")
+                                else:
+                                    st.warning("Yeterli tarihsel veri yok.")
+                            except:
+                                st.error("Mevsimsellik hesaplanamadı.")
+
+                    # =========================================================
+                    # YENİ SEKME: İSTATİSTİKSEL ARBİTRAJ (PAIRS TRADING)
+                    # =========================================================
+                    with tab6:
+                        st.markdown("<p style='font-size:14px; color:#aaa;'>İki varlık arasındaki fiyat makasının (spread) tarihsel ortalamasından ne kadar saptığını Z-Skoru ile ölçer.</p>", unsafe_allow_html=True)
+                        
+                        ikinci_varlik_isim = st.selectbox("Karşılaştırılacak 2. Varlığı Seçin:", list(tum_varliklar_mega.keys()), index=1 if secilen_isim != list(tum_varliklar_mega.keys())[1] else 0)
+                        ikinci_sembol = tum_varliklar_mega.get(ikinci_varlik_isim)
+                        
+                        if ikinci_sembol and ikinci_sembol != secilen_sembol:
+                            with st.spinner("Arbitraj modeli hesaplanıyor..."):
+                                try:
+                                    # Analiz için 1 yıllık temiz veri çekiyoruz
+                                    veri1 = yf.Ticker(secilen_sembol).history(period="1y")['Close']
+                                    veri2 = yf.Ticker(ikinci_sembol).history(period="1y")['Close']
+                                    
+                                    df_pair = pd.DataFrame({'Varlık_1': veri1, 'Varlık_2': veri2}).dropna()
+                                    
+                                    if len(df_pair) > 50:
+                                        # Oran üzerinden Z-Skoru Matematik Modeli
+                                        df_pair['Ratio'] = df_pair['Varlık_1'] / df_pair['Varlık_2']
+                                        df_pair['Mean'] = df_pair['Ratio'].rolling(window=30).mean()
+                                        df_pair['Std'] = df_pair['Ratio'].rolling(window=30).std()
+                                        df_pair['Z_Score'] = (df_pair['Ratio'] - df_pair['Mean']) / df_pair['Std']
+                                        
+                                        fig_pair = go.Figure()
+                                        fig_pair.add_trace(go.Scatter(x=df_pair.index, y=df_pair['Z_Score'], mode='lines', name='Z-Skoru Makası', line=dict(color='cyan', width=2)))
+                                        fig_pair.add_hline(y=2, line_dash="dash", line_color="red", annotation_text="Üst Sınır (+2.0)")
+                                        fig_pair.add_hline(y=-2, line_dash="dash", line_color="green", annotation_text="Alt Sınır (-2.0)")
+                                        fig_pair.add_hline(y=0, line_dash="dot", line_color="rgba(255,255,255,0.5)")
+                                        
+                                        fig_pair.update_layout(height=400, template="plotly_dark", title=f"Z-Skoru Makası: {secilen_isim} / {ikinci_varlik_isim}", margin=dict(t=40, b=10))
+                                        st.plotly_chart(fig_pair, use_container_width=True)
+                                        
+                                        son_z = float(df_pair['Z_Score'].iloc[-1])
+                                        
+                                        # Yapay Zeka (Kural Tabanlı) Yorumlayıcı
+                                        if son_z > 2.0:
+                                            st.error(f"🚨 **ARBİTRAJ FIRSATI (Aşırı Değerli):** {secilen_isim}, {ikinci_varlik_isim}'e kıyasla istatistiksel ortalamasının çok üzerinde. Makasın kapanması için Varlık 1'in düşmesi veya Varlık 2'nin yükselmesi beklenir.")
+                                        elif son_z < -2.0:
+                                            st.success(f"🟢 **ARBİTRAJ FIRSATI (Aşırı Ucuz):** {secilen_isim}, {ikinci_varlik_isim}'e kıyasla istatistiksel ortalamasının çok altında. Makasın kapanması için Varlık 1'in yükselmesi veya Varlık 2'nin düşmesi beklenir.")
+                                        else:
+                                            st.info(f"⚖️ **Denge Durumu:** İki varlık arasındaki oran tarihsel normaller (Z-Skoru: {son_z:.2f}) içinde seyrediyor.")
+                                    else:
+                                        st.warning("Eşleşen yeterli tarihsel veri bulunamadı.")
+                                except Exception as e:
+                                    st.warning("Veriler eşleştirilirken bir uyumsuzluk yaşandı.")
+                        elif ikinci_sembol == secilen_sembol:
+                            st.warning("Lütfen karşılaştırmak için farklı bir varlık seçin.")
+
             with col2:
                 st.write("### 🧠 Piyasa Psikolojisi")
                 try:
@@ -590,6 +754,9 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
             if secili_varlik in bist_genis:
                 komisyon_orani = 0.0015
                 komisyon_metni = "%0.15 (Hisse)"
+            elif secili_varlik in abd_hisseleri:
+                komisyon_orani = 0.0025
+                komisyon_metni = "%0.25 (Yabancı Hisse)"
             elif secili_varlik in kripto:
                 komisyon_orani = 0.0020
                 komisyon_metni = "%0.20 (Kripto)"
@@ -675,7 +842,7 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
         with st.spinner("Sıralama hesaplanıyor..."):
             tum_kullanici_varliklari = set()
             for k, v in db.items():
-                if k != "_GLOBAL_" and "cuzdan" in v and "varliklar" in v["cuzdan"]:
+                if k not in ["_GLOBAL_", "_OTURUMLAR_"] and "cuzdan" in v and "varliklar" in v["cuzdan"]:
                     for varlik_ismi in v["cuzdan"]["varliklar"]:
                         tum_kullanici_varliklari.add(varlik_ismi)
             
@@ -692,7 +859,7 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
             
             liderlik_listesi = []
             for k, v in db.items():
-                if k != "_GLOBAL_" and "cuzdan" in v:
+                if k not in ["_GLOBAL_", "_OTURUMLAR_"] and "cuzdan" in v:
                     kullanici_cuzdan = v["cuzdan"]
                     kullanici_toplam = kullanici_cuzdan.get("nakit", 1000000.0)
                     
