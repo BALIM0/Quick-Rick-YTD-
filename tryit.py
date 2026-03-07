@@ -51,7 +51,6 @@ st.markdown("""
         cursor: pointer !important;
         margin: 0 !important;
     }
-    /* Orijinal yuvarlağı gizle */
     div.stRadio div[role="radiogroup"] > label > div:first-child {
         display: none !important;
     }
@@ -143,7 +142,7 @@ db = db_yukle()
 
 # --- 10 DAKİKALIK OTURUM SÜRESİ KONTROLÜ ---
 su_an = time.time()
-silinecek_oturumlar = [t for t, v in db.get("_OTURUMLAR_", {}).items() if su_an > v.get("bitis", 0)]
+silinecek_oturumlar = [t for t, v in db.get("_OTURUMLAR_", {}).items() if su_an > v["bitis"]]
 for t in silinecek_oturumlar:
     del db["_OTURUMLAR_"][t]
 if silinecek_oturumlar:
@@ -161,7 +160,6 @@ if mevcut_token:
         st.query_params.clear()
         st.session_state.aktif_kullanici = None
 
-# --- GİRİŞ VE KAYIT EKRANI ---
 if st.session_state.aktif_kullanici is None:
     st.title("📊 Portföy Analiz ve Yönetimi")
     st.markdown("Sanal 1.000.000 TL bakiye ile kendi fonunuzu yönetmek ve yapay zeka analizlerine ulaşmak için giriş yapın.")
@@ -227,9 +225,6 @@ def aktif_cuzdan_kaydet():
 st.title("📊 Portföy Analiz ve Yönetimi")
 st.caption(f"👤 Fon Yöneticisi: **{aktif_nickname.upper()}** | 💵 Güncel Kur (USD/TRY): **{guncel_kur_getir():.2f} ₺**")
 
-# =====================================================================================
-# GENİŞLETİLMİŞ VARLIK KÜTÜPHANELERİ
-# =====================================================================================
 bist_30 = {"Akbank": "AKBNK.IS", "Alarko": "ALARK.IS", "Aselsan": "ASELS.IS", "Astor": "ASTOR.IS", "BİM": "BIMAS.IS", "Borusan": "BRSAN.IS", "Coca-Cola İçecek": "CCOLA.IS", "Emlak Konut": "EKGYO.IS", "Enka": "ENKAI.IS", "Ereğli": "EREGL.IS", "Ford Otosan": "FROTO.IS", "Garanti": "GARAN.IS", "Gübre Fab": "GUBRF.IS", "Hektaş": "HEKTS.IS", "İş Bankası": "ISCTR.IS", "Koç Hol": "KCHOL.IS", "Kontrolmatik": "KONTR.IS", "Koza Altın": "KOZAL.IS", "Kardemir": "KRDMD.IS", "Odaş": "ODAS.IS", "Petkim": "PETKM.IS", "Pegasus": "PGSUS.IS", "Sabancı Hol": "SAHOL.IS", "Sasa": "SASA.IS", "Şişecam": "SISE.IS", "Turkcell": "TCELL.IS", "THY": "THYAO.IS", "Tofaş": "TOASO.IS", "Tüpraş": "TUPRS.IS", "Yapı Kredi": "YKBNK.IS"}
 bist_100 = {**bist_30, **{"Alfa Solar": "ALFAS.IS", "Arçelik": "ARCLK.IS", "Brisa": "BRISA.IS", "Çimsa": "CIMSA.IS", "CW Enerji": "CWENE.IS", "Doğuş Oto": "DOAS.IS", "Doğan Hol": "DOHOL.IS", "Eczacıbaşı": "ECILC.IS", "Ege Endüstri": "EGEEN.IS", "Enerjisa": "ENJSA.IS", "Europower": "EUPWR.IS", "Girişim Elk": "GESAN.IS", "Halkbank": "HALKB.IS", "İskenderun D.": "ISDMR.IS", "İş GYO": "ISGYO.IS", "İş Yatırım": "ISMEN.IS", "Konya Çimento": "KONYA.IS", "Kordsa": "KORDS.IS", "Koza Anadolu": "KOZAA.IS", "Mavi": "MAVI.IS", "Migros": "MGROS.IS", "Mia Teknoloji": "MIATK.IS", "Otokar": "OTKAR.IS", "Oyak Çimento": "OYAKC.IS", "Qua Granite": "QUAGR.IS", "Şekerbank": "SKBNK.IS", "Smart Güneş": "SMRTG.IS", "Şok Market": "SOKM.IS", "TAV": "TAVHL.IS", "Tekfen": "TKFEN.IS", "TSKB": "TSKB.IS", "Türk Telekom": "TTKOM.IS", "Türk Traktör": "TTRAK.IS", "Tukaş": "TUKAS.IS", "Ülker": "ULKER.IS", "Vakıfbank": "VAKBN.IS", "Vestel Beyaz": "VESBE.IS", "Vestel": "VESTL.IS", "Yeo Teknoloji": "YEOTK.IS", "Zorlu Enerji": "ZOREN.IS"}}
 bist_genis = {**bist_100, **{"Agrotech": "AGROT.IS", "Akfen Yenilenebilir": "AKFYE.IS", "Anadolu Efes": "AEFES.IS", "Anadolu Sigorta": "ANSGR.IS", "Aygaz": "AYGAZ.IS", "Bera Holding": "BERA.IS", "Bien Seramik": "BIENY.IS", "Biotrend": "BIOEN.IS", "Borusan Yatırım": "BRYAT.IS", "Bülbüloğlu Vinç": "BVSAN.IS", "Can Termik": "CANTE.IS", "Çan2 Termik": "CANTE.IS", "CVK Maden": "CVKMD.IS", "Eksun Gıda": "EKSUN.IS", "Esenboğa Elektrik": "ESEN.IS", "Forte Bilgi": "FORTE.IS", "Galata Wind": "GWIND.IS", "GSD Holding": "GSDHO.IS", "Hat-San Gemi": "HATSN.IS", "İmaş Makina": "IMASM.IS", "İnfo Yatırım": "INFO.IS", "İzdemir Enerji": "IZENR.IS", "Kaleseramik": "KLSER.IS", "Kayseri Şeker": "KAYSE.IS", "Kocaer Çelik": "KCAER.IS", "Kuştur Kuşadası": "KSTUR.IS", "Margün Enerji": "MAGEN.IS", "Mercan Kimya": "MERCN.IS", "Naten": "NATEN.IS", "Oyak Yatırım": "OYYAT.IS", "Özsu Balık": "OZSUB.IS", "Penta": "PENTA.IS", "Reeder Teknoloji": "REEDR.IS", "Rubenis Tekstil": "RUBNS.IS", "SDT Uzay": "SDTTR.IS", "Tarkim": "TARKM.IS", "Tatlıpınar Enerji": "TATEN.IS", "Tezol": "TEZOL.IS", "VBT Yazılım": "VBTYZ.IS", "Ziraat GYO": "ZRGYO.IS", "Tab Gıda": "TABGD.IS", "Ebebek": "EBEBK.IS", "Fuzul GYO": "FZLGY.IS", "Aydem": "AYDEM.IS", "Söke Değirmencilik": "SOKE.IS", "Enerya": "ENSRV.IS", "Koton": "KOTON.IS", "Lilak Kağıt": "LILAK.IS", "Rönesans GYO": "RGYAS.IS", "Hareket Proje": "HRKET.IS", "Koç Metalurji": "KOCMT.IS"}}
@@ -516,9 +511,7 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
             with col1:
                 grafik_veri = yf.Ticker(secilen_sembol).history(period="6mo")
                 if not grafik_veri.empty:
-                    # =========================================================
-                    # YENİ: 6. SEKME (İSTATİSTİKSEL ARBİTRAJ) EKLENDİ
-                    # =========================================================
+                    # YENİ: 6. SEKME (MEVSİMSELLİK VE İST. ARBİTRAJ BİR ARADA)
                     tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["🤖 AI Trend", "📊 Hacim Profili", "🎲 Monte Carlo", "⏪ Backtest", "🗓️ Mevsimsellik", "⚖️ İst. Arbitraj"])
                     
                     with tab1:
@@ -543,7 +536,6 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                             df_vp['Price_Bin'] = pd.cut(df_vp['Close'], bins=bins)
                             vp_grouped = df_vp.dropna().groupby('Price_Bin')['Volume'].sum().reset_index()
                             vp_grouped['Bin_Mid'] = vp_grouped['Price_Bin'].apply(lambda x: x.mid if pd.notnull(x) else 0)
-                            
                             fig_vp = make_subplots(rows=1, cols=2, shared_yaxes=True, column_widths=[0.75, 0.25], horizontal_spacing=0.02)
                             fig_vp.add_trace(go.Candlestick(x=df_vp.index, open=df_vp['Open'], high=df_vp['High'], low=df_vp['Low'], close=df_vp['Close'], name='Fiyat'), row=1, col=1)
                             fig_vp.add_trace(go.Bar(x=vp_grouped['Volume'], y=vp_grouped['Bin_Mid'], orientation='h', name='Fiyat Hacmi', marker=dict(color='rgba(0, 255, 255, 0.6)')), row=1, col=2)
@@ -619,9 +611,6 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                             except:
                                 st.error("Mevsimsellik hesaplanamadı.")
 
-                    # =========================================================
-                    # YENİ SEKME: İSTATİSTİKSEL ARBİTRAJ (PAIRS TRADING)
-                    # =========================================================
                     with tab6:
                         st.markdown("<p style='font-size:14px; color:#aaa;'>İki varlık arasındaki fiyat makasının (spread) tarihsel ortalamasından ne kadar saptığını Z-Skoru ile ölçer.</p>", unsafe_allow_html=True)
                         
@@ -631,14 +620,12 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                         if ikinci_sembol and ikinci_sembol != secilen_sembol:
                             with st.spinner("Arbitraj modeli hesaplanıyor..."):
                                 try:
-                                    # Analiz için 1 yıllık temiz veri çekiyoruz
                                     veri1 = yf.Ticker(secilen_sembol).history(period="1y")['Close']
                                     veri2 = yf.Ticker(ikinci_sembol).history(period="1y")['Close']
                                     
                                     df_pair = pd.DataFrame({'Varlık_1': veri1, 'Varlık_2': veri2}).dropna()
                                     
                                     if len(df_pair) > 50:
-                                        # Oran üzerinden Z-Skoru Matematik Modeli
                                         df_pair['Ratio'] = df_pair['Varlık_1'] / df_pair['Varlık_2']
                                         df_pair['Mean'] = df_pair['Ratio'].rolling(window=30).mean()
                                         df_pair['Std'] = df_pair['Ratio'].rolling(window=30).std()
@@ -655,7 +642,6 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                                         
                                         son_z = float(df_pair['Z_Score'].iloc[-1])
                                         
-                                        # Yapay Zeka (Kural Tabanlı) Yorumlayıcı
                                         if son_z > 2.0:
                                             st.error(f"🚨 **ARBİTRAJ FIRSATI (Aşırı Değerli):** {secilen_isim}, {ikinci_varlik_isim}'e kıyasla istatistiksel ortalamasının çok üzerinde. Makasın kapanması için Varlık 1'in düşmesi veya Varlık 2'nin yükselmesi beklenir.")
                                         elif son_z < -2.0:
@@ -764,15 +750,39 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                 komisyon_orani = 0.0010
                 komisyon_metni = "%0.10 (Emtia)"
 
+            # =====================================================================
+            # YENİ: %10 LİKİDİTE (HACİM) KISITI VE HAFTA SONU SİGORTASI
+            # =====================================================================
             try:
-                anlik_fiyat = float(yf.Ticker(sembol_islem).history(period="1d")['Close'].iloc[-1])
+                # Sadece anlık fiyat değil, hacim okuması için de son 5 günü çekiyoruz
+                veri_hizli = yf.Ticker(sembol_islem).history(period="5d")
+                anlik_fiyat = float(veri_hizli['Close'].iloc[-1])
                 if not sembol_islem.endswith(".IS"): anlik_fiyat *= usd_kuru
+                
+                # Hacim Koruması: Tatil günlerinde 0 dönerse, ortalamayı al
+                son_hacim = float(veri_hizli['Volume'].iloc[-1])
+                if son_hacim <= 0:
+                    son_hacim = float(veri_hizli['Volume'].mean())
+                if pd.isna(son_hacim) or son_hacim <= 0:
+                    son_hacim = 1000000.0 # Nadir API kesintilerinde oyunu kilitlememek için fallback
+                
+                max_islem_limiti = son_hacim * 0.10 # %10 Kuralı!
+                
                 st.write(f"Birim Fiyat: **{anlik_fiyat:,.2f} ₺**")
+                st.caption(f"📊 Günlük Piyasa Hacmi: **{son_hacim:,.0f} Adet**")
+                st.caption(f"⚖️ Max İşlem Limiti (%10): **{max_islem_limiti:,.2f} Adet**")
             except:
                 anlik_fiyat = 0
-                st.warning("Fiyat çekilemedi.")
+                max_islem_limiti = float('inf')
+                st.warning("Fiyat veya hacim çekilemedi.")
 
             islem_miktari = st.number_input("Adet / Miktar:", min_value=0.01, step=1.0)
+            
+            # Kural İhlali Kontrolü
+            limit_asildi = islem_miktari > max_islem_limiti
+            if limit_asildi:
+                st.error(f"🚨 LİKİDİTE KISITI: Gerçekçi piyasa simülasyonu gereği tahtayı bozmamak adına tek seferde en fazla {max_islem_limiti:,.2f} adet işlem yapabilirsiniz!")
+            
             islem_tutari = islem_miktari * anlik_fiyat
             
             komisyon_tutari = islem_tutari * komisyon_orani
@@ -785,7 +795,8 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
             if islem_tipi == "AL": st.info(f"Kasadan Çıkacak: **{toplam_islem_maliyeti:,.2f} ₺**")
             else: st.success(f"Kasaya Girecek: **{toplam_islem_getirisi:,.2f} ₺**")
 
-            if st.button(f"Siparişi Onayla", use_container_width=True) and anlik_fiyat > 0:
+            # Onay Butonu: Limit aşılmadıysa aktif olur
+            if st.button(f"Siparişi Onayla", use_container_width=True) and anlik_fiyat > 0 and not limit_asildi:
                 if islem_tipi == "AL":
                     if cuzdan["nakit"] >= toplam_islem_maliyeti:
                         cuzdan["nakit"] -= toplam_islem_maliyeti
