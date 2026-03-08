@@ -133,14 +133,20 @@ st.markdown("""
         letter-spacing: 1.5px;
     }
 
-    /* TÜM RADIO BUTONLARINI MODERN KARTLARA ÇEVİRME (HİZALAMA DÜZELTİLDİ) */
+    /* TÜM RADIO BUTONLARINI MODERN KARTLARA ÇEVİRME (HİZALAMA VE KAYMA KORUMASI EKLENDİ) */
+    div.stRadio {
+        width: 100% !important;
+    }
+    div.stRadio > div {
+        width: 100% !important;
+    }
     div.stRadio div[role="radiogroup"] {
         display: flex !important;
         width: 100% !important;
-        align-items: stretch !important; /* Butonların konteyneri tam kaplamasını sağlar */
+        align-items: stretch !important;
     }
     div.stRadio div[role="radiogroup"] > label {
-        width: 100% !important; /* Genişliği kesin olarak 100% sabitler */
+        width: 100% !important;
         min-height: 45px !important;
         display: flex !important;
         align-items: center !important;
@@ -154,14 +160,18 @@ st.markdown("""
         cursor: pointer !important;
         margin: 0 !important;
         box-sizing: border-box !important;
+        white-space: nowrap !important; /* Kelimenin ikiye bölünmesini engeller */
+        overflow: hidden !important;
     }
     div.stRadio div[role="radiogroup"] > label > div:first-child {
-        display: none !important; /* Yuvarlak seçeneği gizler */
+        display: none !important;
     }
     div.stRadio div[role="radiogroup"] > label p {
         margin: 0 !important;
         font-size: 14px !important;
-        width: 100% !important; /* Yazının butona ortalanmasını sağlar */
+        width: 100% !important;
+        text-align: center !important;
+        white-space: nowrap !important; /* Kelimenin ikiye bölünmesini engeller */
     }
     div.stRadio div[role="radiogroup"] > label:hover {
         border-color: #00ffff !important;
@@ -175,6 +185,9 @@ st.markdown("""
         gap: 12px !important;
         width: 100% !important;
     }
+    [data-testid="stSidebar"] div.stRadio div[role="radiogroup"] > label {
+        flex: 1 1 100% !important;
+    }
     [data-testid="stSidebar"] div.stRadio div[role="radiogroup"] > label:has(input:checked) {
         background: linear-gradient(90deg, rgba(0,255,255,0.15) 0%, rgba(0,255,255,0.02) 100%) !important;
         border-color: #00ffff !important;
@@ -185,13 +198,16 @@ st.markdown("""
         font-weight: bold !important;
     }
 
-    /* ANA EKRAN DÜZENİ (AL/SAT Butonları Yan Yana Eşit) */
+    /* ANA EKRAN DÜZENİ (AL/SAT ve PİYASA/LİMİT Butonları Yan Yana Kesin %50 Eşit) */
     [data-testid="stMainBlockContainer"] div.stRadio div[role="radiogroup"] {
         flex-direction: row !important;
+        flex-wrap: nowrap !important; /* Alt satıra inmeyi yasakla */
         gap: 15px !important;
+        width: 100% !important;
     }
     [data-testid="stMainBlockContainer"] div.stRadio div[role="radiogroup"] > label {
-        flex: 1 1 0px !important; /* Yan yana durduklarında eşit alan paylaşımı sağlar */
+        flex: 1 1 50% !important; /* Ne olursa olsun alanı tam ortadan ikiye böl */
+        width: 50% !important;
     }
     
     /* AL Butonu Yeşile Dönsün */
