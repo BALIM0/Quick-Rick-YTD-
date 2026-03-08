@@ -128,6 +128,10 @@ def db_yukle():
                 veri["_GLOBAL_"] = {"toplam_komisyon": 0.0}
             if "_OTURUMLAR_" not in veri:
                 veri["_OTURUMLAR_"] = {}
+            for k, v in veri.items():
+                if k not in ["_GLOBAL_", "_OTURUMLAR_"] and "cuzdan" in v:
+                    if "bekleyen_emirler" not in v["cuzdan"]:
+                        v["cuzdan"]["bekleyen_emirler"] = []
             return veri
     return {"_GLOBAL_": {"toplam_komisyon": 0.0}, "_OTURUMLAR_": {}}
 
@@ -208,7 +212,7 @@ if st.session_state.aktif_kullanici is None:
                     "sifre": sifre_sifrele(k_sifre), 
                     "nickname": k_nickname, 
                     "son_isim_degistirme": 0,
-                    "cuzdan": {"nakit": 1000000.0, "varliklar": {}, "izleme_listesi": ["Türk Hava Yolları", "Bitcoin", "Altın (Ons)", "NVIDIA", "Apple"]}
+                    "cuzdan": {"nakit": 1000000.0, "varliklar": {}, "izleme_listesi": ["Türk Hava Yolları", "Bitcoin", "Altın (Ons)", "NVIDIA", "Apple"], "bekleyen_emirler": []}
                 }
                 db_kaydet(db)
                 st.success("✅ Hesabınız oluşturuldu! Şimdi 'Giriş Yap' sekmesinden giriş yapabilirsiniz.")
@@ -358,7 +362,10 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                     durum_metni.text(f"Taranıyor: {isim} ({islenen}/{toplam_varlik})")
                     ticker = yf.Ticker(sembol)
                     veri = ticker.history(period="2y" if vade_secimi == "📅 Uzun Vadeli (1+ Yıl / Yatırım)" else "6mo")
-                    if veri.empty or len(veri) < 20: continue
+                    if veri is None or veri.empty or len(veri) < 20: continue
+                    
+                    if 'Volume' not in veri.columns or veri['Volume'].sum() == 0:
+                        veri['Volume'] = 1000000.0
                     
                     if piyasa_secimi == "👤 Kendi İzleme Listem":
                         temiz_veri = veri['Close'].copy()
@@ -379,14 +386,18 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                         negatif_akis = np.where(tipik_fiyat < tipik_fiyat.shift(1), para_akisi, 0)
                         pozitif_mf = pd.Series(pozitif_akis).rolling(window=14).sum()
                         negatif_mf = pd.Series(negatif_akis).rolling(window=14).sum()
-                        mfi = 100 - (100 / (1 + (pozitif_mf / negatif_mf)))
-                        son_mfi = float(mfi.iloc[-1])
+                        
+                        mfi_ratio = pozitif_mf / negatif_mf.replace(0, np.nan)
+                        mfi = 100 - (100 / (1 + mfi_ratio))
+                        son_mfi = float(mfi.ffill().fillna(50.0).iloc[-1])
                         
                         delta = veri['Close'].diff()
                         gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
                         loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
-                        rsi = 100 - (100 / (1 + (gain / loss)))
-                        son_rsi = float(rsi.iloc[-1])
+                        
+                        rs = gain / loss.replace(0, np.nan)
+                        rsi = 100 - (100 / (1 + rs))
+                        son_rsi = float(rsi.ffill().fillna(50.0).iloc[-1])
                         
                         ema_12 = veri['Close'].ewm(span=12, adjust=False).mean()
                         ema_26 = veri['Close'].ewm(span=26, adjust=False).mean()
@@ -511,7 +522,6 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
             with col1:
                 grafik_veri = yf.Ticker(secilen_sembol).history(period="6mo")
                 if not grafik_veri.empty:
-                    # YENİ: 6. SEKME (MEVSİMSELLİK VE İST. ARBİTRAJ BİR ARADA)
                     tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["🤖 AI Trend", "📊 Hacim Profili", "🎲 Monte Carlo", "⏪ Backtest", "🗓️ Mevsimsellik", "⚖️ İst. Arbitraj"])
                     
                     with tab1:
@@ -523,11 +533,14 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                         fig1 = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.03, row_width=[0.3, 0.7])
                         fig1.add_trace(go.Candlestick(x=grafik_veri.index, open=grafik_veri['Open'], high=grafik_veri['High'], low=grafik_veri['Low'], close=grafik_veri['Close'], name='Fiyat'), row=1, col=1)
                         fig1.add_trace(go.Scatter(x=gelecek_tarihler, y=y_tahmin, mode='lines', name='AI Rotası', line=dict(color='cyan', width=4, dash='dot')), row=1, col=1)
-                        fig1.add_trace(go.Bar(x=grafik_veri.index, y=grafik_veri['Volume'], marker_color=['green' if c >= o else 'red' for o, c in zip(grafik_veri['Open'], grafik_veri['Close'])]), row=2, col=1)
+                        if 'Volume' in grafik_veri.columns:
+                            fig1.add_trace(go.Bar(x=grafik_veri.index, y=grafik_veri['Volume'], marker_color=['green' if c >= o else 'red' for o, c in zip(grafik_veri['Open'], grafik_veri['Close'])]), row=2, col=1)
                         fig1.update_layout(xaxis_rangeslider_visible=False, height=500, template="plotly_dark", margin=dict(t=10, b=10))
                         st.plotly_chart(fig1, use_container_width=True)
                         
                     with tab2:
+                        if 'Volume' not in grafik_veri.columns:
+                            grafik_veri['Volume'] = 1.0
                         df_vp = grafik_veri[['Close', 'Volume', 'Open', 'High', 'Low']].copy()
                         min_price = df_vp['Low'].min()
                         max_price = df_vp['High'].max()
@@ -567,7 +580,7 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                         delta_bt = df_bt['Close'].diff()
                         gain_bt = (delta_bt.where(delta_bt > 0, 0)).rolling(14).mean()
                         loss_bt = (-delta_bt.where(delta_bt < 0, 0)).rolling(14).mean()
-                        df_bt['RSI'] = 100 - (100 / (1 + (gain_bt / loss_bt)))
+                        df_bt['RSI'] = 100 - (100 / (1 + (gain_bt / loss_bt.replace(0, np.nan))))
                         nakit, adet, al_t, al_f, sat_t, sat_f = 10000, 0, [], [], [], []
                         for index, row in df_bt.iterrows():
                             if pd.isna(row['RSI']): continue
@@ -613,18 +626,14 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
 
                     with tab6:
                         st.markdown("<p style='font-size:14px; color:#aaa;'>İki varlık arasındaki fiyat makasının (spread) tarihsel ortalamasından ne kadar saptığını Z-Skoru ile ölçer.</p>", unsafe_allow_html=True)
-                        
                         ikinci_varlik_isim = st.selectbox("Karşılaştırılacak 2. Varlığı Seçin:", list(tum_varliklar_mega.keys()), index=1 if secilen_isim != list(tum_varliklar_mega.keys())[1] else 0)
                         ikinci_sembol = tum_varliklar_mega.get(ikinci_varlik_isim)
-                        
                         if ikinci_sembol and ikinci_sembol != secilen_sembol:
                             with st.spinner("Arbitraj modeli hesaplanıyor..."):
                                 try:
                                     veri1 = yf.Ticker(secilen_sembol).history(period="1y")['Close']
                                     veri2 = yf.Ticker(ikinci_sembol).history(period="1y")['Close']
-                                    
                                     df_pair = pd.DataFrame({'Varlık_1': veri1, 'Varlık_2': veri2}).dropna()
-                                    
                                     if len(df_pair) > 50:
                                         df_pair['Ratio'] = df_pair['Varlık_1'] / df_pair['Varlık_2']
                                         df_pair['Mean'] = df_pair['Ratio'].rolling(window=30).mean()
@@ -636,18 +645,13 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                                         fig_pair.add_hline(y=2, line_dash="dash", line_color="red", annotation_text="Üst Sınır (+2.0)")
                                         fig_pair.add_hline(y=-2, line_dash="dash", line_color="green", annotation_text="Alt Sınır (-2.0)")
                                         fig_pair.add_hline(y=0, line_dash="dot", line_color="rgba(255,255,255,0.5)")
-                                        
                                         fig_pair.update_layout(height=400, template="plotly_dark", title=f"Z-Skoru Makası: {secilen_isim} / {ikinci_varlik_isim}", margin=dict(t=40, b=10))
                                         st.plotly_chart(fig_pair, use_container_width=True)
                                         
                                         son_z = float(df_pair['Z_Score'].iloc[-1])
-                                        
-                                        if son_z > 2.0:
-                                            st.error(f"🚨 **ARBİTRAJ FIRSATI (Aşırı Değerli):** {secilen_isim}, {ikinci_varlik_isim}'e kıyasla istatistiksel ortalamasının çok üzerinde. Makasın kapanması için Varlık 1'in düşmesi veya Varlık 2'nin yükselmesi beklenir.")
-                                        elif son_z < -2.0:
-                                            st.success(f"🟢 **ARBİTRAJ FIRSATI (Aşırı Ucuz):** {secilen_isim}, {ikinci_varlik_isim}'e kıyasla istatistiksel ortalamasının çok altında. Makasın kapanması için Varlık 1'in yükselmesi veya Varlık 2'nin düşmesi beklenir.")
-                                        else:
-                                            st.info(f"⚖️ **Denge Durumu:** İki varlık arasındaki oran tarihsel normaller (Z-Skoru: {son_z:.2f}) içinde seyrediyor.")
+                                        if son_z > 2.0: st.error(f"🚨 **ARBİTRAJ FIRSATI (Aşırı Değerli):** {secilen_isim}, {ikinci_varlik_isim}'e kıyasla ortalamanın çok üzerinde.")
+                                        elif son_z < -2.0: st.success(f"🟢 **ARBİTRAJ FIRSATI (Aşırı Ucuz):** {secilen_isim}, {ikinci_varlik_isim}'e kıyasla ortalamanın çok altında.")
+                                        else: st.info(f"⚖️ **Denge Durumu:** İki varlık arasındaki oran tarihsel normaller (Z-Skoru: {son_z:.2f}) içinde seyrediyor.")
                                     else:
                                         st.warning("Eşleşen yeterli tarihsel veri bulunamadı.")
                                 except Exception as e:
@@ -695,6 +699,81 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                     st.error("Haber servisine ulaşılamıyor.")
 
 elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
+    
+    # =========================================================================================
+    # YENİ KUSURSUZ TEMBEL KONTROL: ZAMAN PARADOKSU ÇÖZÜLDÜ!
+    # =========================================================================================
+    gerceklesen_mesajlar = []
+    if cuzdan.get("bekleyen_emirler"):
+        kalan_emirler = []
+        for emir in cuzdan["bekleyen_emirler"]:
+            sembol = tum_varliklar_mega.get(emir["varlik"])
+            if not sembol: 
+                kalan_emirler.append(emir)
+                continue
+            try:
+                # Olası fiyat iğnelerini kaçırmamak için son 5 günü tararız
+                veri = yf.Ticker(sembol).history(period="5d")
+                if veri.empty:
+                    kalan_emirler.append(emir)
+                    continue
+                
+                # Fiyatı TL'ye çevirme çarpanı
+                katsayi = usd_kuru if not sembol.endswith(".IS") else 1.0
+                
+                # ANLIK FİYAT (En son kapanış)
+                anlik_fiyat = float(veri['Close'].iloc[-1]) * katsayi
+                
+                # Emirin verildiği TARİH (saat, dakika hariç sadece gün bazında)
+                emir_tarihi = pd.to_datetime(emir["tarih"], unit='s').tz_localize(None).date()
+                
+                # Sadece Emirden SONRAKİ günleri filtrele (Geçmişte kalan iğneleri at çöpe!)
+                veri.index = pd.to_datetime(veri.index).tz_localize(None)
+                veri_sonrasi = veri[veri.index.date > emir_tarihi]
+                
+                tetiklendi = False
+                
+                # ÖNCE KONTROL 1: Şu anki anlık fiyat hedefi kırmış mı?
+                if emir["tip"] == "AL" and anlik_fiyat <= emir["hedef_fiyat"]:
+                    tetiklendi = True
+                elif emir["tip"] == "SAT" and anlik_fiyat >= emir["hedef_fiyat"]:
+                    tetiklendi = True
+                    
+                # EĞER ŞU AN KIRILMADIYSA KONTROL 2: Biz yokken (ertesi günlerde) iğne atmış mı?
+                if not tetiklendi and not veri_sonrasi.empty:
+                    min_fiyat = float(veri_sonrasi['Low'].min()) * katsayi
+                    max_fiyat = float(veri_sonrasi['High'].max()) * katsayi
+                    
+                    if emir["tip"] == "AL" and min_fiyat <= emir["hedef_fiyat"]:
+                        tetiklendi = True
+                    elif emir["tip"] == "SAT" and max_fiyat >= emir["hedef_fiyat"]:
+                        tetiklendi = True
+                    
+                if tetiklendi:
+                    if emir["tip"] == "AL":
+                        mevcut_veri = cuzdan["varliklar"].get(emir["varlik"], {"adet": 0.0, "maliyet": 0.0})
+                        yeni_adet = mevcut_veri["adet"] + emir["adet"]
+                        yeni_maliyet = ((mevcut_veri["adet"] * mevcut_veri["maliyet"]) + emir["baglanan_tutar"]) / yeni_adet
+                        cuzdan["varliklar"][emir["varlik"]] = {"adet": yeni_adet, "maliyet": yeni_maliyet}
+                        db["_GLOBAL_"]["toplam_komisyon"] += emir["komisyon"]
+                        gerceklesen_mesajlar.append(f"🔔 {emir['varlik']} hedefinize ({emir['hedef_fiyat']} ₺) ulaştı! Otomatik ALIM yapıldı.")
+                        
+                    elif emir["tip"] == "SAT":
+                        cuzdan["nakit"] += emir["beklenen_getiri"]
+                        db["_GLOBAL_"]["toplam_komisyon"] += emir["komisyon"]
+                        gerceklesen_mesajlar.append(f"🔔 {emir['varlik']} hedefinize ({emir['hedef_fiyat']} ₺) ulaştı! Otomatik SATIŞ yapıldı.")
+                else:
+                    kalan_emirler.append(emir)
+            except:
+                kalan_emirler.append(emir)
+                
+        if len(cuzdan["bekleyen_emirler"]) != len(kalan_emirler):
+            cuzdan["bekleyen_emirler"] = kalan_emirler
+            aktif_cuzdan_kaydet()
+            for m in gerceklesen_mesajlar:
+                st.toast(m, icon="✅")
+    # =========================================================================================
+
     toplam_komisyon = db["_GLOBAL_"].get("toplam_komisyon", 0.0)
     st.markdown(f"<div class='bagis-panosu'>🌟 <b>Komisyon Olarak Bağışlanan Toplam Tutar:</b> <br><span class='bagis-sayi'>{toplam_komisyon:,.2f} ₺</span></div>", unsafe_allow_html=True)
 
@@ -733,7 +812,11 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
         
         with col_islem:
             st.markdown("<b>Hızlı İşlem Masası</b>", unsafe_allow_html=True)
-            islem_tipi = st.radio("İşlem Yönü:", ["AL", "SAT"], horizontal=True, label_visibility="collapsed")
+            
+            c_yon, c_tur = st.columns(2)
+            with c_yon: islem_tipi = st.radio("İşlem Yönü:", ["AL", "SAT"], horizontal=True, label_visibility="collapsed")
+            with c_tur: emir_turu = st.radio("Emir Türü:", ["⚡ Piyasa", "🕒 Limit"], horizontal=True, label_visibility="collapsed")
+            
             secili_varlik = st.selectbox("Varlık Seçin:", list(tum_varliklar_mega.keys()))
             sembol_islem = tum_varliklar_mega[secili_varlik]
             
@@ -750,25 +833,26 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                 komisyon_orani = 0.0010
                 komisyon_metni = "%0.10 (Emtia)"
 
-            # =====================================================================
-            # YENİ: %10 LİKİDİTE (HACİM) KISITI VE HAFTA SONU SİGORTASI
-            # =====================================================================
             try:
-                # Sadece anlık fiyat değil, hacim okuması için de son 5 günü çekiyoruz
                 veri_hizli = yf.Ticker(sembol_islem).history(period="5d")
+                if veri_hizli.empty:
+                    raise ValueError("Veri boş")
+                    
                 anlik_fiyat = float(veri_hizli['Close'].iloc[-1])
                 if not sembol_islem.endswith(".IS"): anlik_fiyat *= usd_kuru
                 
-                # Hacim Koruması: Tatil günlerinde 0 dönerse, ortalamayı al
-                son_hacim = float(veri_hizli['Volume'].iloc[-1])
-                if son_hacim <= 0:
-                    son_hacim = float(veri_hizli['Volume'].mean())
-                if pd.isna(son_hacim) or son_hacim <= 0:
-                    son_hacim = 1000000.0 # Nadir API kesintilerinde oyunu kilitlememek için fallback
+                if 'Volume' in veri_hizli.columns:
+                    son_hacim = float(veri_hizli['Volume'].iloc[-1])
+                    if son_hacim <= 0: son_hacim = float(veri_hizli['Volume'].mean())
+                else:
+                    son_hacim = 0.0
+                    
+                if pd.isna(son_hacim) or son_hacim <= 0: 
+                    son_hacim = 1000000.0 
                 
-                max_islem_limiti = son_hacim * 0.10 # %10 Kuralı!
+                max_islem_limiti = son_hacim * 0.10 
                 
-                st.write(f"Birim Fiyat: **{anlik_fiyat:,.2f} ₺**")
+                st.write(f"Anlık Fiyat: **{anlik_fiyat:,.2f} ₺**")
                 st.caption(f"📊 Günlük Piyasa Hacmi: **{son_hacim:,.0f} Adet**")
                 st.caption(f"⚖️ Max İşlem Limiti (%10): **{max_islem_limiti:,.2f} Adet**")
             except:
@@ -778,12 +862,16 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
 
             islem_miktari = st.number_input("Adet / Miktar:", min_value=0.01, step=1.0)
             
-            # Kural İhlali Kontrolü
             limit_asildi = islem_miktari > max_islem_limiti
             if limit_asildi:
                 st.error(f"🚨 LİKİDİTE KISITI: Gerçekçi piyasa simülasyonu gereği tahtayı bozmamak adına tek seferde en fazla {max_islem_limiti:,.2f} adet işlem yapabilirsiniz!")
             
-            islem_tutari = islem_miktari * anlik_fiyat
+            if "Limit" in emir_turu:
+                hedef_fiyat = st.number_input("Hedef Fiyat (₺):", min_value=0.01, value=float(anlik_fiyat) if anlik_fiyat>0 else 1.0, step=1.0)
+                islem_tutari = islem_miktari * hedef_fiyat
+            else:
+                hedef_fiyat = anlik_fiyat
+                islem_tutari = islem_miktari * anlik_fiyat
             
             komisyon_tutari = islem_tutari * komisyon_orani
             toplam_islem_maliyeti = islem_tutari + komisyon_tutari 
@@ -792,22 +880,32 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
             st.write(f"İşlem Hacmi: **{islem_tutari:,.2f} ₺**")
             st.write(f"Komisyon ({komisyon_metni}): **{komisyon_tutari:,.2f} ₺**")
             
-            if islem_tipi == "AL": st.info(f"Kasadan Çıkacak: **{toplam_islem_maliyeti:,.2f} ₺**")
+            if islem_tipi == "AL": st.info(f"Kasadan Çıkacak/Bloke: **{toplam_islem_maliyeti:,.2f} ₺**")
             else: st.success(f"Kasaya Girecek: **{toplam_islem_getirisi:,.2f} ₺**")
 
-            # Onay Butonu: Limit aşılmadıysa aktif olur
-            if st.button(f"Siparişi Onayla", use_container_width=True) and anlik_fiyat > 0 and not limit_asildi:
+            buton_metni = "🕒 Bekleyen Emir Gir" if "Limit" in emir_turu else "⚡ Siparişi Anında Onayla"
+
+            if st.button(buton_metni, use_container_width=True) and anlik_fiyat > 0 and not limit_asildi:
                 if islem_tipi == "AL":
                     if cuzdan["nakit"] >= toplam_islem_maliyeti:
                         cuzdan["nakit"] -= toplam_islem_maliyeti
-                        mevcut_veri = cuzdan["varliklar"].get(secili_varlik, {"adet": 0.0, "maliyet": 0.0})
-                        yeni_adet = mevcut_veri["adet"] + islem_miktari
-                        yeni_maliyet = ((mevcut_veri["adet"] * mevcut_veri["maliyet"]) + toplam_islem_maliyeti) / yeni_adet
-                        cuzdan["varliklar"][secili_varlik] = {"adet": yeni_adet, "maliyet": yeni_maliyet}
                         
-                        db["_GLOBAL_"]["toplam_komisyon"] += komisyon_tutari
-                        aktif_cuzdan_kaydet()
-                        st.success("İşlem Başarılı! Komisyon bağış havuzuna aktarıldı.")
+                        if "Limit" in emir_turu:
+                            cuzdan["bekleyen_emirler"].append({
+                                "id": str(uuid.uuid4()), "tarih": time.time(), "tip": "AL", "varlik": secili_varlik,
+                                "adet": islem_miktari, "hedef_fiyat": hedef_fiyat, "baglanan_tutar": toplam_islem_maliyeti, "komisyon": komisyon_tutari
+                            })
+                            aktif_cuzdan_kaydet()
+                            st.success("🕒 Alım Limit Emriniz Başarıyla Sisteme Kaydedildi!")
+                        else:
+                            mevcut_veri = cuzdan["varliklar"].get(secili_varlik, {"adet": 0.0, "maliyet": 0.0})
+                            yeni_adet = mevcut_veri["adet"] + islem_miktari
+                            yeni_maliyet = ((mevcut_veri["adet"] * mevcut_veri["maliyet"]) + toplam_islem_maliyeti) / yeni_adet
+                            cuzdan["varliklar"][secili_varlik] = {"adet": yeni_adet, "maliyet": yeni_maliyet}
+                            db["_GLOBAL_"]["toplam_komisyon"] += komisyon_tutari
+                            aktif_cuzdan_kaydet()
+                            st.success("⚡ İşlem Başarılı! Komisyon bağış havuzuna aktarıldı.")
+                            
                         time.sleep(1.5); st.rerun() 
                     else: st.error("Yetersiz bakiye (Komisyon dahil)!")
                 elif islem_tipi == "SAT":
@@ -818,9 +916,20 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                         if yeni_adet <= 0.000001: del cuzdan["varliklar"][secili_varlik]
                         else: cuzdan["varliklar"][secili_varlik]["adet"] = yeni_adet
                         
-                        db["_GLOBAL_"]["toplam_komisyon"] += komisyon_tutari
-                        aktif_cuzdan_kaydet()
-                        st.success("İşlem Başarılı! Komisyon bağış havuzuna aktarıldı.")
+                        if "Limit" in emir_turu:
+                            cuzdan["bekleyen_emirler"].append({
+                                "id": str(uuid.uuid4()), "tarih": time.time(), "tip": "SAT", "varlik": secili_varlik,
+                                "adet": islem_miktari, "hedef_fiyat": hedef_fiyat, "beklenen_getiri": toplam_islem_getirisi,
+                                "komisyon": komisyon_tutari, "maliyet_rezerv": mevcut_veri["maliyet"]
+                            })
+                            aktif_cuzdan_kaydet()
+                            st.success("🕒 Satış Limit Emriniz Başarıyla Sisteme Kaydedildi!")
+                        else:
+                            cuzdan["nakit"] += toplam_islem_getirisi
+                            db["_GLOBAL_"]["toplam_komisyon"] += komisyon_tutari
+                            aktif_cuzdan_kaydet()
+                            st.success("⚡ İşlem Başarılı! Komisyon bağış havuzuna aktarıldı.")
+                            
                         time.sleep(1.5); st.rerun() 
                     else: st.error("Yetersiz adet!")
 
@@ -845,6 +954,31 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                     
                 st.dataframe(df_p.style.map(renk_ver, subset=['K/Z (₺)', '% K/Z']).format({"Adet": "{:,.4f}", "Maliyet (₺)": "{:,.2f}", "Fiyat (₺)": "{:,.2f}", "Değer (₺)": "{:,.2f}", "K/Z (₺)": "{:,.2f}", "% K/Z": "% {:,.2f}"}), use_container_width=True)
             else: st.info("Cüzdan boş.")
+
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.subheader("🕒 Bekleyen Emirlerim")
+            if cuzdan.get("bekleyen_emirler"):
+                for emir in cuzdan["bekleyen_emirler"]:
+                    st.markdown(f"<div style='background-color:#1a1a1a; border:1px solid #333; padding:10px; border-radius:8px; margin-bottom:10px;'>", unsafe_allow_html=True)
+                    c1, c2, c3, c4 = st.columns([3, 2, 3, 2])
+                    tip_ikon = "🟢 AL" if emir["tip"] == "AL" else "🔴 SAT"
+                    c1.write(f"**{emir['varlik']}**")
+                    c2.write(f"{tip_ikon} ({emir['adet']})")
+                    c3.write(f"Hedef: **{emir['hedef_fiyat']:,.2f} ₺**")
+                    
+                    if c4.button("❌ İptal", key=f"iptal_{emir['id']}"):
+                        if emir["tip"] == "AL":
+                            cuzdan["nakit"] += emir["baglanan_tutar"]
+                        else:
+                            mevcut_veri = cuzdan["varliklar"].get(emir["varlik"], {"adet": 0.0, "maliyet": emir.get("maliyet_rezerv", 0.0)})
+                            cuzdan["varliklar"][emir["varlik"]] = {"adet": mevcut_veri["adet"] + emir["adet"], "maliyet": emir.get("maliyet_rezerv", 0.0)}
+                        
+                        cuzdan["bekleyen_emirler"] = [e for e in cuzdan["bekleyen_emirler"] if e["id"] != emir["id"]]
+                        aktif_cuzdan_kaydet()
+                        st.rerun()
+                    st.markdown("</div>", unsafe_allow_html=True)
+            else:
+                st.caption("Şu an bekleyen aktif bir emriniz bulunmuyor.")
 
     with tab_liderlik:
         st.subheader("🏆 En İyi Fon Yöneticileri")
@@ -873,11 +1007,16 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                 if k not in ["_GLOBAL_", "_OTURUMLAR_"] and "cuzdan" in v:
                     kullanici_cuzdan = v["cuzdan"]
                     kullanici_toplam = kullanici_cuzdan.get("nakit", 1000000.0)
+                    for be in kullanici_cuzdan.get("bekleyen_emirler", []):
+                        if be["tip"] == "AL": kullanici_toplam += be["baglanan_tutar"]
                     
                     if "varliklar" in kullanici_cuzdan:
                         for v_isim, v_veri in kullanici_cuzdan["varliklar"].items():
                             adet = v_veri if isinstance(v_veri, (int, float)) else v_veri.get("adet", 0)
                             kullanici_toplam += adet * liderlik_fiyatlar.get(v_isim, 0.0)
+                            
+                    for be in kullanici_cuzdan.get("bekleyen_emirler", []):
+                        if be["tip"] == "SAT": kullanici_toplam += be["adet"] * liderlik_fiyatlar.get(be["varlik"], 0.0)
                             
                     gosterilecek_isim = v.get("nickname", k)
                     liderlik_listesi.append({"Kullanici": gosterilecek_isim, "Toplam": kullanici_toplam})
