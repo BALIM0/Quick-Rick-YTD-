@@ -21,75 +21,184 @@ except ImportError:
 
 st.set_page_config(page_title="Portföy Analiz ve Yönetimi", layout="wide", page_icon="📊")
 
-# --- GELİŞMİŞ UI / UX TASARIMI (KUTULARI EŞİTLEYEN CSS MÜHENDİSLİĞİ) ---
+# =========================================================================================
+# --- GELİŞMİŞ UI / UX TASARIMI (PREMIUM ARAYÜZ MÜHENDİSLİĞİ) ---
+# =========================================================================================
 st.markdown("""
 <style>
-    div[data-testid="metric-container"] {background-color: #1e1e1e; border: 1px solid #333; padding: 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0, 255, 255, 0.05); transition: transform 0.3s;}
-    div[data-testid="metric-container"]:hover {transform: translateY(-5px); box-shadow: 0 6px 15px rgba(0, 255, 255, 0.15);}
-    div.stButton > button {border-radius: 8px; font-weight: bold; transition: all 0.3s ease;}
-    div.stButton > button:hover {border-color: #00ffff; box-shadow: 0 0 10px rgba(0,255,255,0.3); color: #00ffff;}
-    .bagis-panosu {text-align: center; padding: 15px; background: linear-gradient(135deg, rgba(255,215,0,0.1) 0%, rgba(255,140,0,0.1) 100%); border-radius: 12px; border: 1px solid rgba(255,215,0,0.3); margin-bottom: 20px;}
-    .bagis-sayi {color: #FFD700; font-size: 24px; font-weight: bold; text-shadow: 0 0 10px rgba(255,215,0,0.5);}
+    /* Google Fonts'tan Modern Bir Font (Inter) Çekiyoruz */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
 
-    /* TÜM RADIO BUTONLARINI MODERN KARTLARA ÇEVİRME VE BOYUTLARINI SABİTLEME */
+    /* Tüm Sayfaya Fontu ve Özel Arka Plan Gradiyanını Uyguluyoruz */
+    html, body, [class*="css"] {
+        font-family: 'Inter', sans-serif !important;
+    }
+    
+    .stApp {
+        background: radial-gradient(circle at top right, #131d2b 0%, #0b0f19 100%) !important;
+    }
+    
+    [data-testid="stSidebar"] {
+        background-color: #0e131f !important;
+        border-right: 1px solid rgba(0, 255, 255, 0.05) !important;
+    }
+
+    /* Glassmorphism (Buzlu Cam) Metrik Kartları */
+    div[data-testid="metric-container"] {
+        background: rgba(20, 26, 36, 0.6) !important;
+        backdrop-filter: blur(12px) !important;
+        -webkit-backdrop-filter: blur(12px) !important;
+        border: 1px solid rgba(0, 255, 255, 0.15) !important;
+        padding: 20px !important;
+        border-radius: 16px !important;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3) !important;
+        transition: all 0.4s ease-in-out !important;
+    }
+    div[data-testid="metric-container"]:hover {
+        transform: translateY(-7px) !important;
+        border-color: rgba(0, 255, 255, 0.6) !important;
+        box-shadow: 0 12px 40px 0 rgba(0, 255, 255, 0.15) !important;
+    }
+
+    /* Genel Buton Tasarımları (Neon Glow Etkisi) */
+    div.stButton > button {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+        color: #fff !important;
+        border: 1px solid rgba(0, 255, 255, 0.3) !important;
+        border-radius: 10px !important;
+        padding: 10px 24px !important;
+        font-weight: 600 !important;
+        letter-spacing: 0.5px !important;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+        width: 100% !important;
+    }
+    div.stButton > button:hover {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
+        border-color: #00ffff !important;
+        color: #00ffff !important;
+        box-shadow: 0 0 15px rgba(0, 255, 255, 0.3), inset 0 0 10px rgba(0, 255, 255, 0.1) !important;
+        transform: scale(1.03) !important;
+    }
+
+    /* Sekme (Tabs) Tasarımını Modernleştirme */
+    button[data-baseweb="tab"] {
+        background-color: transparent !important;
+        border: none !important;
+        border-bottom: 3px solid transparent !important;
+        padding: 12px 20px !important;
+        font-weight: 600 !important;
+        color: #667085 !important;
+        transition: all 0.3s ease !important;
+    }
+    button[data-baseweb="tab"][aria-selected="true"] {
+        color: #00ffff !important;
+        border-bottom: 3px solid #00ffff !important;
+        background-color: rgba(0, 255, 255, 0.05) !important;
+        border-radius: 8px 8px 0 0 !important;
+    }
+    button[data-baseweb="tab"]:hover {
+        color: #e2e8f0 !important;
+        background-color: rgba(255, 255, 255, 0.02) !important;
+    }
+
+    /* Girdi Kutuları (Input, Select) Odaklanma Efektleri */
+    div[data-baseweb="select"] > div, input[type="text"], input[type="number"], input[type="password"] {
+        border-radius: 10px !important;
+        border: 1px solid #334155 !important;
+        background-color: rgba(15, 23, 42, 0.8) !important;
+        color: white !important;
+        transition: all 0.3s ease !important;
+    }
+    div[data-baseweb="select"] > div:hover, input[type="text"]:focus, input[type="number"]:focus, input[type="password"]:focus {
+        border-color: #00ffff !important;
+        box-shadow: 0 0 8px rgba(0,255,255,0.4) !important;
+    }
+
+    /* Komisyon Bağış Panosu (Geliştirilmiş) */
+    .bagis-panosu {
+        text-align: center; 
+        padding: 25px; 
+        background: linear-gradient(135deg, rgba(255,215,0,0.1) 0%, rgba(255,140,0,0.1) 100%); 
+        border-radius: 16px; 
+        border: 1px solid rgba(255,215,0,0.4); 
+        margin-bottom: 30px;
+        box-shadow: 0 10px 30px rgba(255, 215, 0, 0.08);
+        backdrop-filter: blur(8px);
+    }
+    .bagis-sayi {
+        color: #FFD700; 
+        font-size: 34px; 
+        font-weight: 800; 
+        text-shadow: 0 0 20px rgba(255,215,0,0.5);
+        letter-spacing: 1.5px;
+    }
+
+    /* TÜM RADIO BUTONLARINI MODERN KARTLARA ÇEVİRME (HİZALAMA DÜZELTİLDİ) */
     div.stRadio div[role="radiogroup"] {
         display: flex !important;
         width: 100% !important;
+        align-items: stretch !important; /* Butonların konteyneri tam kaplamasını sağlar */
     }
     div.stRadio div[role="radiogroup"] > label {
-        flex: 1 1 0px !important;
+        width: 100% !important; /* Genişliği kesin olarak 100% sabitler */
         min-height: 45px !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
         text-align: center !important;
         padding: 5px 10px !important;
-        border: 1px solid #333 !important;
-        border-radius: 8px !important;
-        background-color: #1a1a1a !important;
+        border: 1px solid #334155 !important;
+        border-radius: 10px !important;
+        background-color: #0f172a !important;
         transition: all 0.3s ease !important;
         cursor: pointer !important;
         margin: 0 !important;
+        box-sizing: border-box !important;
     }
     div.stRadio div[role="radiogroup"] > label > div:first-child {
-        display: none !important;
+        display: none !important; /* Yuvarlak seçeneği gizler */
     }
     div.stRadio div[role="radiogroup"] > label p {
         margin: 0 !important;
         font-size: 14px !important;
-        width: 100% !important;
+        width: 100% !important; /* Yazının butona ortalanmasını sağlar */
     }
     div.stRadio div[role="radiogroup"] > label:hover {
         border-color: #00ffff !important;
-        background-color: #222 !important;
-        box-shadow: 0 4px 10px rgba(0, 255, 255, 0.1) !important;
+        background-color: #1e293b !important;
+        box-shadow: 0 4px 15px rgba(0, 255, 255, 0.15) !important;
     }
     
-    /* SOL MENÜ DÜZENİ (Alt Alta) */
+    /* SOL MENÜ DÜZENİ (Alt Alta Duvar Gibi) */
     [data-testid="stSidebar"] div.stRadio div[role="radiogroup"] {
         flex-direction: column !important;
-        gap: 10px !important;
+        gap: 12px !important;
+        width: 100% !important;
     }
     [data-testid="stSidebar"] div.stRadio div[role="radiogroup"] > label:has(input:checked) {
         background: linear-gradient(90deg, rgba(0,255,255,0.15) 0%, rgba(0,255,255,0.02) 100%) !important;
         border-color: #00ffff !important;
-        border-left: 4px solid #00ffff !important; 
+        border-left: 5px solid #00ffff !important; 
     }
     [data-testid="stSidebar"] div.stRadio div[role="radiogroup"] > label:has(input:checked) p {
         color: #00ffff !important;
         font-weight: bold !important;
     }
 
-    /* ANA EKRAN DÜZENİ (AL/SAT Butonları Yan Yana) */
+    /* ANA EKRAN DÜZENİ (AL/SAT Butonları Yan Yana Eşit) */
     [data-testid="stMainBlockContainer"] div.stRadio div[role="radiogroup"] {
         flex-direction: row !important;
         gap: 15px !important;
     }
+    [data-testid="stMainBlockContainer"] div.stRadio div[role="radiogroup"] > label {
+        flex: 1 1 0px !important; /* Yan yana durduklarında eşit alan paylaşımı sağlar */
+    }
+    
     /* AL Butonu Yeşile Dönsün */
     [data-testid="stMainBlockContainer"] div.stRadio div[role="radiogroup"] > label:nth-child(1):has(input:checked) {
         background: linear-gradient(90deg, rgba(0,255,0,0.15) 0%, rgba(0,255,0,0.02) 100%) !important;
         border-color: #00ff00 !important;
-        border-left: 4px solid #00ff00 !important; 
+        border-left: 5px solid #00ff00 !important; 
     }
     [data-testid="stMainBlockContainer"] div.stRadio div[role="radiogroup"] > label:nth-child(1):has(input:checked) p {
         color: #00ff00 !important;
@@ -99,7 +208,7 @@ st.markdown("""
     [data-testid="stMainBlockContainer"] div.stRadio div[role="radiogroup"] > label:nth-child(2):has(input:checked) {
         background: linear-gradient(90deg, rgba(255,68,68,0.15) 0%, rgba(255,68,68,0.02) 100%) !important;
         border-color: #ff4444 !important;
-        border-left: 4px solid #ff4444 !important; 
+        border-left: 5px solid #ff4444 !important; 
     }
     [data-testid="stMainBlockContainer"] div.stRadio div[role="radiogroup"] > label:nth-child(2):has(input:checked) p {
         color: #ff4444 !important;
@@ -701,7 +810,7 @@ if uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
 elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
     
     # =========================================================================================
-    # YENİ KUSURSUZ TEMBEL KONTROL: ZAMAN PARADOKSU ÇÖZÜLDÜ!
+    # TEMBEL KONTROL: ZAMAN PARADOKSU ÇÖZÜLMÜŞ LİMİT EMİR MOTORU
     # =========================================================================================
     gerceklesen_mesajlar = []
     if cuzdan.get("bekleyen_emirler"):
@@ -712,34 +821,25 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                 kalan_emirler.append(emir)
                 continue
             try:
-                # Olası fiyat iğnelerini kaçırmamak için son 5 günü tararız
                 veri = yf.Ticker(sembol).history(period="5d")
                 if veri.empty:
                     kalan_emirler.append(emir)
                     continue
                 
-                # Fiyatı TL'ye çevirme çarpanı
                 katsayi = usd_kuru if not sembol.endswith(".IS") else 1.0
-                
-                # ANLIK FİYAT (En son kapanış)
                 anlik_fiyat = float(veri['Close'].iloc[-1]) * katsayi
-                
-                # Emirin verildiği TARİH (saat, dakika hariç sadece gün bazında)
                 emir_tarihi = pd.to_datetime(emir["tarih"], unit='s').tz_localize(None).date()
                 
-                # Sadece Emirden SONRAKİ günleri filtrele (Geçmişte kalan iğneleri at çöpe!)
                 veri.index = pd.to_datetime(veri.index).tz_localize(None)
                 veri_sonrasi = veri[veri.index.date > emir_tarihi]
                 
                 tetiklendi = False
                 
-                # ÖNCE KONTROL 1: Şu anki anlık fiyat hedefi kırmış mı?
                 if emir["tip"] == "AL" and anlik_fiyat <= emir["hedef_fiyat"]:
                     tetiklendi = True
                 elif emir["tip"] == "SAT" and anlik_fiyat >= emir["hedef_fiyat"]:
                     tetiklendi = True
                     
-                # EĞER ŞU AN KIRILMADIYSA KONTROL 2: Biz yokken (ertesi günlerde) iğne atmış mı?
                 if not tetiklendi and not veri_sonrasi.empty:
                     min_fiyat = float(veri_sonrasi['Low'].min()) * katsayi
                     max_fiyat = float(veri_sonrasi['High'].max()) * katsayi
@@ -912,7 +1012,6 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                     mevcut_veri = cuzdan["varliklar"].get(secili_varlik, {"adet": 0.0, "maliyet": 0.0})
                     if mevcut_veri["adet"] >= islem_miktari:
                         yeni_adet = mevcut_veri["adet"] - islem_miktari
-                        cuzdan["nakit"] += toplam_islem_getirisi
                         if yeni_adet <= 0.000001: del cuzdan["varliklar"][secili_varlik]
                         else: cuzdan["varliklar"][secili_varlik]["adet"] = yeni_adet
                         
@@ -959,7 +1058,7 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
             st.subheader("🕒 Bekleyen Emirlerim")
             if cuzdan.get("bekleyen_emirler"):
                 for emir in cuzdan["bekleyen_emirler"]:
-                    st.markdown(f"<div style='background-color:#1a1a1a; border:1px solid #333; padding:10px; border-radius:8px; margin-bottom:10px;'>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='background-color:rgba(15, 23, 42, 0.8); border:1px solid rgba(0,255,255,0.2); padding:10px; border-radius:10px; margin-bottom:10px; backdrop-filter:blur(5px);'>", unsafe_allow_html=True)
                     c1, c2, c3, c4 = st.columns([3, 2, 3, 2])
                     tip_ikon = "🟢 AL" if emir["tip"] == "AL" else "🔴 SAT"
                     c1.write(f"**{emir['varlik']}**")
