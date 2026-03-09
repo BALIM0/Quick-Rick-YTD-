@@ -231,6 +231,19 @@ st.markdown("""
         color: #ff4444 !important; 
         font-weight: bold !important; 
     }
+    
+    /* Sohbet Mesaj Kutuları İçin Minik Ayar */
+    .sohbet-mesaji {
+        background-color: rgba(15, 23, 42, 0.4);
+        padding: 10px;
+        border-radius: 8px;
+        margin-bottom: 8px;
+        border-left: 3px solid #334155;
+    }
+    .sohbet-mesaji.admin {
+        border-left: 3px solid #FFD700;
+        background-color: rgba(255, 215, 0, 0.05);
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -259,13 +272,18 @@ def sifre_sifrele(sifre):
     return hashlib.sha256(sifre.encode()).hexdigest()
 
 def db_yukle():
+    # ÖLÜMSÜZLÜK ZIRHI (JSON HATA YAKALAYICI)
     if os.path.exists(DB_DOSYASI):
         try:
             with open(DB_DOSYASI, "r", encoding="utf-8") as f:
                 veri = json.load(f)
                 
+            # Global havuz kontrolleri ve Sohbet alanı entegrasyonu
             if "_GLOBAL_" not in veri:
-                veri["_GLOBAL_"] = {"toplam_komisyon": 0.0, "duyuru": ""}
+                veri["_GLOBAL_"] = {"toplam_komisyon": 0.0, "duyuru": "", "sohbet": []}
+            else:
+                if "sohbet" not in veri["_GLOBAL_"]:
+                    veri["_GLOBAL_"]["sohbet"] = []
                 
             if "_OTURUMLAR_" not in veri:
                 veri["_OTURUMLAR_"] = {}
@@ -289,7 +307,7 @@ def db_yukle():
             pass
             
     return {
-        "_GLOBAL_": {"toplam_komisyon": 0.0, "duyuru": ""}, 
+        "_GLOBAL_": {"toplam_komisyon": 0.0, "duyuru": "", "sohbet": []}, 
         "_OTURUMLAR_": {},
         ADMIN_ID: {
             "sifre": sifre_sifrele(ADMIN_PASS), 
@@ -301,6 +319,7 @@ def db_yukle():
     }
 
 def db_kaydet(db):
+    # ATOMİK YAZMA ZIRHI
     gecici_dosya = f"{DB_DOSYASI}.tmp"
     with open(gecici_dosya, "w", encoding="utf-8") as f:
         json.dump(db, f, indent=4)
@@ -313,6 +332,7 @@ if 'aktif_kullanici' not in st.session_state:
 
 db = db_yukle()
 
+# --- OTURUM SÜRESİ KONTROLÜ ---
 su_an = time.time()
 silinecek_oturumlar = []
 for t, v in db.get("_OTURUMLAR_", {}).items():
@@ -408,7 +428,7 @@ def aktif_cuzdan_kaydet():
     db_kaydet(db)
 
 # =========================================================================================
-# KAYIP GLOBAL DEĞİŞKEN (HATA SEBEBİ) BURAYA EKLENDİ!
+# GLOBAL DEĞİŞKEN (HATA SEBEBİ) 
 # =========================================================================================
 usd_kuru = guncel_kur_getir()
 
@@ -587,7 +607,7 @@ if uygulama_modu == "👑 Yönetici Paneli (Kurucu)":
     st.header("👑 SİSTEM YÖNETİCİSİ (ADMIN) PANELİ")
     st.markdown("Merkez bankası yetkileriyle donatılmış, oyunu ve oyuncuları yöneteceğiniz kontrol paneline hoş geldiniz.")
     
-    tab_oyuncular, tab_ekonomi, tab_duyuru = st.tabs(["👥 Kullanıcı Yönetimi", "🏦 Merkez Bankası", "📢 Global Duyuru"])
+    tab_oyuncular, tab_ekonomi, tab_duyuru = st.tabs(["👥 Kullanıcı Yönetimi", "🏦 Merkez Bankası", "📢 Duyuru & Sohbet"])
     
     with tab_oyuncular:
         st.subheader("Aktif Kullanıcılar ve Giyotin")
@@ -651,6 +671,15 @@ if uygulama_modu == "👑 Yönetici Paneli (Kurucu)":
             st.success("Duyuru panosu güncellendi!")
             time.sleep(1)
             st.rerun()
+            
+        st.markdown("---")
+        st.subheader("Sohbet Geçmişini Temizle")
+        if st.button("🧹 Borsa Meydanı'ndaki Tüm Mesajları Sil"):
+            db["_GLOBAL_"]["sohbet"] = []
+            db_kaydet(db)
+            st.success("Tüm sohbet geçmişi silindi!")
+            time.sleep(1)
+            st.rerun()
 
 # =========================================================================================
 # 🔍 ALGORİTMİK PİYASA TARAMA
@@ -701,7 +730,6 @@ elif uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                 try:
                     durum_metni.text(f"Taranıyor: {isim} ({islenen}/{toplam_varlik})")
                     
-                    # ANTI-BAN: 1 Aylık geniş veri çekimi
                     ticker = yf.Ticker(sembol)
                     veri = ticker.history(period="2y" if vade_secimi == "📅 Uzun Vadeli (1+ Yıl / Yatırım)" else "6mo")
                     
@@ -820,7 +848,6 @@ elif uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                         sonuclar.append({"Varlık": isim, "Fiyat (₺)": round(son_fiyat, 2), "200G Ort (₺)": round(sma_200_deger, 2), "F/K": fk_metni, "Puan": puan, "Durum": " | ".join(durum_notu) if durum_notu else "Nötr"})
                         
                 except Exception as e:
-                    # Geliştirici Ayna Modu (Eğer hata olursa ismini yazar)
                     st.write(f"⚠️ {isim} atlandı. Hata: {str(e)}") 
                 finally:
                     time.sleep(0.05)
@@ -851,8 +878,10 @@ elif uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                         elif v > 65: return 'background-color: rgba(255, 0, 0, 0.2); font-weight: bold; color: #ff4444;'
                     except: pass
                     return ''
-                if hasattr(st.session_state.df_sonuc.style, "map"): styled_df = st.session_state.df_sonuc.style.map(style_rsi, subset=['RSI'])
-                else: styled_df = st.session_state.df_sonuc.style.applymap(style_rsi, subset=['RSI'])
+                if hasattr(st.session_state.df_sonuc.style, "map"): 
+                    styled_df = st.session_state.df_sonuc.style.map(style_rsi, subset=['RSI'])
+                else: 
+                    styled_df = st.session_state.df_sonuc.style.applymap(style_rsi, subset=['RSI'])
                 st.dataframe(styled_df.format({"Fiyat (₺)": "{:,.2f}"}), use_container_width=True)
             else:
                 st.dataframe(st.session_state.df_sonuc.style.format({"Fiyat (₺)": "{:,.2f}", "200G Ort (₺)": "{:,.2f}"}), use_container_width=True)
@@ -864,18 +893,26 @@ elif uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                 df_port = st.session_state.ozel_portfoy_verisi.ffill().dropna()
                 returns = df_port.pct_change().dropna()
                 if len(returns) > 10: 
-                    mean_returns, cov_matrix, num_portfolios = returns.mean(), returns.cov(), 5000 
-                    results, weights_record = np.zeros((3, num_portfolios)), []
+                    mean_returns = returns.mean()
+                    cov_matrix = returns.cov()
+                    num_portfolios = 5000 
+                    results = np.zeros((3, num_portfolios))
+                    weights_record = []
+                    
                     for i in range(num_portfolios):
                         weights = np.random.random(len(df_port.columns))
                         weights /= np.sum(weights)
                         weights_record.append(weights)
                         p_std = np.sqrt(np.dot(weights.T, np.dot(cov_matrix, weights))) * np.sqrt(252)
                         p_ret = np.sum(mean_returns * weights) * 252
-                        results[0,i], results[1,i], results[2,i] = p_ret, p_std, p_ret / p_std
+                        results[0,i] = p_ret
+                        results[1,i] = p_std
+                        results[2,i] = p_ret / p_std
+                        
                     max_sharpe_idx = np.argmax(results[2])
                     opt_weights = weights_record[max_sharpe_idx]
                     col_pie, col_text = st.columns([1, 1])
+                    
                     with col_pie:
                         fig_pie = px.pie(pd.DataFrame({'Varlık': df_port.columns, 'Oran': opt_weights * 100}), values='Oran', names='Varlık', title="Optimum Sermaye Dağılımı", hole=0.4, template="plotly_dark")
                         fig_pie.update_traces(textposition='inside', textinfo='percent+label')
@@ -883,7 +920,8 @@ elif uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                     with col_text:
                         st.write(f"**Beklenen Yıllık Getiri:** %{round(results[0,max_sharpe_idx]*100, 2)}")
                         st.write(f"**Tahmini Yıllık Risk:** %{round(results[1,max_sharpe_idx]*100, 2)}")
-                else: st.warning("Yeterli geçmiş veri yok.")
+                else: 
+                    st.warning("Yeterli geçmiş veri yok.")
                     
             with st.expander("🗺️ Varlık Korelasyon Matrisi", expanded=False):
                 returns_corr = st.session_state.ozel_portfoy_verisi.ffill().dropna().pct_change().dropna()
@@ -891,9 +929,11 @@ elif uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                     st.plotly_chart(px.imshow(returns_corr.corr(), text_auto=".2f", aspect="auto", color_continuous_scale="RdYlGn", title="Korelasyon", template="plotly_dark"), use_container_width=True)
 
         col_analiz_baslik, col_analiz_yenile = st.columns([3, 1])
-        with col_analiz_baslik: st.write("### 🤖 Gelişmiş Analiz Paneli")
+        with col_analiz_baslik: 
+            st.write("### 🤖 Gelişmiş Analiz Paneli")
         with col_analiz_yenile:
-            if st.button("🔄 Grafiği Tazele", use_container_width=True): st.rerun()
+            if st.button("🔄 Grafiği Tazele", use_container_width=True): 
+                st.rerun()
                 
         secilen_isim = st.selectbox("Grafik için varlık seçin:", st.session_state.df_sonuc['Varlık'].tolist())
         secilen_sembol = tum_varliklar_mega.get(secilen_isim)
@@ -902,6 +942,7 @@ elif uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
             col1, col2 = st.columns([2, 1])
             with col1:
                 grafik_veri = yf.Ticker(secilen_sembol).history(period="6mo")
+                
                 if not grafik_veri.empty:
                     if isinstance(grafik_veri.columns, pd.MultiIndex):
                         grafik_veri.columns = grafik_veri.columns.get_level_values(0)
@@ -918,45 +959,61 @@ elif uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                             model = LinearRegression().fit(df_ml[['Gunler']], df_ml['Close'])
                             y_tahmin = model.predict(np.array([[len(df_ml) + i] for i in range(1, 16)]))
                             gelecek_tarihler = [df_ml.index[-1] + pd.Timedelta(days=i) for i in range(1, 16)]
+                            
                             fig1 = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.03, row_width=[0.3, 0.7])
                             fig1.add_trace(go.Candlestick(x=grafik_veri.index, open=grafik_veri['Open'], high=grafik_veri['High'], low=grafik_veri['Low'], close=grafik_veri['Close'], name='Fiyat'), row=1, col=1)
                             fig1.add_trace(go.Scatter(x=gelecek_tarihler, y=y_tahmin, mode='lines', name='AI Rotası', line=dict(color='cyan', width=4, dash='dot')), row=1, col=1)
+                            
                             if 'Volume' in grafik_veri.columns:
                                 fig1.add_trace(go.Bar(x=grafik_veri.index, y=grafik_veri['Volume'], marker_color=['green' if c >= o else 'red' for o, c in zip(grafik_veri['Open'], grafik_veri['Close'])]), row=2, col=1)
                             fig1.update_layout(xaxis_rangeslider_visible=False, height=500, template="plotly_dark", margin=dict(t=10, b=10))
                             st.plotly_chart(fig1, use_container_width=True)
                         
                     with tab2:
-                        if 'Volume' not in grafik_veri.columns: grafik_veri['Volume'] = 1.0
+                        if 'Volume' not in grafik_veri.columns: 
+                            grafik_veri['Volume'] = 1.0
+                            
                         df_vp = grafik_veri[['Close', 'Volume', 'Open', 'High', 'Low']].copy()
-                        min_price, max_price = df_vp['Low'].min(), df_vp['High'].max()
+                        min_price = df_vp['Low'].min()
+                        max_price = df_vp['High'].max()
+                        
                         if min_price != max_price and pd.notna(min_price) and pd.notna(max_price):
                             bins = np.linspace(min_price, max_price, 50)
                             df_vp['Price_Bin'] = pd.cut(df_vp['Close'], bins=bins)
                             vp_grouped = df_vp.dropna().groupby('Price_Bin')['Volume'].sum().reset_index()
                             vp_grouped['Bin_Mid'] = vp_grouped['Price_Bin'].apply(lambda x: x.mid if pd.notnull(x) else 0)
+                            
                             fig_vp = make_subplots(rows=1, cols=2, shared_yaxes=True, column_widths=[0.75, 0.25], horizontal_spacing=0.02)
                             fig_vp.add_trace(go.Candlestick(x=df_vp.index, open=df_vp['Open'], high=df_vp['High'], low=df_vp['Low'], close=df_vp['Close'], name='Fiyat'), row=1, col=1)
                             fig_vp.add_trace(go.Bar(x=vp_grouped['Volume'], y=vp_grouped['Bin_Mid'], orientation='h', name='Fiyat Hacmi', marker=dict(color='rgba(0, 255, 255, 0.6)')), row=1, col=2)
                             fig_vp.update_layout(xaxis_rangeslider_visible=False, height=500, template="plotly_dark", margin=dict(t=10, b=10), showlegend=False)
                             st.plotly_chart(fig_vp, use_container_width=True)
-                        else: st.info("Hacim profili çıkarılamadı.")
+                        else:
+                            st.info("Hacim profili çıkarılamadı.")
 
                     with tab3:
                         log_returns = np.log(1 + grafik_veri['Close'].pct_change()).dropna()
                         if len(log_returns) > 10:
-                            u, var, stdev = log_returns.mean(), log_returns.var(), log_returns.std()
+                            u = log_returns.mean()
+                            var = log_returns.var()
+                            stdev = log_returns.std()
                             drift = u - (0.5 * var)
-                            t_intervals, iterations = 30, 100 
+                            t_intervals = 30
+                            iterations = 100 
                             daily_returns = np.exp(drift + stdev * np.random.randn(t_intervals, iterations))
                             price_paths = np.zeros_like(daily_returns)
                             price_paths[0] = grafik_veri['Close'].iloc[-1]
-                            for t in range(1, t_intervals): price_paths[t] = price_paths[t - 1] * daily_returns[t]
+                            
+                            for t in range(1, t_intervals): 
+                                price_paths[t] = price_paths[t - 1] * daily_returns[t]
+                                
                             mc_tarihler = [grafik_veri.index[-1] + pd.Timedelta(days=i) for i in range(t_intervals)]
+                            
                             fig2 = go.Figure()
                             gecmis_30 = grafik_veri['Close'].iloc[-30:]
                             fig2.add_trace(go.Scatter(x=gecmis_30.index, y=gecmis_30.values, mode='lines', name='Geçmiş Fiyat', line=dict(color='white', width=3)))
-                            for i in range(iterations): fig2.add_trace(go.Scatter(x=mc_tarihler, y=price_paths[:, i], mode='lines', showlegend=False, line=dict(color='rgba(0, 255, 255, 0.05)')))
+                            for i in range(iterations): 
+                                fig2.add_trace(go.Scatter(x=mc_tarihler, y=price_paths[:, i], mode='lines', showlegend=False, line=dict(color='rgba(0, 255, 255, 0.05)')))
                             fig2.add_trace(go.Scatter(x=mc_tarihler, y=price_paths.mean(axis=1), mode='lines', name='Ortalama Beklenti', line=dict(color='red', width=3, dash='dash')))
                             fig2.update_layout(height=500, template="plotly_dark", margin=dict(t=10, b=10))
                             st.plotly_chart(fig2, use_container_width=True)
@@ -968,47 +1025,87 @@ elif uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                         gain[gain < 0] = 0.0
                         loss = -delta.copy()
                         loss[loss < 0] = 0.0
+                        
                         avg_gain = gain.rolling(window=14, min_periods=1).mean()
                         avg_loss = loss.rolling(window=14, min_periods=1).mean()
+                        
                         rs = avg_gain / avg_loss.replace(0.0, np.nan)
                         df_bt['RSI'] = 100.0 - (100.0 / (1.0 + rs))
-                        nakit, adet, al_t, al_f, sat_t, sat_f = 10000, 0, [], [], [], []
+                        
+                        nakit = 10000
+                        adet = 0
+                        al_t = []
+                        al_f = []
+                        sat_t = []
+                        sat_f = []
+                        
                         for index, row in df_bt.iterrows():
-                            if pd.isna(row['RSI']): continue
-                            if row['RSI'] < 30 and adet == 0: adet = nakit / row['Close']; nakit = 0; al_t.append(index); al_f.append(row['Close'])
-                            elif row['RSI'] > 70 and adet > 0: nakit = adet * row['Close']; adet = 0; sat_t.append(index); sat_f.append(row['Close'])
+                            if pd.isna(row['RSI']): 
+                                continue
+                            if row['RSI'] < 30 and adet == 0: 
+                                adet = nakit / row['Close']
+                                nakit = 0
+                                al_t.append(index)
+                                al_f.append(row['Close'])
+                            elif row['RSI'] > 70 and adet > 0: 
+                                nakit = adet * row['Close']
+                                adet = 0
+                                sat_t.append(index)
+                                sat_f.append(row['Close'])
+                                
                         son_deger = nakit if adet == 0 else adet * df_bt['Close'].iloc[-1]
+                        
                         c1, c2 = st.columns(2)
                         c1.metric("Al-Sat Getirisi", f"%{round(((son_deger - 10000) / 10000) * 100, 2)}")
                         c2.metric("Bekleme Getirisi", f"%{round(((df_bt['Close'].iloc[-1] - df_bt['Close'].dropna().iloc[0]) / df_bt['Close'].dropna().iloc[0]) * 100, 2)}")
+                        
                         fig3 = go.Figure().add_trace(go.Scatter(x=df_bt.index, y=df_bt['Close'], mode='lines', name='Fiyat', line=dict(color='white')))
-                        if al_t: fig3.add_trace(go.Scatter(x=al_t, y=al_f, mode='markers', name='AL', marker=dict(color='green', size=12, symbol='triangle-up')))
-                        if sat_t: fig3.add_trace(go.Scatter(x=sat_t, y=sat_f, mode='markers', name='SAT', marker=dict(color='red', size=12, symbol='triangle-down')))
+                        if al_t: 
+                            fig3.add_trace(go.Scatter(x=al_t, y=al_f, mode='markers', name='AL', marker=dict(color='green', size=12, symbol='triangle-up')))
+                        if sat_t: 
+                            fig3.add_trace(go.Scatter(x=sat_t, y=sat_f, mode='markers', name='SAT', marker=dict(color='red', size=12, symbol='triangle-down')))
                         fig3.update_layout(height=400, template="plotly_dark", margin=dict(t=10, b=10))
                         st.plotly_chart(fig3, use_container_width=True)
 
                     with tab5:
                         with st.spinner("Mevsimsellik verisi hesaplanıyor (Son 5 Yıl)..."):
                             try:
-                                seas_data = yf.Ticker(secilen_sembol).history(period="5y").dropna(subset=['Close'])
+                                seas_data = yf.Ticker(secilen_sembol).history(period="5y")
+                                seas_data = seas_data.dropna(subset=['Close'])
+                                
                                 if len(seas_data) > 100:
                                     seas_data.index = pd.to_datetime(seas_data.index).tz_localize(None)
                                     monthly_closes = seas_data['Close'].resample('ME').last()
                                     monthly_returns = monthly_closes.pct_change() * 100
+                                    
                                     df_seas = pd.DataFrame({'Getiri': monthly_returns})
-                                    df_seas['Yıl'], df_seas['Ay'] = df_seas.index.year, df_seas.index.month
+                                    df_seas['Yıl'] = df_seas.index.year
+                                    df_seas['Ay'] = df_seas.index.month
+                                    
                                     ay_isimleri = {1: 'Oca', 2: 'Şub', 3: 'Mar', 4: 'Nis', 5: 'May', 6: 'Haz', 7: 'Tem', 8: 'Ağu', 9: 'Eyl', 10: 'Eki', 11: 'Kas', 12: 'Ara'}
+                                    
                                     heatmap_df = df_seas.pivot(index='Yıl', columns='Ay', values='Getiri').reindex(columns=range(1, 13))
                                     heatmap_df.columns = [ay_isimleri.get(c, str(c)) for c in heatmap_df.columns]
                                     heatmap_df = heatmap_df.dropna(how='all')
-                                    fig_heat = px.imshow(heatmap_df, text_auto=".2f", aspect="auto", color_continuous_scale=["#ff4444", "#1a1a1a", "#00ff00"], color_continuous_midpoint=0, labels=dict(x="Aylar", y="Yıllar", color="Getiri (%)"))
+                                    
+                                    fig_heat = px.imshow(
+                                        heatmap_df, 
+                                        text_auto=".2f", 
+                                        aspect="auto", 
+                                        color_continuous_scale=["#ff4444", "#1a1a1a", "#00ff00"], 
+                                        color_continuous_midpoint=0, 
+                                        labels=dict(x="Aylar", y="Yıllar", color="Getiri (%)")
+                                    )
                                     fig_heat.update_layout(template="plotly_dark", margin=dict(t=40, b=10))
                                     fig_heat.update_traces(textfont=dict(color="white", weight="bold"))
                                     st.plotly_chart(fig_heat, use_container_width=True)
+                                    
                                     avg_ret = heatmap_df.mean()
                                     st.info(f"💡 Tarihsel olarak **en çok kazandıran ay: {avg_ret.idxmax()}** (Ort. %{avg_ret.max():.2f}) | **En riskli ay: {avg_ret.idxmin()}** (Ort. %{avg_ret.min():.2f})")
-                                else: st.warning("Yeterli tarihsel veri yok.")
-                            except: st.error("Mevsimsellik hesaplanamadı.")
+                                else:
+                                    st.warning("Yeterli tarihsel veri yok.")
+                            except: 
+                                st.error("Mevsimsellik hesaplanamadı.")
 
                     with tab6:
                         st.markdown("<p style='font-size:14px; color:#aaa;'>İki varlık arasındaki fiyat makasının (spread) tarihsel ortalamasından ne kadar saptığını Z-Skoru ile ölçer.</p>", unsafe_allow_html=True)
@@ -1020,12 +1117,15 @@ elif uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                                 try:
                                     veri1 = yf.Ticker(secilen_sembol).history(period="1y")['Close'].dropna()
                                     veri2 = yf.Ticker(ikinci_sembol).history(period="1y")['Close'].dropna()
+                                    
                                     df_pair = pd.DataFrame({'Varlık_1': veri1, 'Varlık_2': veri2}).dropna()
+                                    
                                     if len(df_pair) > 50:
                                         df_pair['Ratio'] = df_pair['Varlık_1'] / df_pair['Varlık_2']
                                         df_pair['Mean'] = df_pair['Ratio'].rolling(window=30).mean()
                                         df_pair['Std'] = df_pair['Ratio'].rolling(window=30).std()
                                         df_pair['Z_Score'] = (df_pair['Ratio'] - df_pair['Mean']) / df_pair['Std']
+                                        
                                         fig_pair = go.Figure()
                                         fig_pair.add_trace(go.Scatter(x=df_pair.index, y=df_pair['Z_Score'], mode='lines', name='Z-Skoru Makası', line=dict(color='cyan', width=2)))
                                         fig_pair.add_hline(y=2, line_dash="dash", line_color="red", annotation_text="Üst Sınır (+2.0)")
@@ -1033,13 +1133,20 @@ elif uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                                         fig_pair.add_hline(y=0, line_dash="dot", line_color="rgba(255,255,255,0.5)")
                                         fig_pair.update_layout(height=400, template="plotly_dark", title=f"Z-Skoru Makası: {secilen_isim} / {ikinci_varlik_isim}", margin=dict(t=40, b=10))
                                         st.plotly_chart(fig_pair, use_container_width=True)
+                                        
                                         son_z = float(df_pair['Z_Score'].dropna().iloc[-1])
-                                        if son_z > 2.0: st.error(f"🚨 **ARBİTRAJ FIRSATI (Aşırı Değerli):** {secilen_isim}, {ikinci_varlik_isim}'e kıyasla ortalamanın çok üzerinde.")
-                                        elif son_z < -2.0: st.success(f"🟢 **ARBİTRAJ FIRSATI (Aşırı Ucuz):** {secilen_isim}, {ikinci_varlik_isim}'e kıyasla ortalamanın çok altında.")
-                                        else: st.info(f"⚖️ **Denge Durumu:** İki varlık arasındaki oran tarihsel normaller (Z-Skoru: {son_z:.2f}) içinde seyrediyor.")
-                                    else: st.warning("Eşleşen yeterli tarihsel veri bulunamadı.")
-                                except Exception as e: st.warning("Veriler eşleştirilirken bir uyumsuzluk yaşandı.")
-                        elif ikinci_sembol == secilen_sembol: st.warning("Lütfen karşılaştırmak için farklı bir varlık seçin.")
+                                        if son_z > 2.0: 
+                                            st.error(f"🚨 **ARBİTRAJ FIRSATI (Aşırı Değerli):** {secilen_isim}, {ikinci_varlik_isim}'e kıyasla ortalamanın çok üzerinde.")
+                                        elif son_z < -2.0: 
+                                            st.success(f"🟢 **ARBİTRAJ FIRSATI (Aşırı Ucuz):** {secilen_isim}, {ikinci_varlik_isim}'e kıyasla ortalamanın çok altında.")
+                                        else: 
+                                            st.info(f"⚖️ **Denge Durumu:** İki varlık arasındaki oran tarihsel normaller (Z-Skoru: {son_z:.2f}) içinde seyrediyor.")
+                                    else: 
+                                        st.warning("Eşleşen yeterli tarihsel veri bulunamadı.")
+                                except Exception as e: 
+                                    st.warning("Veriler eşleştirilirken bir uyumsuzluk yaşandı.")
+                        elif ikinci_sembol == secilen_sembol: 
+                            st.warning("Lütfen karşılaştırmak için farklı bir varlık seçin.")
 
             with col2:
                 st.write("### 🧠 Piyasa Psikolojisi")
@@ -1052,15 +1159,21 @@ elif uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                             if baslik and baslik != "Başlık Yok": 
                                 toplam_duygu += TextBlob(baslik).sentiment.polarity
                                 gecerli_haber += 1
+                                
                         if gecerli_haber > 0:
                             fig_gauge = go.Figure(go.Indicator(
-                                mode="gauge+number", value=toplam_duygu/gecerli_haber, domain={'x': [0, 1], 'y': [0, 1]}, 
+                                mode="gauge+number", 
+                                value=toplam_duygu/gecerli_haber, 
+                                domain={'x': [0, 1], 'y': [0, 1]}, 
                                 title={'text': "Medya Hissi", 'font': {'color': 'white'}}, 
                                 gauge={'axis': {'range': [-1, 1]}, 'bar': {'color': "white"}, 'steps': [{'range': [-1, -0.2], 'color': "rgba(255,68,68,0.6)"}, {'range': [-0.2, 0.2], 'color': "rgba(150,150,150,0.4)"}, {'range': [0.2, 1], 'color': "rgba(0,200,83,0.6)"}]}
                             ))
                             st.plotly_chart(fig_gauge.update_layout(height=200, margin=dict(l=10, r=10, t=30, b=10), template="plotly_dark"), use_container_width=True)
-                        else: st.info("Haber başlıkları analiz edilemedi.")
-                    else: st.info("Bu varlığa ait güncel İngilizce haber bulunamadı.")
+                        else:
+                            st.info("Haber başlıkları analiz edilemedi.")
+                    else:
+                        st.info("Bu varlığa ait güncel İngilizce haber bulunamadı.")
+                        
                     with st.expander("📰 Son Dakika Haberleri", expanded=True):
                         if haberler:
                             for h in haberler[:5]:
@@ -1069,14 +1182,17 @@ elif uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                                     l = h.get('link') or h.get('url') or h.get('content', {}).get('clickThroughUrl', {}).get('url', '#')
                                     st.markdown(f"🔗 **[{t}]({l})**")
                                     st.markdown("---")
-                        else: st.write("Gösterilecek haber kaynağı yok.")
-                except: st.error("Haber servisine ulaşılamıyor.")
+                        else:
+                            st.write("Gösterilecek haber kaynağı yok.")
+                except Exception as e: 
+                    st.error("Haber servisine ulaşılamıyor.")
 
 # =========================================================================================
 # 💼 SANAL PORTFÖY VE OYUN MOTORU
 # =========================================================================================
 elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
     
+    # LİMİT EMİR MOTORU 
     gerceklesen_mesajlar = []
     if cuzdan.get("bekleyen_emirler"):
         kalan_emirler = []
@@ -1136,7 +1252,8 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
     toplam_komisyon = db["_GLOBAL_"].get("toplam_komisyon", 0.0)
     st.markdown(f"<div class='bagis-panosu'>🌟 <b>Komisyon Olarak Bağışlanan Toplam Tutar:</b> <br><span class='bagis-sayi'>{toplam_komisyon:,.2f} ₺</span></div>", unsafe_allow_html=True)
 
-    tab_portfoy, tab_liderlik = st.tabs(["💼 Portföyüm", "🏆 Liderlik Tablosu (En İyiler)"])
+    # YENİ: SOHBET SEKMESİ EKLENDİ
+    tab_portfoy, tab_liderlik, tab_sohbet = st.tabs(["💼 Portföyüm", "🏆 Liderlik Tablosu", "💬 Borsa Meydanı (Sohbet)"])
     
     with tab_portfoy:
         toplam_varlik_degeri = 0
@@ -1362,3 +1479,42 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                 
             st.dataframe(pd.DataFrame(gosterim_listesi).style.hide(axis="index"), use_container_width=True)
             st.info("💡 **Not:** Güvenlik ve rekabet gizliliği amacıyla kullanıcıların gerçek giriş ID'leri değil takma adları gösterilmektedir. Kasa bakiyeleri ise maskelenmiştir.")
+    
+    # =====================================================================================
+    # YENİ: BORSA MEYDANI (CANLI SOHBET) EKRANI
+    # =====================================================================================
+    with tab_sohbet:
+        st.subheader("💬 Borsa Meydanı")
+        st.write("Diğer fon yöneticileriyle piyasa dedikodularını ve stratejilerinizi paylaşın.")
+        
+        # Mesajların Gösterildiği Kutu (Scroll edilebilir)
+        chat_container = st.container(height=450)
+        with chat_container:
+            mesajlar = db["_GLOBAL_"].get("sohbet", [])
+            if not mesajlar:
+                st.caption("Burası çok sessiz... İlk mesajı sen gönder!")
+            else:
+                for msg in mesajlar:
+                    zaman_str = pd.to_datetime(msg["time"], unit="s").tz_localize("UTC").tz_convert("Europe/Istanbul").strftime("%H:%M")
+                    
+                    if msg["user"] == "👑 SİSTEM YÖNETİCİSİ":
+                        # Admin mesajı şık altın sarısı görünür
+                        st.markdown(f"<div class='sohbet-mesaji admin'><b><span style='color:#FFD700'>{msg['user']}</span></b> <span style='font-size:11px; color:#aaa;'>🕒 {zaman_str}</span><br><span style='color:#FFD700'>{msg['text']}</span></div>", unsafe_allow_html=True)
+                    else:
+                        # Normal kullanıcı mesajı mavi görünür
+                        st.markdown(f"<div class='sohbet-mesaji'><b><span style='color:#00ffff'>{msg['user']}</span></b> <span style='font-size:11px; color:#aaa;'>🕒 {zaman_str}</span><br>{msg['text']}</div>", unsafe_allow_html=True)
+        
+        # Mesaj Gönderme Çubuğu
+        yeni_mesaj = st.chat_input("Piyasa hakkında bir şeyler yaz...")
+        if yeni_mesaj:
+            yeni_mesaj_paketi = {
+                "user": aktif_nickname,
+                "text": yeni_mesaj[:250], # Spam koruması: En fazla 250 karakter eklenebilir
+                "time": time.time()
+            }
+            db["_GLOBAL_"]["sohbet"].append(yeni_mesaj_paketi)
+            
+            # Performans Koruması: Sadece son 50 mesajı tut, veritabanını şişirme
+            db["_GLOBAL_"]["sohbet"] = db["_GLOBAL_"]["sohbet"][-50:]
+            db_kaydet(db)
+            st.rerun()
