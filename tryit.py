@@ -122,7 +122,7 @@ except:
     ADMIN_PASS = "supergizli123"
 
 # =========================================================================================
-# CACHE'Lİ CANLI FİYAT ÇEKİCİ (Anti-Ban ve Hızlandırma İçin)
+# CACHE'Lİ CANLI FİYAT ÇEKİCİ 
 # =========================================================================================
 @st.cache_data(ttl=10, show_spinner=False)
 def canli_fiyat_getir(sembol, katsayi=1.0):
@@ -243,11 +243,14 @@ def aktif_cuzdan_kaydet():
 usd_kuru = guncel_kur_getir()
 
 st.title("📊 Portföy Analiz ve Yönetimi")
+
 global_duyuru = db["_GLOBAL_"].get("duyuru", "")
-if global_duyuru: st.error(f"📢 **SİSTEM DUYURUSU:** {global_duyuru}")
+if global_duyuru:
+    st.error(f"📢 **SİSTEM DUYURUSU:** {global_duyuru}")
+
 st.caption(f"👤 Fon Yöneticisi: **{aktif_nickname.upper()}** | 💵 Güncel Kur (USD/TRY): **{usd_kuru:.2f} ₺**")
 
-bist_30 = {"Akbank": "AKBNK.IS", "Alarko": "ALARK.IS", "Aselsan": "ASELS.IS", "Astor": "ASTOR.IS", "BİM": "BIMAS.IS", "Borusan": "BRSAN.IS", "Coca-Cola İçecek": "CCOLA.IS", "Emlak Konut": "EKGYO.IS", "Enka": "ENKAI.IS", "Ereğli": "EREGL.IS", "Ford Otosan": "FROTO.IS", "Garanti": "GARAN.IS", "Gübre Fab": "GUBRF.IS", "Hektaş": "HEKTS.IS", "İş Bankası": "ISCTR.IS", "Koç Hol": "KCHOL.IS", "Kontrolmatik": "KONTR.IS", "Koza Altın": "KOZAL.IS", "Kardemir": "KRDMD.IS", "Odaş": "ODAS.IS", "Petkim": "PETKM.IS", "Pegasus": "PGSUS.IS", "Sabancı Hol": "SAHOL.IS", "Sasa": "SASA.IS", "Şişecam": "SISE.IS", "Turkcell": "TCELL.IS", "THY": "THYAO.IS", "Tofaş": "TOASO.IS", "Tüpraş": "TUPRS.IS", "Yapı Kredi": "YKBNK.IS"}
+bist_30 = {"Akbank": "AKBNK.IS", "Alarko": "ALARK.IS", "Aselsan": "ASELS.IS", "Astor": "ASTOR.IS", "BİM": "BIMAS.IS", "Borusan": "BRSAN.IS", "Coca-Cola İçecek": "CCOLA.IS", "Emlak Konut": "EKGYO.IS", "Enka": "ENKAI.IS", "Ereğli": "EREGL.IS", "Ford Otosan": "FROTO.IS", "Garanti": "GARAN.IS", "Gübre Fab": "GUBRF.IS", "Hektaş": "HEKTS.IS", "İş Bankası": "ISCTR.IS", "Ko Hol": "KCHOL.IS", "Kontrolmatik": "KONTR.IS", "Koza Altın": "KOZAL.IS", "Kardemir": "KRDMD.IS", "Odaş": "ODAS.IS", "Petkim": "PETKM.IS", "Pegasus": "PGSUS.IS", "Sabancı Hol": "SAHOL.IS", "Sasa": "SASA.IS", "Şişecam": "SISE.IS", "Turkcell": "TCELL.IS", "THY": "THYAO.IS", "Tofaş": "TOASO.IS", "Tüpraş": "TUPRS.IS", "Yapı Kredi": "YKBNK.IS"}
 bist_100 = {**bist_30, **{"Alfa Solar": "ALFAS.IS", "Arçelik": "ARCLK.IS", "Brisa": "BRISA.IS", "Çimsa": "CIMSA.IS", "CW Enerji": "CWENE.IS", "Doğuş Oto": "DOAS.IS", "Doğan Hol": "DOHOL.IS", "Eczacıbaşı": "ECILC.IS", "Ege Endüstri": "EGEEN.IS", "Enerjisa": "ENJSA.IS", "Europower": "EUPWR.IS", "Girişim Elk": "GESAN.IS", "Halkbank": "HALKB.IS", "İskenderun D.": "ISDMR.IS", "İş GYO": "ISGYO.IS", "İş Yatırım": "ISMEN.IS", "Konya Çimento": "KONYA.IS", "Kordsa": "KORDS.IS", "Koza Anadolu": "KOZAA.IS", "Mavi": "MAVI.IS", "Migros": "MGROS.IS", "Mia Teknoloji": "MIATK.IS", "Otokar": "OTKAR.IS", "Oyak Çimento": "OYAKC.IS", "Qua Granite": "QUAGR.IS", "Şekerbank": "SKBNK.IS", "Smart Güneş": "SMRTG.IS", "Şok Market": "SOKM.IS", "TAV": "TAVHL.IS", "Tekfen": "TKFEN.IS", "TSKB": "TSKB.IS", "Türk Telekom": "TTKOM.IS", "Türk Traktör": "TTRAK.IS", "Tukaş": "TUKAS.IS", "Ülker": "ULKER.IS", "Vakıfbank": "VAKBN.IS", "Vestel Beyaz": "VESBE.IS", "Vestel": "VESTL.IS", "Yeo Teknoloji": "YEOTK.IS", "Zorlu Enerji": "ZOREN.IS"}}
 bist_genis = {**bist_100, **{"Agrotech": "AGROT.IS", "Akfen Yenilenebilir": "AKFYE.IS", "Anadolu Efes": "AEFES.IS", "Anadolu Sigorta": "ANSGR.IS", "Aygaz": "AYGAZ.IS", "Bera Holding": "BERA.IS", "Bien Seramik": "BIENY.IS", "Biotrend": "BIOEN.IS", "Borusan Yatırım": "BRYAT.IS", "Bülbüloğlu Vinç": "BVSAN.IS", "Can Termik": "CANTE.IS", "Çan2 Termik": "CANTE.IS", "CVK Maden": "CVKMD.IS", "Eksun Gıda": "EKSUN.IS", "Esenboğa Elektrik": "ESEN.IS", "Forte Bilgi": "FORTE.IS", "Galata Wind": "GWIND.IS", "GSD Holding": "GSDHO.IS", "Hat-San Gemi": "HATSN.IS", "İmaş Makina": "IMASM.IS", "İnfo Yatırım": "INFO.IS", "İzdemir Enerji": "IZENR.IS", "Kaleseramik": "KLSER.IS", "Kayseri Şeker": "KAYSE.IS", "Kocaer Çelik": "KCAER.IS", "Kuştur Kuşadası": "KSTUR.IS", "Margün Enerji": "MAGEN.IS", "Mercan Kimya": "MERCN.IS", "Naten": "NATEN.IS", "Oyak Yatırım": "OYYAT.IS", "Özsu Balık": "OZSUB.IS", "Penta": "PENTA.IS", "Reeder Teknoloji": "REEDR.IS", "Rubenis Tekstil": "RUBNS.IS", "SDT Uzay": "SDTTR.IS", "Tarkim": "TARKM.IS", "Tatlıpınar Enerji": "TATEN.IS", "Tezol": "TEZOL.IS", "VBT Yazılım": "VBTYZ.IS", "Ziraat GYO": "ZRGYO.IS", "Tab Gıda": "TABGD.IS", "Ebebek": "EBEBK.IS", "Fuzul GYO": "FZLGY.IS", "Aydem": "AYDEM.IS", "Söke Değirmencilik": "SOKE.IS", "Enerya": "ENSRV.IS", "Koton": "KOTON.IS", "Lilak Kağıt": "LILAK.IS", "Rönesans GYO": "RGYAS.IS", "Hareket Proje": "HRKET.IS", "Koç Metalurji": "KOCMT.IS"}}
 abd_hisseleri = {"Apple": "AAPL", "Microsoft": "MSFT", "NVIDIA": "NVDA", "Tesla": "TSLA", "Amazon": "AMZN", "Alphabet (Google)": "GOOGL", "Meta (Facebook)": "META", "AMD": "AMD", "Netflix": "NFLX", "Intel": "INTC", "Coca-Cola (ABD)": "KO", "PepsiCo": "PEP", "McDonald's": "MCD", "Boeing": "BA", "Ford Motor (ABD)": "F", "General Motors": "GM", "Uber": "UBER", "Airbnb": "ABNB", "Disney": "DIS", "Pfizer": "PFE", "Johnson & Johnson": "JNJ", "Visa": "V", "Mastercard": "MA", "JPMorgan Chase": "JPM", "Bank of America": "BAC", "Goldman Sachs": "GS", "Walmart": "WMT", "Nike": "NKE", "Starbucks": "SBUX", "Alibaba": "BABA"}
@@ -258,7 +261,9 @@ tum_varliklar_mega = {**bist_genis, **abd_hisseleri, **kripto, **madenler_emtia}
 
 st.sidebar.header("🕹️ Uygulama Modu")
 modlar = ["🔍 Algoritmik Piyasa Tarama", "💼 Sanal Portföy (Oyun)"]
-if is_admin: modlar.append("👑 Yönetici Paneli (Kurucu)")
+if is_admin:
+    modlar.append("👑 Yönetici Paneli (Kurucu)")
+
 uygulama_modu = st.sidebar.radio("Mod Seçiniz:", modlar, label_visibility="collapsed")
 st.sidebar.markdown("---")
 
@@ -273,53 +278,80 @@ if st.sidebar.button("🚪 Çıkış Yap", use_container_width=True):
 
 with st.sidebar.expander("⚙️ Hesap Ayarları", expanded=False):
     tab_sifre, tab_isim, tab_sil = st.tabs(["🔑 Şifre", "🏷️ İsim", "❌ Sil"])
+    
     with tab_sifre:
         with st.form("sifre_degistir_form"):
             eski_sifre = st.text_input("Mevcut Şifre", type="password")
             yeni_sifre = st.text_input("Yeni Şifre", type="password")
             yeni_sifre_tekrar = st.text_input("Yeni Şifre (Tekrar)", type="password")
+            
             if st.form_submit_button("Güncelle", use_container_width=True):
-                if db[aktif_kullanici]["sifre"] != sifre_sifrele(eski_sifre): st.error("❌ Mevcut şifreniz yanlış!")
-                elif yeni_sifre != yeni_sifre_tekrar: st.error("❌ Yeni şifreler eşleşmiyor!")
-                elif len(yeni_sifre) < 4: st.warning("⚠️ Şifre en az 4 karakter olmalı.")
+                if db[aktif_kullanici]["sifre"] != sifre_sifrele(eski_sifre):
+                    st.error("❌ Mevcut şifreniz yanlış!")
+                elif yeni_sifre != yeni_sifre_tekrar:
+                    st.error("❌ Yeni şifreler eşleşmiyor!")
+                elif len(yeni_sifre) < 4:
+                    st.warning("⚠️ Şifre en az 4 karakter olmalı.")
                 else:
                     db[aktif_kullanici]["sifre"] = sifre_sifrele(yeni_sifre)
                     db_kaydet(db)
                     st.success("✅ Şifre güncellendi!")
+                    
     with tab_isim:
         son_degisim = db[aktif_kullanici].get("son_isim_degistirme", 0)
         kalan_saniye = (7 * 24 * 60 * 60) - (su_an - son_degisim)
+        
         if kalan_saniye > 0 and not is_admin:
-            kalan_gun, kalan_saat = int(kalan_saniye // (24 * 3600)), int((kalan_saniye % (24 * 3600)) // 3600)
+            kalan_gun = int(kalan_saniye // (24 * 3600))
+            kalan_saat = int((kalan_saniye % (24 * 3600)) // 3600)
             st.info(f"⏳ Takma adınızı değiştirmek için **{kalan_gun} gün {kalan_saat} saat** beklemelisiniz.")
         else:
             with st.form("isim_degistir_form"):
                 st.caption("Sadece Liderlik Tablosunda görünür.")
                 yeni_isim = st.text_input("Yeni Takma Ad (Nickname)")
+                
                 if st.form_submit_button("İsmi Güncelle", use_container_width=True):
                     mevcut_nicknameler = [v.get("nickname", "").lower() for k, v in db.items() if k not in ["_GLOBAL_", "_OTURUMLAR_"]]
-                    if yeni_isim.lower() in mevcut_nicknameler and yeni_isim.lower() != aktif_nickname.lower(): st.error("❌ Bu isim kullanılıyor!")
-                    elif yeni_isim.lower() == aktif_kullanici.lower() and not is_admin: st.error("❌ Güvenlik: Giriş ID'niz ile aynı olamaz!")
-                    elif len(yeni_isim) < 3: st.warning("⚠️ En az 3 karakter olmalı.")
+                    if yeni_isim.lower() in mevcut_nicknameler and yeni_isim.lower() != aktif_nickname.lower():
+                        st.error("❌ Bu isim kullanılıyor!")
+                    elif yeni_isim.lower() == aktif_kullanici.lower() and not is_admin:
+                        st.error("❌ Güvenlik: Giriş ID'niz ile aynı olamaz!")
+                    elif len(yeni_isim) < 3:
+                        st.warning("⚠️ En az 3 karakter olmalı.")
                     else:
                         db[aktif_kullanici]["nickname"] = yeni_isim
                         db[aktif_kullanici]["son_isim_degistirme"] = su_an
                         db_kaydet(db)
                         st.success("✅ İsim güncellendi!")
-                        time.sleep(1); st.rerun()
+                        time.sleep(1)
+                        st.rerun()
+
     with tab_sil:
         st.markdown("<span style='font-size: 13px; color: #ff4444;'>Dikkat: Bu işlem kalıcıdır.</span>", unsafe_allow_html=True)
         sil_onay = st.checkbox("Silme işlemini onaylıyorum")
         if st.button("❌ Hesabımı Sil", use_container_width=True, disabled=not sil_onay):
-            if is_admin: st.error("Kurucu hesap silinemez!")
+            if is_admin:
+                st.error("Kurucu hesap silinemez!")
             else:
-                if aktif_kullanici in db: del db[aktif_kullanici]; db_kaydet(db)
-                st.query_params.clear(); st.session_state.aktif_kullanici = None; st.rerun()
+                if aktif_kullanici in db:
+                    del db[aktif_kullanici]
+                    db_kaydet(db)
+                st.query_params.clear()
+                st.session_state.aktif_kullanici = None
+                st.rerun()
 
+st.sidebar.markdown("---")
+st.sidebar.warning("**⚠️ YASAL UYARI (YTD)**\nBurada yer alan yatırım bilgi, yorum ve yapay zeka tahminleri yatırım danışmanlığı kapsamında değildir. Sistem tarafından üretilen sinyaller kesin getiri vaat etmez.")
+
+# =========================================================================================
+# 👑 YÖNETİCİ PANELİ (SADECE ADMİNLER GÖREBİLİR)
+# =========================================================================================
 if uygulama_modu == "👑 Yönetici Paneli (Kurucu)":
     st.header("👑 SİSTEM YÖNETİCİSİ (ADMIN) PANELİ")
     st.markdown("Merkez bankası yetkileriyle donatılmış, oyunu ve oyuncuları yöneteceğiniz kontrol paneline hoş geldiniz.")
-    tab_oyuncular, tab_ekonomi, tab_duyuru = st.tabs(["👥 Kullanıcı Yönetimi (Ban/Sil)", "🏦 Merkez Bankası (Ekonomi)", "📢 Duyuru & Sohbet"])
+    
+    tab_oyuncular, tab_ekonomi, tab_duyuru = st.tabs(["👥 Kullanıcı Yönetimi", "🏦 Merkez Bankası", "📢 Global Duyuru"])
+    
     with tab_oyuncular:
         st.subheader("Aktif Kullanıcılar ve Giyotin")
         oyuncu_listesi = []
@@ -327,18 +359,29 @@ if uygulama_modu == "👑 Yönetici Paneli (Kurucu)":
             if k not in ["_GLOBAL_", "_OTURUMLAR_"] and not v.get("is_admin", False):
                 bakiye = v["cuzdan"].get("nakit", 0)
                 oyuncu_listesi.append({"ID (Gizli)": k, "Takma Ad": v.get("nickname"), "Nakit Bakiye": f"{bakiye:,.2f} ₺"})
+                
         if oyuncu_listesi:
             st.dataframe(pd.DataFrame(oyuncu_listesi), use_container_width=True)
+            
             st.markdown("---")
             st.error("☠️ **Hileci/Kural İhlali Yapan Kullanıcıyı Sil (Ban)**")
             silinecek_id = st.selectbox("Sistemden tamamen silinecek oyuncunun GİZLİ ID'sini seçin:", [o["ID (Gizli)"] for o in oyuncu_listesi])
+            
             if st.button("Kullanıcıyı Kalıcı Olarak Sil (BANLA)"):
-                if silinecek_id in db: del db[silinecek_id]; db_kaydet(db); st.success(f"{silinecek_id} sistemden silindi!"); time.sleep(1); st.rerun()
-        else: st.info("Sistemde şu an yönetici haricinde kimse yok.")
+                if silinecek_id in db:
+                    del db[silinecek_id]
+                    db_kaydet(db)
+                    st.success(f"{silinecek_id} sistemden tamamen silindi!")
+                    time.sleep(1)
+                    st.rerun()
+        else:
+            st.info("Sistemde şu an yönetici haricinde kimse yok.")
 
     with tab_ekonomi:
         st.subheader("Ekonomik Müdahaleler")
-        st.metric("Merkez Havuzda Biriken Komisyon", f"{db['_GLOBAL_'].get('toplam_komisyon', 0.0):,.2f} ₺")
+        havuz_komisyon = db["_GLOBAL_"].get("toplam_komisyon", 0.0)
+        st.metric("Merkez Havuzda Biriken Komisyon", f"{havuz_komisyon:,.2f} ₺")
+        
         c1, c2 = st.columns(2)
         with c1:
             st.markdown("### 🚁 Tüm Oyunculara Hibe (Teşvik Dağıt)")
@@ -349,17 +392,28 @@ if uygulama_modu == "👑 Yönetici Paneli (Kurucu)":
                     if k not in ["_GLOBAL_", "_OTURUMLAR_"] and not v.get("is_admin", False):
                         db[k]["cuzdan"]["nakit"] += hibe_miktari
                         dagitilan_kisi += 1
-                db_kaydet(db); st.success(f"Başarılı! {dagitilan_kisi} kişiye toplam {dagitilan_kisi * hibe_miktari:,.2f} ₺ dağıtıldı.")
+                db_kaydet(db)
+                st.success(f"Başarılı! {dagitilan_kisi} kişiye toplam {dagitilan_kisi * hibe_miktari:,.2f} ₺ teşvik dağıtıldı.")
+                
         with c2:
             st.markdown("### 🧹 Komisyon Havuzunu Sıfırla")
+            st.write("Eğer biriken komisyon rakamı çok uçuk yerlere gelirse buradan sıfırlayabilirsiniz.")
             if st.button("🔄 Havuzu Sıfırla (0 ₺ Yap)"):
-                db["_GLOBAL_"]["toplam_komisyon"] = 0.0; db_kaydet(db); st.success("Komisyon havuzu sıfırlandı!"); time.sleep(1); st.rerun()
+                db["_GLOBAL_"]["toplam_komisyon"] = 0.0
+                db_kaydet(db)
+                st.success("Komisyon havuzu başarıyla sıfırlandı!")
+                time.sleep(1)
+                st.rerun()
 
     with tab_duyuru:
         st.subheader("Tüm Oyunculara Sistem Mesajı Gönder")
         yeni_duyuru = st.text_area("Duyuru Metni (Silmek için boş bırakıp kaydedin):", value=db["_GLOBAL_"].get("duyuru", ""))
         if st.button("📢 Duyuruyu Yayınla / Güncelle"):
-            db["_GLOBAL_"]["duyuru"] = yeni_duyuru; db_kaydet(db); st.success("Duyuru güncellendi!"); time.sleep(1); st.rerun()
+            db["_GLOBAL_"]["duyuru"] = yeni_duyuru
+            db_kaydet(db)
+            st.success("Duyuru panosu güncellendi!")
+            time.sleep(1)
+            st.rerun()
             
         st.markdown("---")
         st.subheader("Sohbet Geçmişini Temizle")
@@ -370,21 +424,29 @@ if uygulama_modu == "👑 Yönetici Paneli (Kurucu)":
             time.sleep(1)
             st.rerun()
 
+# =========================================================================================
+# 🔍 ALGORİTMİK PİYASA TARAMA
+# =========================================================================================
 elif uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
     st.sidebar.header("⚙️ Tarama Ayarları")
     st.sidebar.markdown("<b>1. Yatırım Vadesi</b>", unsafe_allow_html=True)
     vade_secimi = st.sidebar.radio("Vade:", ["⏱️ Kısa Vadeli (1-3 Ay / Al-Sat)", "📅 Uzun Vadeli (1+ Yıl / Yatırım)"], label_visibility="collapsed")
+    
     st.sidebar.markdown("<b>2. İncelenecek Piyasa</b>", unsafe_allow_html=True)
     piyasa_secimi = st.sidebar.radio("Piyasa:", ["🇹🇷 BIST 30 (En Büyükler)", "🇹🇷 BIST 100", "🇹🇷 BIST Tüm (Genişletilmiş)", "🇺🇸 ABD Teknoloji ve Global", "🪙 Kripto Paralar", "⛏️ Tüm Emtia ve Madenler", "👤 Kendi İzleme Listem"], label_visibility="collapsed")
 
     aktif_varliklar = {}
     if piyasa_secimi == "👤 Kendi İzleme Listem":
-        if "ilk_liste" not in st.session_state: st.session_state.ilk_liste = [v for v in cuzdan.get("izleme_listesi", []) if v in tum_varliklar_mega]
+        if "ilk_liste" not in st.session_state:
+            st.session_state.ilk_liste = [v for v in cuzdan.get("izleme_listesi", []) if v in tum_varliklar_mega]
+        
         secilen_isimler = st.sidebar.multiselect("Varlıkları Seçin:", options=list(tum_varliklar_mega.keys()), default=st.session_state.ilk_liste)
+        
         if set(secilen_isimler) != set(st.session_state.ilk_liste):
             st.session_state.ilk_liste = secilen_isimler
             cuzdan["izleme_listesi"] = secilen_isimler
             aktif_cuzdan_kaydet()
+            
         aktif_varliklar = {isim: tum_varliklar_mega[isim] for isim in secilen_isimler}
     elif piyasa_secimi == "🇹🇷 BIST 30 (En Büyükler)": aktif_varliklar = bist_30
     elif piyasa_secimi == "🇹🇷 BIST 100": aktif_varliklar = bist_100
@@ -393,8 +455,10 @@ elif uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
     elif piyasa_secimi == "🪙 Kripto Paralar": aktif_varliklar = kripto
     else: aktif_varliklar = madenler_emtia
 
-    if 'df_sonuc' not in st.session_state: st.session_state.df_sonuc = pd.DataFrame()
-    if 'ozel_portfoy_verisi' not in st.session_state: st.session_state.ozel_portfoy_verisi = pd.DataFrame()
+    if 'df_sonuc' not in st.session_state:
+        st.session_state.df_sonuc = pd.DataFrame()
+    if 'ozel_portfoy_verisi' not in st.session_state:
+        st.session_state.ozel_portfoy_verisi = pd.DataFrame()
 
     if st.button("🚀 Algoritmayı Çalıştır", use_container_width=True):
         sonuclar = []
@@ -408,16 +472,21 @@ elif uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
             for isim, sembol in aktif_varliklar.items():
                 try:
                     durum_metni.text(f"Taranıyor: {isim} ({islenen}/{toplam_varlik})")
+                    
                     ticker = yf.Ticker(sembol)
                     veri = ticker.history(period="2y" if vade_secimi == "📅 Uzun Vadeli (1+ Yıl / Yatırım)" else "6mo")
-                    if veri is None or veri.empty: continue
+                    
+                    if veri is None or veri.empty: 
+                        continue
                     
                     if isinstance(veri.columns, pd.MultiIndex):
                         veri.columns = veri.columns.get_level_values(0)
                     veri.columns = [str(c).title() for c in veri.columns]
                     
                     veri = veri.dropna(subset=['Close'])
-                    if veri.empty or len(veri) < 20: continue
+                    if veri.empty or len(veri) < 20: 
+                        continue
+                    
                     veri = veri.ffill()
                     
                     if 'Volume' not in veri.columns:
@@ -432,7 +501,8 @@ elif uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                         portfoy_fiyat_gecmisi[isim] = temiz_veri
                         
                     son_fiyat = float(veri['Close'].iloc[-1])
-                    if not sembol.endswith(".IS"): son_fiyat *= usd_kuru
+                    if not sembol.endswith(".IS"): 
+                        son_fiyat *= usd_kuru
                         
                     puan = 0
                     durum_notu = []
@@ -444,6 +514,7 @@ elif uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                         delta_fiyat = tipik_fiyat.diff()
                         pozitif_akis = pd.Series(0.0, index=para_akisi.index)
                         negatif_akis = pd.Series(0.0, index=para_akisi.index)
+                        
                         pozitif_akis[delta_fiyat > 0] = para_akisi[delta_fiyat > 0]
                         negatif_akis[delta_fiyat < 0] = para_akisi[delta_fiyat < 0]
                         
@@ -462,6 +533,7 @@ elif uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                         
                         avg_gain = gain.rolling(window=14, min_periods=1).mean()
                         avg_loss = loss.rolling(window=14, min_periods=1).mean()
+                        
                         rs = avg_gain / avg_loss.replace(0.0, np.nan)
                         rsi = 100.0 - (100.0 / (1.0 + rs))
                         son_rsi = float(rsi.fillna(50.0).iloc[-1])
@@ -478,7 +550,8 @@ elif uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                         std_20 = veri['Close'].rolling(window=20, min_periods=1).std().fillna(0.0)
                         son_alt_bant = float((sma_20 - (std_20 * 2.0)).iloc[-1])
                         
-                        if not sembol.endswith(".IS"): son_alt_bant *= usd_kuru
+                        if not sembol.endswith(".IS"): 
+                            son_alt_bant *= usd_kuru
 
                         if son_mfi < 20: puan += 3; durum_notu.append("Hacim: Para Girişi")
                         elif son_mfi > 80: puan -= 2; durum_notu.append("Hacim: Para Çıkışı")
@@ -780,6 +853,53 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
     tab_portfoy, tab_liderlik, tab_sohbet = st.tabs(["💼 Portföyüm", "🏆 Liderlik Tablosu", "💬 Borsa Meydanı (Sohbet)"])
     
     with tab_portfoy:
+        
+        # =====================================================================================
+        # GERİ GELEN METRİK VİTRİNİ (HEM SPOT HEM KALDIRAÇ İÇİN HESAPLAR)
+        # =====================================================================================
+        toplam_varlik_degeri = 0
+        guncel_fiyatlar_metrik = {}
+        
+        # 1. Spot Cüzdan Değerini Hesapla
+        if cuzdan["varliklar"]:
+            for varlik_ismi, v_veri in list(cuzdan["varliklar"].items()):
+                if isinstance(v_veri, (int, float)): 
+                    cuzdan["varliklar"][varlik_ismi] = {"adet": v_veri, "maliyet": 0.0}
+                    aktif_cuzdan_kaydet()
+                    adet = v_veri
+                else: 
+                    adet = v_veri["adet"]
+                    
+                sembol = tum_varliklar_mega.get(varlik_ismi)
+                if sembol:
+                    anlik_f = canli_fiyat_getir(sembol, usd_kuru if not sembol.endswith(".IS") else 1.0)
+                    guncel_fiyatlar_metrik[varlik_ismi] = anlik_f
+                    toplam_varlik_degeri += (anlik_f * adet)
+
+        # 2. Kaldıraçlı İşlemlerin Net Değerini Hesapla
+        toplam_kaldirac_net_deger = 0
+        for poz in cuzdan.get("kaldiracli_islemler", []):
+            if poz["varlik"] not in guncel_fiyatlar_metrik:
+                sembol = tum_varliklar_mega.get(poz["varlik"])
+                anlik_f = canli_fiyat_getir(sembol, usd_kuru if not sembol.endswith(".IS") else 1.0) if sembol else poz["giris_fiyati"]
+                guncel_fiyatlar_metrik[poz["varlik"]] = anlik_f
+            
+            g_fiyat = guncel_fiyatlar_metrik[poz["varlik"]]
+            if poz["yon"] == "AL (Long)":
+                pnl = (g_fiyat - poz["giris_fiyati"]) * poz["adet"]
+            else:
+                pnl = (poz["giris_fiyati"] - g_fiyat) * poz["adet"]
+            toplam_kaldirac_net_deger += max(0, poz["teminat"] + pnl)
+
+        toplam_portfoy = cuzdan["nakit"] + toplam_varlik_degeri + toplam_kaldirac_net_deger
+        
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Toplam Net Değer", f"{toplam_portfoy:,.2f} ₺", f"% {((toplam_portfoy - 1000000.0) / 1000000.0) * 100:.2f}")
+        col2.metric("Boş Nakit", f"{cuzdan['nakit']:,.2f} ₺")
+        col3.metric("Yatırımdaki Varlıklar (Spot + Kaldıraç)", f"{(toplam_varlik_degeri + toplam_kaldirac_net_deger):,.2f} ₺")
+        st.markdown("---")
+        # =====================================================================================
+
         col_islem, col_durum = st.columns([1, 2])
         
         with col_islem:
@@ -975,7 +1095,6 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                 if cz_canli.get("varliklar"):
                     liste = []
                     for v, d in cz_canli["varliklar"].items():
-                        # BURADAKİ TYPO DÜZELTİLDİ (maliyet)
                         maliyet = d["maliyet"] if isinstance(d, dict) else 0.0
                         adet = d["adet"] if isinstance(d, dict) else d
                         gf = guncel_fiyatlar.get(v, 0)
