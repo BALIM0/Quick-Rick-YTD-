@@ -28,18 +28,9 @@ st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
     
-    html, body, [class*="css"] { 
-        font-family: 'Inter', sans-serif !important; 
-    }
-    
-    .stApp { 
-        background: radial-gradient(circle at top right, #131d2b 0%, #0b0f19 100%) !important; 
-    }
-    
-    [data-testid="stSidebar"] { 
-        background-color: #0e131f !important; 
-        border-right: 1px solid rgba(0, 255, 255, 0.05) !important; 
-    }
+    html, body, [class*="css"] { font-family: 'Inter', sans-serif !important; }
+    .stApp { background: radial-gradient(circle at top right, #131d2b 0%, #0b0f19 100%) !important; }
+    [data-testid="stSidebar"] { background-color: #0e131f !important; border-right: 1px solid rgba(0, 255, 255, 0.05) !important; }
     
     div[data-testid="metric-container"] { 
         background: rgba(20, 26, 36, 0.6) !important; 
@@ -51,7 +42,6 @@ st.markdown("""
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3) !important; 
         transition: all 0.4s ease-in-out !important; 
     }
-    
     div[data-testid="metric-container"]:hover { 
         transform: translateY(-7px) !important; 
         border-color: rgba(0, 255, 255, 0.6) !important; 
@@ -69,7 +59,6 @@ st.markdown("""
         transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important; 
         width: 100% !important; 
     }
-    
     div.stButton > button:hover { 
         background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important; 
         border-color: #00ffff !important; 
@@ -78,94 +67,29 @@ st.markdown("""
         transform: scale(1.03) !important; 
     }
     
-    button[data-baseweb="tab"] { 
-        background-color: transparent !important; 
-        border: none !important; 
-        border-bottom: 3px solid transparent !important; 
-        padding: 12px 20px !important; 
-        font-weight: 600 !important; 
-        color: #667085 !important; 
-        transition: all 0.3s ease !important; 
-    }
+    button[data-baseweb="tab"] { background-color: transparent !important; border: none !important; border-bottom: 3px solid transparent !important; padding: 12px 20px !important; font-weight: 600 !important; color: #667085 !important; transition: all 0.3s ease !important; }
+    button[data-baseweb="tab"][aria-selected="true"] { color: #00ffff !important; border-bottom: 3px solid #00ffff !important; background-color: rgba(0, 255, 255, 0.05) !important; border-radius: 8px 8px 0 0 !important; }
+    button[data-baseweb="tab"]:hover { color: #e2e8f0 !important; background-color: rgba(255, 255, 255, 0.02) !important; }
     
-    button[data-baseweb="tab"][aria-selected="true"] { 
-        color: #00ffff !important; 
-        border-bottom: 3px solid #00ffff !important; 
-        background-color: rgba(0, 255, 255, 0.05) !important; 
-        border-radius: 8px 8px 0 0 !important; 
-    }
+    div[data-baseweb="select"] > div, input[type="text"], input[type="number"], input[type="password"] { border-radius: 10px !important; border: 1px solid #334155 !important; background-color: rgba(15, 23, 42, 0.8) !important; color: white !important; transition: all 0.3s ease !important; }
+    div[data-baseweb="select"] > div:hover, input[type="text"]:focus, input[type="number"]:focus, input[type="password"]:focus { border-color: #00ffff !important; box-shadow: 0 0 8px rgba(0,255,255,0.4) !important; }
     
-    button[data-baseweb="tab"]:hover { 
-        color: #e2e8f0 !important; 
-        background-color: rgba(255, 255, 255, 0.02) !important; 
-    }
-    
-    div[data-baseweb="select"] > div, input[type="text"], input[type="number"], input[type="password"] { 
-        border-radius: 10px !important; 
-        border: 1px solid #334155 !important; 
-        background-color: rgba(15, 23, 42, 0.8) !important; 
-        color: white !important; 
-        transition: all 0.3s ease !important; 
-    }
-    
-    div[data-baseweb="select"] > div:hover, input[type="text"]:focus, input[type="number"]:focus, input[type="password"]:focus { 
-        border-color: #00ffff !important; 
-        box-shadow: 0 0 8px rgba(0,255,255,0.4) !important; 
-    }
-    
-    .bagis-panosu { 
-        text-align: center; 
-        padding: 25px; 
-        background: linear-gradient(135deg, rgba(255,215,0,0.1) 0%, rgba(255,140,0,0.1) 100%); 
-        border-radius: 16px; 
-        border: 1px solid rgba(255,215,0,0.4); 
-        margin-bottom: 30px; 
-        box-shadow: 0 10px 30px rgba(255, 215, 0, 0.08); 
-        backdrop-filter: blur(8px); 
-    }
-    
-    .bagis-sayi { 
-        color: #FFD700; 
-        font-size: 34px; 
-        font-weight: 800; 
-        text-shadow: 0 0 20px rgba(255,215,0,0.5); 
-        letter-spacing: 1.5px; 
-    }
+    .bagis-panosu { text-align: center; padding: 25px; background: linear-gradient(135deg, rgba(255,215,0,0.1) 0%, rgba(255,140,0,0.1) 100%); border-radius: 16px; border: 1px solid rgba(255,215,0,0.4); margin-bottom: 30px; box-shadow: 0 10px 30px rgba(255, 215, 0, 0.08); backdrop-filter: blur(8px); }
+    .bagis-sayi { color: #FFD700; font-size: 34px; font-weight: 800; text-shadow: 0 0 20px rgba(255,215,0,0.5); letter-spacing: 1.5px; }
     
     div.stRadio { width: 100% !important; }
     div.stRadio > div { width: 100% !important; }
-    div.stRadio div[role="radiogroup"] { 
-        display: flex !important; 
-        width: 100% !important; 
-        align-items: stretch !important; 
-    }
-    
-    div.stRadio div[role="radiogroup"] > label { 
-        width: 100% !important; 
-        min-height: 45px !important; 
-        display: flex !important; 
-        align-items: center !important; 
-        justify-content: center !important; 
-        text-align: center !important; 
-        padding: 5px 10px !important; 
-        border: 1px solid #334155 !important; 
-        border-radius: 10px !important; 
-        background-color: #0f172a !important; 
-        transition: all 0.3s ease !important; 
-        cursor: pointer !important; 
-        margin: 0 !important; 
-        box-sizing: border-box !important; 
-        white-space: nowrap !important; 
-        overflow: hidden !important; 
-    }
-    
+    div.stRadio div[role="radiogroup"] { display: flex !important; width: 100% !important; align-items: stretch !important; }
+    div.stRadio div[role="radiogroup"] > label { width: 100% !important; min-height: 45px !important; display: flex !important; align-items: center !important; justify-content: center !important; text-align: center !important; padding: 5px 10px !important; border: 1px solid #334155 !important; border-radius: 10px !important; background-color: #0f172a !important; transition: all 0.3s ease !important; cursor: pointer !important; margin: 0 !important; box-sizing: border-box !important; white-space: nowrap !important; overflow: hidden !important; }
     div.stRadio div[role="radiogroup"] > label > div:first-child { display: none !important; }
     div.stRadio div[role="radiogroup"] > label p { margin: 0 !important; font-size: 14px !important; width: 100% !important; text-align: center !important; white-space: nowrap !important; }
     div.stRadio div[role="radiogroup"] > label:hover { border-color: #00ffff !important; background-color: #1e293b !important; box-shadow: 0 4px 15px rgba(0, 255, 255, 0.15) !important; }
+    
     [data-testid="stSidebar"] div.stRadio div[role="radiogroup"] { flex-direction: column !important; gap: 12px !important; width: 100% !important; }
     [data-testid="stSidebar"] div.stRadio div[role="radiogroup"] > label { flex: 1 1 100% !important; }
     [data-testid="stSidebar"] div.stRadio div[role="radiogroup"] > label:has(input:checked) { background: linear-gradient(90deg, rgba(0,255,255,0.15) 0%, rgba(0,255,255,0.02) 100%) !important; border-color: #00ffff !important; border-left: 5px solid #00ffff !important; }
     [data-testid="stSidebar"] div.stRadio div[role="radiogroup"] > label:has(input:checked) p { color: #00ffff !important; font-weight: bold !important; }
+    
     [data-testid="stMainBlockContainer"] div.stRadio div[role="radiogroup"] { flex-direction: row !important; flex-wrap: nowrap !important; gap: 15px !important; width: 100% !important; }
     [data-testid="stMainBlockContainer"] div.stRadio div[role="radiogroup"] > label { flex: 1 1 50% !important; width: 50% !important; }
     [data-testid="stMainBlockContainer"] div.stRadio div[role="radiogroup"] > label:nth-child(1):has(input:checked) { background: linear-gradient(90deg, rgba(0,255,0,0.15) 0%, rgba(0,255,0,0.02) 100%) !important; border-color: #00ff00 !important; border-left: 5px solid #00ff00 !important; }
@@ -175,6 +99,16 @@ st.markdown("""
     
     .sohbet-mesaji { background-color: rgba(15, 23, 42, 0.4); padding: 10px; border-radius: 8px; margin-bottom: 8px; border-left: 3px solid #334155; }
     .sohbet-mesaji.admin { border-left: 3px solid #FFD700; background-color: rgba(255, 215, 0, 0.05); }
+    
+    /* Kaldıraçlı İşlem Kartları */
+    .kaldirac-kart { background-color: rgba(15, 23, 42, 0.8); border: 1px solid rgba(0, 255, 255, 0.2); padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: all 0.3s;}
+    .kaldirac-kart:hover { transform: scale(1.02); }
+    .kaldirac-kart.long { border-left: 5px solid #00ff00; }
+    .kaldirac-kart.short { border-left: 5px solid #ff4444; }
+    
+    /* Canlı Işık Animasyonu */
+    .pulsing-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background-color: #00ff00; animation: pulse 2s infinite; margin-right: 5px; }
+    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(0, 255, 0, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(0, 255, 0, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 255, 0, 0); } }
 </style>
 """, unsafe_allow_html=True)
 
@@ -187,14 +121,24 @@ except:
     ADMIN_ID = "admin_master"
     ADMIN_PASS = "supergizli123"
 
+# =========================================================================================
+# CACHE'Lİ CANLI FİYAT ÇEKİCİ (Anti-Ban ve Hızlandırma İçin)
+# =========================================================================================
+@st.cache_data(ttl=10, show_spinner=False)
+def canli_fiyat_getir(sembol, katsayi=1.0):
+    try:
+        veri = yf.Ticker(sembol).history(period="5d")
+        if isinstance(veri.columns, pd.MultiIndex):
+            veri.columns = veri.columns.get_level_values(0)
+        veri.columns = [str(c).title() for c in veri.columns]
+        veri = veri.dropna(subset=['Close']).ffill()
+        return float(veri['Close'].iloc[-1]) * katsayi
+    except:
+        return 0.0
+
 @st.cache_data(ttl=300)
 def guncel_kur_getir():
-    try:
-        kur_verisi = yf.Ticker("TRY=X").history(period="5d")
-        kur_verisi = kur_verisi.dropna(subset=['Close']).ffill()
-        return float(kur_verisi['Close'].iloc[-1])
-    except:
-        return 34.50
+    return canli_fiyat_getir("TRY=X", 1.0) or 34.50
 
 def sifre_sifrele(sifre):
     return hashlib.sha256(sifre.encode()).hexdigest()
@@ -209,14 +153,16 @@ def db_yukle():
                 if "sohbet" not in veri["_GLOBAL_"]: veri["_GLOBAL_"]["sohbet"] = []
             if "_OTURUMLAR_" not in veri: veri["_OTURUMLAR_"] = {}
             if ADMIN_ID not in veri:
-                veri[ADMIN_ID] = {"sifre": sifre_sifrele(ADMIN_PASS), "nickname": "👑 SİSTEM YÖNETİCİSİ", "son_isim_degistirme": 0, "cuzdan": {"nakit": 0.0, "varliklar": {}, "izleme_listesi": [], "bekleyen_emirler": []}, "is_admin": True}
+                veri[ADMIN_ID] = {"sifre": sifre_sifrele(ADMIN_PASS), "nickname": "👑 SİSTEM YÖNETİCİSİ", "son_isim_degistirme": 0, "cuzdan": {"nakit": 0.0, "varliklar": {}, "kaldiracli_islemler": [], "izleme_listesi": [], "bekleyen_emirler": []}, "is_admin": True}
+            
             for k, v in veri.items():
                 if k not in ["_GLOBAL_", "_OTURUMLAR_"] and "cuzdan" in v:
                     if "bekleyen_emirler" not in v["cuzdan"]: v["cuzdan"]["bekleyen_emirler"] = []
+                    if "kaldiracli_islemler" not in v["cuzdan"]: v["cuzdan"]["kaldiracli_islemler"] = [] 
             return veri
         except Exception:
             pass
-    return {"_GLOBAL_": {"toplam_komisyon": 0.0, "duyuru": "", "sohbet": []}, "_OTURUMLAR_": {}, ADMIN_ID: {"sifre": sifre_sifrele(ADMIN_PASS), "nickname": "👑 SİSTEM YÖNETİCİSİ", "son_isim_degistirme": 0, "cuzdan": {"nakit": 0.0, "varliklar": {}, "izleme_listesi": [], "bekleyen_emirler": []}, "is_admin": True}}
+    return {"_GLOBAL_": {"toplam_komisyon": 0.0, "duyuru": "", "sohbet": []}, "_OTURUMLAR_": {}, ADMIN_ID: {"sifre": sifre_sifrele(ADMIN_PASS), "nickname": "👑 SİSTEM YÖNETİCİSİ", "son_isim_degistirme": 0, "cuzdan": {"nakit": 0.0, "varliklar": {}, "kaldiracli_islemler": [], "izleme_listesi": [], "bekleyen_emirler": []}, "is_admin": True}}
 
 def db_kaydet(db):
     gecici_dosya = f"{DB_DOSYASI}.tmp"
@@ -280,7 +226,7 @@ if st.session_state.aktif_kullanici is None:
             elif k_kullanici.lower() == k_nickname.lower(): st.error("🛡️ Güvenlik İhlali: Kullanıcı adı ile Takma Ad aynı olamaz.")
             elif len(k_kullanici) < 3 or len(k_sifre) < 4 or len(k_nickname) < 3: st.warning("Kullanıcı adı/Takma ad en az 3, şifre en az 4 karakter olmalıdır.")
             else:
-                db[k_kullanici] = {"sifre": sifre_sifrele(k_sifre), "nickname": k_nickname, "son_isim_degistirme": 0, "cuzdan": {"nakit": 1000000.0, "varliklar": {}, "izleme_listesi": ["Türk Hava Yolları", "Bitcoin", "Altın (Ons)", "NVIDIA", "Apple"], "bekleyen_emirler": []}, "is_admin": False}
+                db[k_kullanici] = {"sifre": sifre_sifrele(k_sifre), "nickname": k_nickname, "son_isim_degistirme": 0, "cuzdan": {"nakit": 1000000.0, "varliklar": {}, "kaldiracli_islemler": [], "izleme_listesi": ["Türk Hava Yolları", "Bitcoin", "Altın (Ons)", "NVIDIA", "Apple"], "bekleyen_emirler": []}, "is_admin": False}
                 db_kaydet(db)
                 st.success("✅ Hesabınız oluşturuldu! Şimdi 'Giriş Yap' sekmesinden giriş yapabilirsiniz.")
     st.stop()
@@ -548,6 +494,7 @@ elif uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                         
                         sma_200_deger = float(sma_200.iloc[-1])
                         sma_50_deger = float(sma_50.iloc[-1])
+                        
                         if not sembol.endswith(".IS"): 
                             sma_200_deger *= usd_kuru
                             sma_50_deger *= usd_kuru
@@ -570,7 +517,8 @@ elif uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
 
                         sonuclar.append({"Varlık": isim, "Fiyat (₺)": round(son_fiyat, 2), "200G Ort (₺)": round(sma_200_deger, 2), "F/K": fk_metni, "Puan": puan, "Durum": " | ".join(durum_notu) if durum_notu else "Nötr"})
                         
-                except Exception as e: st.write(f"⚠️ {isim} atlandı. Hata: {str(e)}") 
+                except Exception as e:
+                    st.write(f"⚠️ {isim} atlandı. Hata: {str(e)}") 
                 finally:
                     time.sleep(0.05)
                     islenen += 1
@@ -581,10 +529,14 @@ elif uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
             
             if sonuclar:
                 st.session_state.df_sonuc = pd.DataFrame(sonuclar).sort_values(by="Puan", ascending=False).reset_index(drop=True)
-                if piyasa_secimi == "👤 Kendi İzleme Listem" and len(portfoy_fiyat_gecmisi) > 1: st.session_state.ozel_portfoy_verisi = pd.DataFrame(portfoy_fiyat_gecmisi)
-                else: st.session_state.ozel_portfoy_verisi = pd.DataFrame()
-            else: st.error("📉 Seçilen piyasada kriterlere uygun yeterli geçmiş veri bulunamadı. Lütfen daha sonra tekrar deneyin.")
-        else: st.warning("Lütfen sol menüden en az bir varlık seçin.")
+                if piyasa_secimi == "👤 Kendi İzleme Listem" and len(portfoy_fiyat_gecmisi) > 1:
+                    st.session_state.ozel_portfoy_verisi = pd.DataFrame(portfoy_fiyat_gecmisi)
+                else:
+                    st.session_state.ozel_portfoy_verisi = pd.DataFrame()
+            else: 
+                st.error("📉 Seçilen piyasada kriterlere uygun yeterli geçmiş veri bulunamadı. Lütfen daha sonra tekrar deneyin.")
+        else:
+            st.warning("Lütfen sol menüden en az bir varlık seçin.")
 
     if not st.session_state.df_sonuc.empty:
         try:
@@ -599,8 +551,10 @@ elif uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                 if hasattr(st.session_state.df_sonuc.style, "map"): styled_df = st.session_state.df_sonuc.style.map(style_rsi, subset=['RSI'])
                 else: styled_df = st.session_state.df_sonuc.style.applymap(style_rsi, subset=['RSI'])
                 st.dataframe(styled_df.format({"Fiyat (₺)": "{:,.2f}"}), use_container_width=True)
-            else: st.dataframe(st.session_state.df_sonuc.style.format({"Fiyat (₺)": "{:,.2f}", "200G Ort (₺)": "{:,.2f}"}), use_container_width=True)
-        except: st.dataframe(st.session_state.df_sonuc, use_container_width=True)
+            else:
+                st.dataframe(st.session_state.df_sonuc.style.format({"Fiyat (₺)": "{:,.2f}", "200G Ort (₺)": "{:,.2f}"}), use_container_width=True)
+        except: 
+            st.dataframe(st.session_state.df_sonuc, use_container_width=True)
             
         if piyasa_secimi == "👤 Kendi İzleme Listem" and not st.session_state.ozel_portfoy_verisi.empty:
             with st.expander("⚖️ Markowitz Optimum Portföy Dağılımını Göster", expanded=False):
@@ -816,112 +770,30 @@ elif uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                 except: st.error("Haber servisine ulaşılamıyor.")
 
 # =========================================================================================
-# 💼 SANAL PORTFÖY VE OYUN MOTORU
+# 💼 SANAL PORTFÖY VE OYUN MOTORU (CANLI VERİ AKIŞLI)
 # =========================================================================================
 elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
-    
-    gerceklesen_mesajlar = []
-    if cuzdan.get("bekleyen_emirler"):
-        kalan_emirler = []
-        for emir in cuzdan["bekleyen_emirler"]:
-            sembol = tum_varliklar_mega.get(emir["varlik"])
-            if not sembol: 
-                kalan_emirler.append(emir)
-                continue
-            try:
-                veri = yf.Ticker(sembol).history(period="1mo")
-                if isinstance(veri.columns, pd.MultiIndex):
-                    veri.columns = veri.columns.get_level_values(0)
-                veri.columns = [str(c).title() for c in veri.columns]
-                
-                veri = veri.dropna(subset=['Close']).ffill()
-                if veri.empty:
-                    kalan_emirler.append(emir)
-                    continue
-                
-                katsayi = usd_kuru if not sembol.endswith(".IS") else 1.0
-                anlik_fiyat = float(veri['Close'].iloc[-1]) * katsayi
-                emir_tarihi = pd.to_datetime(emir["tarih"], unit='s').tz_localize(None).date()
-                
-                veri.index = pd.to_datetime(veri.index).tz_localize(None)
-                veri_sonrasi = veri[veri.index.date > emir_tarihi]
-                
-                tetiklendi = False
-                if emir["tip"] == "AL" and anlik_fiyat <= emir["hedef_fiyat"]: tetiklendi = True
-                elif emir["tip"] == "SAT" and anlik_fiyat >= emir["hedef_fiyat"]: tetiklendi = True
-                    
-                if not tetiklendi and not veri_sonrasi.empty:
-                    min_fiyat = float(veri_sonrasi['Low'].min()) * katsayi
-                    max_fiyat = float(veri_sonrasi['High'].max()) * katsayi
-                    if emir["tip"] == "AL" and min_fiyat <= emir["hedef_fiyat"]: tetiklendi = True
-                    elif emir["tip"] == "SAT" and max_fiyat >= emir["hedef_fiyat"]: tetiklendi = True
-                    
-                if tetiklendi:
-                    if emir["tip"] == "AL":
-                        mevcut_veri = cuzdan["varliklar"].get(emir["varlik"], {"adet": 0.0, "maliyet": 0.0})
-                        yeni_adet = mevcut_veri["adet"] + emir["adet"]
-                        yeni_maliyet = ((mevcut_veri["adet"] * mevcut_veri["maliyet"]) + emir["baglanan_tutar"]) / yeni_adet
-                        cuzdan["varliklar"][emir["varlik"]] = {"adet": yeni_adet, "maliyet": yeni_maliyet}
-                        db["_GLOBAL_"]["toplam_komisyon"] += emir["komisyon"]
-                        gerceklesen_mesajlar.append(f"🔔 {emir['varlik']} hedefinize ({emir['hedef_fiyat']} ₺) ulaştı! Otomatik ALIM yapıldı.")
-                    elif emir["tip"] == "SAT":
-                        cuzdan["nakit"] += emir["beklenen_getiri"]
-                        db["_GLOBAL_"]["toplam_komisyon"] += emir["komisyon"]
-                        gerceklesen_mesajlar.append(f"🔔 {emir['varlik']} hedefinize ({emir['hedef_fiyat']} ₺) ulaştı! Otomatik SATIŞ yapıldı.")
-                else: kalan_emirler.append(emir)
-            except: kalan_emirler.append(emir)
-                
-        if len(cuzdan["bekleyen_emirler"]) != len(kalan_emirler):
-            cuzdan["bekleyen_emirler"] = kalan_emirler
-            aktif_cuzdan_kaydet()
-            for m in gerceklesen_mesajlar: st.toast(m, icon="✅")
 
     toplam_komisyon = db["_GLOBAL_"].get("toplam_komisyon", 0.0)
-    st.markdown(f"<div class='bagis-panosu'>🌟 <b>Komisyon Olarak Bağışlanan Toplam Tutar:</b> <br><span class='bagis-sayi'>{toplam_komisyon:,.2f} ₺</span></div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='bagis-panosu'>🌟 <b>Komisyon Olarak Bağışlanan (ve Likide Edilen) Toplam Tutar:</b> <br><span class='bagis-sayi'>{toplam_komisyon:,.2f} ₺</span></div>", unsafe_allow_html=True)
 
     tab_portfoy, tab_liderlik, tab_sohbet = st.tabs(["💼 Portföyüm", "🏆 Liderlik Tablosu", "💬 Borsa Meydanı (Sohbet)"])
     
     with tab_portfoy:
-        toplam_varlik_degeri = 0
-        guncel_fiyatlar = {}
-        
-        if cuzdan["varliklar"]:
-            for varlik_ismi, v_veri in list(cuzdan["varliklar"].items()):
-                if isinstance(v_veri, (int, float)): 
-                    cuzdan["varliklar"][varlik_ismi] = {"adet": v_veri, "maliyet": 0.0}
-                    aktif_cuzdan_kaydet()
-                    adet = v_veri
-                else: adet = v_veri["adet"]
-                    
-                sembol = tum_varliklar_mega.get(varlik_ismi)
-                if sembol:
-                    try:
-                        veri_guncel = yf.Ticker(sembol).history(period="1mo")
-                        if isinstance(veri_guncel.columns, pd.MultiIndex):
-                            veri_guncel.columns = veri_guncel.columns.get_level_values(0)
-                        veri_guncel.columns = [str(c).title() for c in veri_guncel.columns]
-                        veri_guncel = veri_guncel.dropna(subset=['Close']).ffill()
-                        
-                        fiyat = float(veri_guncel['Close'].iloc[-1])
-                        if not sembol.endswith(".IS"): fiyat *= usd_kuru
-                        guncel_fiyatlar[varlik_ismi] = fiyat
-                        toplam_varlik_degeri += (fiyat * adet)
-                    except: guncel_fiyatlar[varlik_ismi] = 0.0
-
-        toplam_portfoy = cuzdan["nakit"] + toplam_varlik_degeri
-        col1, col2, col3 = st.columns(3)
-        col1.metric("Toplam Portföy", f"{toplam_portfoy:,.2f} ₺", f"% {((toplam_portfoy - 1000000.0) / 1000000.0) * 100:.2f}")
-        col2.metric("Boş Nakit", f"{cuzdan['nakit']:,.2f} ₺")
-        col3.metric("Yatırımdaki Varlıklar", f"{toplam_varlik_degeri:,.2f} ₺")
-        st.markdown("---")
-
         col_islem, col_durum = st.columns([1, 2])
         
         with col_islem:
             st.markdown("<b>Hızlı İşlem Masası</b>", unsafe_allow_html=True)
+            
+            kaldirac_orani = st.select_slider("⚡ Kaldıraç Oranı (1x = Spot)", options=[1, 2, 5, 10, 25, 50], value=1)
+            
             c_yon, c_tur = st.columns(2)
-            with c_yon: islem_tipi = st.radio("İşlem Yönü:", ["AL", "SAT"], horizontal=True, label_visibility="collapsed")
-            with c_tur: emir_turu = st.radio("Emir Türü:", ["⚡ Piyasa", "🕒 Limit"], horizontal=True, label_visibility="collapsed")
+            with c_yon: 
+                yon_opsiyonlari = ["AL", "SAT"] if kaldirac_orani == 1 else ["AL (Long)", "SAT (Short)"]
+                islem_tipi = st.radio("İşlem Yönü:", yon_opsiyonlari, horizontal=True, label_visibility="collapsed")
+            with c_tur: 
+                emir_opsiyonlari = ["⚡ Piyasa", "🕒 Limit"] if kaldirac_orani == 1 else ["⚡ Piyasa"]
+                emir_turu = st.radio("Emir Türü:", emir_opsiyonlari, horizontal=True, label_visibility="collapsed")
             
             secili_varlik = st.selectbox("Varlık Seçin:", list(tum_varliklar_mega.keys()))
             sembol_islem = tum_varliklar_mega[secili_varlik]
@@ -932,154 +804,283 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
             else: komisyon_orani, komisyon_metni = 0.0010, "%0.10 (Emtia)"
 
             try:
-                veri_hizli = yf.Ticker(sembol_islem).history(period="1mo")
-                if isinstance(veri_hizli.columns, pd.MultiIndex):
-                    veri_hizli.columns = veri_hizli.columns.get_level_values(0)
-                veri_hizli.columns = [str(c).title() for c in veri_hizli.columns]
-                veri_hizli = veri_hizli.dropna(subset=['Close']).ffill()
-                
-                if veri_hizli.empty: raise ValueError("Yahoo Finance bu varlık için boş veri yolladı (API Engeli olabilir).")
-                    
-                anlik_fiyat = float(veri_hizli['Close'].iloc[-1])
-                if not sembol_islem.endswith(".IS"): anlik_fiyat *= usd_kuru
-                
-                if 'Volume' in veri_hizli.columns:
-                    veri_hizli['Volume'] = pd.to_numeric(veri_hizli['Volume'], errors='coerce')
-                    son_hacim = float(veri_hizli['Volume'].iloc[-1])
-                    if pd.isna(son_hacim) or son_hacim <= 0: son_hacim = float(veri_hizli['Volume'].mean())
-                else: son_hacim = 0.0
-                    
-                if pd.isna(son_hacim) or son_hacim <= 0: son_hacim = 1000000.0 
+                anlik_fiyat = canli_fiyat_getir(sembol_islem, usd_kuru if not sembol_islem.endswith(".IS") else 1.0)
+                if anlik_fiyat == 0.0: raise ValueError("Fiyat sıfır geldi")
+                son_hacim = 1000000.0 
                 max_islem_limiti = son_hacim * 0.10 
-                
                 st.write(f"Anlık Fiyat: **{anlik_fiyat:,.2f} ₺**")
-                st.caption(f"📊 Günlük Piyasa Hacmi: **{son_hacim:,.0f} Adet**")
-                st.caption(f"⚖️ Max İşlem Limiti (%10): **{max_islem_limiti:,.2f} Adet**")
             except Exception as e:
                 anlik_fiyat, max_islem_limiti = 0.0, float('inf')
-                st.warning(f"Fiyat çekilemedi. (Hata Detayı: {str(e)})")
+                st.warning(f"Fiyat çekilemedi. Hata: {str(e)}")
 
-            islem_miktari = st.number_input("Adet / Miktar:", min_value=0.01, step=1.0)
+            if kaldirac_orani == 1:
+                islem_miktari = st.number_input("Adet / Miktar:", min_value=0.01, step=1.0)
+                limit_asildi = islem_miktari > max_islem_limiti
+                if limit_asildi: st.error(f"🚨 LİKİDİTE KISITI: En fazla {max_islem_limiti:,.2f} adet alabilirsiniz!")
+                
+                if "Limit" in emir_turu:
+                    hedef_fiyat = st.number_input("Hedef Fiyat (₺):", min_value=0.01, value=float(anlik_fiyat) if anlik_fiyat>0 else 1.0, step=1.0)
+                    islem_tutari = islem_miktari * hedef_fiyat
+                else:
+                    hedef_fiyat = anlik_fiyat
+                    islem_tutari = islem_miktari * anlik_fiyat
+                    
+                komisyon_tutari = islem_tutari * komisyon_orani
+                toplam_islem_maliyeti = islem_tutari + komisyon_tutari 
+                toplam_islem_getirisi = islem_tutari - komisyon_tutari 
+
+                st.write(f"İşlem Hacmi: **{islem_tutari:,.2f} ₺**")
+                st.write(f"Komisyon ({komisyon_metni}): **{komisyon_tutari:,.2f} ₺**")
+                if islem_tipi == "AL": st.info(f"Kasadan Çıkacak: **{toplam_islem_maliyeti:,.2f} ₺**")
+                else: st.success(f"Kasaya Girecek: **{toplam_islem_getirisi:,.2f} ₺**")
+
+                buton_metni = "🕒 Bekleyen Emir Gir" if "Limit" in emir_turu else "⚡ Siparişi Anında Onayla"
+                if st.button(buton_metni, use_container_width=True) and anlik_fiyat > 0 and not limit_asildi:
+                    if islem_tipi == "AL":
+                        if cuzdan["nakit"] >= toplam_islem_maliyeti:
+                            cuzdan["nakit"] -= toplam_islem_maliyeti
+                            if "Limit" in emir_turu:
+                                cuzdan["bekleyen_emirler"].append({"id": str(uuid.uuid4()), "tarih": time.time(), "tip": "AL", "varlik": secili_varlik, "adet": islem_miktari, "hedef_fiyat": hedef_fiyat, "baglanan_tutar": toplam_islem_maliyeti, "komisyon": komisyon_tutari})
+                                aktif_cuzdan_kaydet(); st.success("🕒 Alım Limit Emriniz Kaydedildi!")
+                            else:
+                                mevcut_veri = cuzdan["varliklar"].get(secili_varlik, {"adet": 0.0, "maliyet": 0.0})
+                                yeni_adet = mevcut_veri["adet"] + islem_miktari
+                                cuzdan["varliklar"][secili_varlik] = {"adet": yeni_adet, "maliyet": ((mevcut_veri["adet"] * mevcut_veri["maliyet"]) + toplam_islem_maliyeti) / yeni_adet}
+                                db["_GLOBAL_"]["toplam_komisyon"] += komisyon_tutari
+                                aktif_cuzdan_kaydet(); st.success("⚡ İşlem Başarılı!")
+                            time.sleep(1); st.rerun() 
+                        else: st.error("Yetersiz bakiye!")
+                    elif islem_tipi == "SAT":
+                        mevcut_veri = cuzdan["varliklar"].get(secili_varlik, {"adet": 0.0, "maliyet": 0.0})
+                        if mevcut_veri["adet"] >= islem_miktari:
+                            yeni_adet = mevcut_veri["adet"] - islem_miktari
+                            if yeni_adet <= 0.000001: del cuzdan["varliklar"][secili_varlik]
+                            else: cuzdan["varliklar"][secili_varlik]["adet"] = yeni_adet
+                            if "Limit" in emir_turu:
+                                cuzdan["bekleyen_emirler"].append({"id": str(uuid.uuid4()), "tarih": time.time(), "tip": "SAT", "varlik": secili_varlik, "adet": islem_miktari, "hedef_fiyat": hedef_fiyat, "beklenen_getiri": toplam_islem_getirisi, "komisyon": komisyon_tutari, "maliyet_rezerv": mevcut_veri["maliyet"]})
+                                aktif_cuzdan_kaydet(); st.success("🕒 Satış Limit Emriniz Kaydedildi!")
+                            else:
+                                cuzdan["nakit"] += toplam_islem_getirisi
+                                db["_GLOBAL_"]["toplam_komisyon"] += komisyon_tutari
+                                aktif_cuzdan_kaydet(); st.success("⚡ İşlem Başarılı!")
+                            time.sleep(1); st.rerun() 
+                        else: st.error("Yetersiz adet!")
             
-            limit_asildi = islem_miktari > max_islem_limiti
-            if limit_asildi: st.error(f"🚨 LİKİDİTE KISITI: Gerçekçi piyasa simülasyonu gereği tek seferde en fazla {max_islem_limiti:,.2f} adet alabilirsiniz!")
-            
-            if "Limit" in emir_turu:
-                hedef_fiyat = st.number_input("Hedef Fiyat (₺):", min_value=0.01, value=float(anlik_fiyat) if anlik_fiyat>0 else 1.0, step=1.0)
-                islem_tutari = islem_miktari * hedef_fiyat
             else:
-                hedef_fiyat = anlik_fiyat
-                islem_tutari = islem_miktari * anlik_fiyat
-            
-            komisyon_tutari = islem_tutari * komisyon_orani
-            toplam_islem_maliyeti = islem_tutari + komisyon_tutari 
-            toplam_islem_getirisi = islem_tutari - komisyon_tutari 
+                girilen_teminat = st.number_input("Bağlanacak Nakit Teminat (₺):", min_value=10.0, max_value=cuzdan["nakit"] if cuzdan["nakit"]>10 else 10.0, step=100.0)
+                islem_hacmi = girilen_teminat * kaldirac_orani
+                alinacak_adet = islem_hacmi / anlik_fiyat if anlik_fiyat > 0 else 0
+                
+                limit_asildi = alinacak_adet > max_islem_limiti
+                if limit_asildi: st.error(f"🚨 Hacim çok büyük! Tahtayı bozmamak için teminatı veya kaldıracı düşürün.")
+                
+                if islem_tipi == "AL (Long)": liq_fiyat = anlik_fiyat * (1 - (1/kaldirac_orani))
+                else: liq_fiyat = anlik_fiyat * (1 + (1/kaldirac_orani))
+                
+                st.info(f"📊 Pozisyon Büyüklüğü: **{islem_hacmi:,.2f} ₺** ({alinacak_adet:,.4f} Adet)")
+                komisyon_tutari = islem_hacmi * komisyon_orani
+                st.write(f"Sisteme Ödenecek Komisyon: **{komisyon_tutari:,.2f} ₺**")
+                st.error(f"🚨 **Likidasyon Fiyatı:** {liq_fiyat:,.2f} ₺ (Fiyat buraya gelirse paranız yanar!)")
 
-            st.write(f"İşlem Hacmi: **{islem_tutari:,.2f} ₺**")
-            st.write(f"Komisyon ({komisyon_metni}): **{komisyon_tutari:,.2f} ₺**")
-            
-            if islem_tipi == "AL": st.info(f"Kasadan Çıkacak/Bloke: **{toplam_islem_maliyeti:,.2f} ₺**")
-            else: st.success(f"Kasaya Girecek: **{toplam_islem_getirisi:,.2f} ₺**")
-
-            buton_metni = "🕒 Bekleyen Emir Gir" if "Limit" in emir_turu else "⚡ Siparişi Anında Onayla"
-
-            if st.button(buton_metni, use_container_width=True) and anlik_fiyat > 0 and not limit_asildi:
-                if islem_tipi == "AL":
-                    if cuzdan["nakit"] >= toplam_islem_maliyeti:
-                        cuzdan["nakit"] -= toplam_islem_maliyeti
-                        if "Limit" in emir_turu:
-                            cuzdan["bekleyen_emirler"].append({"id": str(uuid.uuid4()), "tarih": time.time(), "tip": "AL", "varlik": secili_varlik, "adet": islem_miktari, "hedef_fiyat": hedef_fiyat, "baglanan_tutar": toplam_islem_maliyeti, "komisyon": komisyon_tutari})
-                            aktif_cuzdan_kaydet(); st.success("🕒 Alım Limit Emriniz Kaydedildi!")
-                        else:
-                            mevcut_veri = cuzdan["varliklar"].get(secili_varlik, {"adet": 0.0, "maliyet": 0.0})
-                            yeni_adet = mevcut_veri["adet"] + islem_miktari
-                            cuzdan["varliklar"][secili_varlik] = {"adet": yeni_adet, "maliyet": ((mevcut_veri["adet"] * mevcut_veri["maliyet"]) + toplam_islem_maliyeti) / yeni_adet}
-                            db["_GLOBAL_"]["toplam_komisyon"] += komisyon_tutari
-                            aktif_cuzdan_kaydet(); st.success("⚡ İşlem Başarılı!")
-                        time.sleep(1.5); st.rerun() 
-                    else: st.error("Yetersiz bakiye!")
-                elif islem_tipi == "SAT":
-                    mevcut_veri = cuzdan["varliklar"].get(secili_varlik, {"adet": 0.0, "maliyet": 0.0})
-                    if mevcut_veri["adet"] >= islem_miktari:
-                        yeni_adet = mevcut_veri["adet"] - islem_miktari
-                        if yeni_adet <= 0.000001: del cuzdan["varliklar"][secili_varlik]
-                        else: cuzdan["varliklar"][secili_varlik]["adet"] = yeni_adet
-                        if "Limit" in emir_turu:
-                            cuzdan["bekleyen_emirler"].append({"id": str(uuid.uuid4()), "tarih": time.time(), "tip": "SAT", "varlik": secili_varlik, "adet": islem_miktari, "hedef_fiyat": hedef_fiyat, "beklenen_getiri": toplam_islem_getirisi, "komisyon": komisyon_tutari, "maliyet_rezerv": mevcut_veri["maliyet"]})
-                            aktif_cuzdan_kaydet(); st.success("🕒 Satış Limit Emriniz Kaydedildi!")
-                        else:
-                            cuzdan["nakit"] += toplam_islem_getirisi
-                            db["_GLOBAL_"]["toplam_komisyon"] += komisyon_tutari
-                            aktif_cuzdan_kaydet(); st.success("⚡ İşlem Başarılı!")
-                        time.sleep(1.5); st.rerun() 
-                    else: st.error("Yetersiz adet!")
+                if st.button("🚀 Kaldıraçlı Pozisyonu Aç", use_container_width=True) and anlik_fiyat > 0 and not limit_asildi:
+                    gerekli_nakit = girilen_teminat + komisyon_tutari
+                    if cuzdan["nakit"] >= gerekli_nakit:
+                        cuzdan["nakit"] -= gerekli_nakit
+                        db["_GLOBAL_"]["toplam_komisyon"] += komisyon_tutari
+                        
+                        yeni_pozisyon = {
+                            "id": str(uuid.uuid4()),
+                            "varlik": secili_varlik,
+                            "yon": islem_tipi,
+                            "kaldirac": kaldirac_orani,
+                            "teminat": girilen_teminat,
+                            "adet": alinacak_adet,
+                            "giris_fiyati": anlik_fiyat,
+                            "liq_fiyati": liq_fiyat,
+                            "tarih": time.time()
+                        }
+                        cuzdan["kaldiracli_islemler"].append(yeni_pozisyon)
+                        aktif_cuzdan_kaydet()
+                        st.success(f"{kaldirac_orani}x {islem_tipi} Pozisyonu Başarıyla Açıldı!")
+                        time.sleep(1)
+                        st.rerun()
+                    else:
+                        st.error(f"Yetersiz Nakit! Teminat + Komisyon için {gerekli_nakit:,.2f} ₺ gerekiyor.")
 
         with col_durum:
-            col_b, col_y = st.columns([3, 1])
-            with col_b: st.subheader("Cüzdan")
-            with col_y: 
-                if st.button("🔄 Yenile", use_container_width=True): st.rerun()
-            if cuzdan["varliklar"]:
-                liste = []
-                for v, d in cuzdan["varliklar"].items():
-                    gf = guncel_fiyatlar.get(v, 0)
-                    kz_tl = (d["adet"] * gf) - (d["adet"] * d["maliyet"])
-                    kz_yuzde = ((gf - d["maliyet"]) / d["maliyet"] * 100) if d["maliyet"] > 0 else 0
-                    liste.append({"Varlık": v, "Adet": d["adet"], "Maliyet (₺)": d["maliyet"], "Fiyat (₺)": gf, "Değer (₺)": d["adet"] * gf, "K/Z (₺)": kz_tl, "% K/Z": kz_yuzde})
+            def canli_portfoy_motoru():
+                db_canli = db_yukle()
+                cz_canli = db_canli[aktif_kullanici]["cuzdan"]
+                degisiklik_var = False
+                mesaj_listesi = []
                 
-                df_p = pd.DataFrame(liste).sort_values("Değer (₺)", ascending=False)
-                def renk_ver(val):
-                    try: return 'color: #00ff00; font-weight:bold;' if float(val) > 0 else 'color: #ff4444; font-weight:bold;' if float(val) < 0 else ''
-                    except: return ''
-                st.dataframe(df_p.style.map(renk_ver, subset=['K/Z (₺)', '% K/Z']).format({"Adet": "{:,.4f}", "Maliyet (₺)": "{:,.2f}", "Fiyat (₺)": "{:,.2f}", "Değer (₺)": "{:,.2f}", "K/Z (₺)": "{:,.2f}", "% K/Z": "% {:,.2f}"}), use_container_width=True)
-            else: st.info("Cüzdan boş.")
+                st.markdown("<span class='pulsing-dot'></span> <span style='color:#00ffff; font-size:12px; font-weight:bold;'>Canlı Veri Akışı Aktif (Her 10 Sn)</span>", unsafe_allow_html=True)
+                
+                guncel_fiyatlar = {}
+                tum_varlik_isimleri = set(cz_canli.get("varliklar", {}).keys())
+                for poz in cz_canli.get("kaldiracli_islemler", []): tum_varlik_isimleri.add(poz["varlik"])
+                for em in cz_canli.get("bekleyen_emirler", []): tum_varlik_isimleri.add(em["varlik"])
+                
+                for v_ismi in tum_varlik_isimleri:
+                    sembol = tum_varliklar_mega.get(v_ismi)
+                    if sembol:
+                        kat = usd_kuru if not sembol.endswith(".IS") else 1.0
+                        guncel_fiyatlar[v_ismi] = canli_fiyat_getir(sembol, kat)
 
-            st.markdown("<br>", unsafe_allow_html=True)
-            st.subheader("🕒 Bekleyen Emirlerim")
-            if cuzdan.get("bekleyen_emirler"):
-                for emir in cuzdan["bekleyen_emirler"]:
-                    st.markdown(f"<div style='background-color:rgba(15, 23, 42, 0.8); border:1px solid rgba(0,255,255,0.2); padding:10px; border-radius:10px; margin-bottom:10px; backdrop-filter:blur(5px);'>", unsafe_allow_html=True)
-                    c1, c2, c3, c4 = st.columns([3, 2, 3, 2])
-                    c1.write(f"**{emir['varlik']}**")
-                    c2.write(f"{'🟢 AL' if emir['tip'] == 'AL' else '🔴 SAT'} ({emir['adet']})")
-                    c3.write(f"Hedef: **{emir['hedef_fiyat']:,.2f} ₺**")
-                    if c4.button("❌ İptal", key=f"iptal_{emir['id']}"):
-                        if emir["tip"] == "AL": cuzdan["nakit"] += emir["baglanan_tutar"]
-                        else:
-                            mevcut_veri = cuzdan["varliklar"].get(emir["varlik"], {"adet": 0.0, "maliyet": emir.get("maliyet_rezerv", 0.0)})
-                            cuzdan["varliklar"][emir["varlik"]] = {"adet": mevcut_veri["adet"] + emir["adet"], "maliyet": emir.get("maliyet_rezerv", 0.0)}
-                        cuzdan["bekleyen_emirler"] = [e for e in cuzdan["bekleyen_emirler"] if e["id"] != emir["id"]]
-                        aktif_cuzdan_kaydet(); st.rerun()
-                    st.markdown("</div>", unsafe_allow_html=True)
-            else: st.caption("Şu an bekleyen aktif bir emriniz bulunmuyor.")
+                kalan_emirler = []
+                for emir in cz_canli.get("bekleyen_emirler", []):
+                    anlik = guncel_fiyatlar.get(emir["varlik"], 0.0)
+                    if anlik > 0:
+                        if emir["tip"] == "AL" and anlik <= emir["hedef_fiyat"]:
+                            mevcut = cz_canli["varliklar"].get(emir["varlik"], {"adet": 0.0, "maliyet": 0.0})
+                            if isinstance(mevcut, (int, float)): mevcut = {"adet": mevcut, "maliyet": 0.0}
+                            yn_adet = mevcut["adet"] + emir["adet"]
+                            yn_maliyet = ((mevcut["adet"] * mevcut["maliyet"]) + emir["baglanan_tutar"]) / yn_adet
+                            cz_canli["varliklar"][emir["varlik"]] = {"adet": yn_adet, "maliyet": yn_maliyet}
+                            db_canli["_GLOBAL_"]["toplam_komisyon"] += emir["komisyon"]
+                            mesaj_listesi.append(f"🔔 {emir['varlik']} hedefe ulaştı! SPOT ALIM yapıldı.")
+                            degisiklik_var = True
+                        elif emir["tip"] == "SAT" and anlik >= emir["hedef_fiyat"]:
+                            cz_canli["nakit"] += emir["beklenen_getiri"]
+                            db_canli["_GLOBAL_"]["toplam_komisyon"] += emir["komisyon"]
+                            mesaj_listesi.append(f"🔔 {emir['varlik']} hedefe ulaştı! SPOT SATIŞ yapıldı.")
+                            degisiklik_var = True
+                        else: kalan_emirler.append(emir)
+                    else: kalan_emirler.append(emir)
+                cz_canli["bekleyen_emirler"] = kalan_emirler
+
+                kalan_pozisyonlar = []
+                for poz in cz_canli.get("kaldiracli_islemler", []):
+                    anlik = guncel_fiyatlar.get(poz["varlik"], 0.0)
+                    if anlik > 0:
+                        patladi = False
+                        if poz["yon"] == "AL (Long)" and anlik <= poz["liq_fiyati"]: patladi = True
+                        elif poz["yon"] == "SAT (Short)" and anlik >= poz["liq_fiyati"]: patladi = True
+                        
+                        if patladi:
+                            db_canli["_GLOBAL_"]["toplam_komisyon"] += poz["teminat"]
+                            mesaj_listesi.append(f"🚨 {poz['varlik']} {poz['kaldirac']}x {poz['yon']} MARGIN CALL! ({poz['teminat']} ₺ Yandı)")
+                            degisiklik_var = True
+                        else: kalan_pozisyonlar.append(poz)
+                    else: kalan_pozisyonlar.append(poz)
+                cz_canli["kaldiracli_islemler"] = kalan_pozisyonlar
+                
+                if degisiklik_var:
+                    db_kaydet(db_canli)
+                    for m in mesaj_listesi: st.toast(m, icon="🔥" if "MARGIN" in m else "✅")
+                    time.sleep(1)
+                    st.rerun()
+
+                st.subheader("Cüzdan")
+                if cz_canli.get("varliklar"):
+                    liste = []
+                    for v, d in cz_canli["varliklar"].items():
+                        # BURADAKİ TYPO DÜZELTİLDİ (maliyet)
+                        maliyet = d["maliyet"] if isinstance(d, dict) else 0.0
+                        adet = d["adet"] if isinstance(d, dict) else d
+                        gf = guncel_fiyatlar.get(v, 0)
+                        liste.append({
+                            "Varlık": v, 
+                            "Adet": adet, 
+                            "Maliyet (₺)": maliyet, 
+                            "Fiyat (₺)": gf, 
+                            "Değer (₺)": adet * gf, 
+                            "K/Z (₺)": (adet * gf) - (adet * maliyet), 
+                            "% K/Z": ((gf - maliyet) / maliyet * 100) if maliyet > 0 else 0
+                        })
+                    df_p = pd.DataFrame(liste).sort_values("Değer (₺)", ascending=False)
+                    def renk_ver(val):
+                        try: return 'color: #00ff00; font-weight:bold;' if float(val) > 0 else 'color: #ff4444; font-weight:bold;' if float(val) < 0 else ''
+                        except: return ''
+                    st.dataframe(df_p.style.map(renk_ver, subset=['K/Z (₺)', '% K/Z']).format({"Adet": "{:,.4f}", "Maliyet (₺)": "{:,.2f}", "Fiyat (₺)": "{:,.2f}", "Değer (₺)": "{:,.2f}", "K/Z (₺)": "{:,.2f}", "% K/Z": "% {:,.2f}"}), use_container_width=True)
+                else: st.caption("Spot cüzdanınız boş.")
+
+                st.markdown("<br>", unsafe_allow_html=True)
+                st.subheader("🚀 Aktif Kaldıraçlı İşlemler")
+                if cz_canli.get("kaldiracli_islemler"):
+                    for poz in cz_canli["kaldiracli_islemler"]:
+                        gf = guncel_fiyatlar.get(poz["varlik"], poz["giris_fiyati"])
+                        pnl = (gf - poz["giris_fiyati"]) * poz["adet"] if poz["yon"] == "AL (Long)" else (poz["giris_fiyati"] - gf) * poz["adet"]
+                        roe_yuzde = (pnl / poz["teminat"]) * 100
+                        net_nakit_karsiligi = max(0, poz["teminat"] + pnl)
+                        
+                        st.markdown(f"""
+                            <div class='kaldirac-kart {"long" if poz["yon"] == "AL (Long)" else "short"}'>
+                                <div style='display:flex; justify-content:space-between; margin-bottom:10px;'>
+                                    <b>{poz['varlik']}</b>
+                                    <span style='background:#1e293b; padding:2px 8px; border-radius:5px;'>{poz['kaldirac']}x {poz['yon']}</span>
+                                </div>
+                                <div style='display:flex; justify-content:space-between; font-size:14px; color:#aaa;'>
+                                    <span>Giriş: {poz['giris_fiyati']:,.2f} ₺</span>
+                                    <span>Anlık: <span style='color:white'>{gf:,.2f} ₺</span></span>
+                                </div>
+                                <div style='display:flex; justify-content:space-between; font-size:14px; margin-top:5px;'>
+                                    <span>Liq: <span style='color:#ff4444'>{poz['liq_fiyati']:,.2f} ₺</span></span>
+                                    <span>Bağlanan: {poz['teminat']:,.2f} ₺</span>
+                                </div>
+                                <div style='text-align:right; margin-top:10px; font-size:18px; font-weight:bold; color:{"#00ff00" if pnl > 0 else "#ff4444"};'>
+                                    {pnl:,.2f} ₺ ( %{roe_yuzde:,.2f} )
+                                </div>
+                            </div>
+                        """, unsafe_allow_html=True)
+                        if st.button("❌ Pozisyonu Kapat", key=f"kapat_{poz['id']}"):
+                            kapanis_komisyonu = (gf * poz["adet"]) * (0.0010 if poz["varlik"] not in bist_genis and poz["varlik"] not in abd_hisseleri else 0.0015)
+                            nihai_iade = net_nakit_karsiligi - kapanis_komisyonu
+                            cz_canli["nakit"] += max(0, nihai_iade)
+                            db_canli["_GLOBAL_"]["toplam_komisyon"] += kapanis_komisyonu
+                            cz_canli["kaldiracli_islemler"] = [p for p in cz_canli["kaldiracli_islemler"] if p["id"] != poz["id"]]
+                            db_kaydet(db_canli)
+                            st.success(f"Pozisyon kapandı! Kasanıza {max(0, nihai_iade):,.2f} ₺ eklendi.")
+                            time.sleep(1); st.rerun()
+                else: st.caption("Açık kaldıraçlı işleminiz bulunmuyor.")
+
+                st.markdown("<br>", unsafe_allow_html=True)
+                st.subheader("🕒 Bekleyen Spot Emirlerim")
+                if cz_canli.get("bekleyen_emirler"):
+                    for emir in cz_canli["bekleyen_emirler"]:
+                        st.markdown(f"<div style='background-color:rgba(15, 23, 42, 0.8); border:1px solid rgba(0,255,255,0.2); padding:10px; border-radius:10px; margin-bottom:10px; backdrop-filter:blur(5px);'>", unsafe_allow_html=True)
+                        c1, c2, c3, c4 = st.columns([3, 2, 3, 2])
+                        c1.write(f"**{emir['varlik']}**")
+                        c2.write(f"{'🟢 AL' if emir['tip'] == 'AL' else '🔴 SAT'} ({emir['adet']})")
+                        c3.write(f"Hedef: **{emir['hedef_fiyat']:,.2f} ₺**")
+                        if c4.button("❌ İptal", key=f"iptal_{emir['id']}"):
+                            if emir["tip"] == "AL": cz_canli["nakit"] += emir["baglanan_tutar"]
+                            else:
+                                mevcut_veri = cz_canli["varliklar"].get(emir["varlik"], {"adet": 0.0, "maliyet": emir.get("maliyet_rezerv", 0.0)})
+                                cz_canli["varliklar"][emir["varlik"]] = {"adet": mevcut_veri["adet"] + emir["adet"], "maliyet": emir.get("maliyet_rezerv", 0.0)}
+                            cz_canli["bekleyen_emirler"] = [e for e in cz_canli["bekleyen_emirler"] if e["id"] != emir["id"]]
+                            db_kaydet(db_canli); st.rerun()
+                        st.markdown("</div>", unsafe_allow_html=True)
+                else: st.caption("Bekleyen aktif bir emriniz bulunmuyor.")
+
+            if hasattr(st, "fragment"):
+                canli_portfoy_motoru = st.fragment(run_every=10)(canli_portfoy_motoru)
+                canli_portfoy_motoru()
+            else:
+                if HAS_AUTOREFRESH: st_autorefresh(interval=10000, key="portfoy_yenile")
+                canli_portfoy_motoru()
 
     with tab_liderlik:
         st.subheader("🏆 En İyi Fon Yöneticileri")
         st.write("Sistemdeki tüm yatırımcıların toplam fon büyüklüklerine göre rekabet sıralaması.")
-        with st.spinner("Sıralama hesaplanıyor..."):
+        
+        def liderlik_tablosunu_ciz():
+            db_canli = db_yukle()
             tum_kullanici_varliklari = set()
-            for k, v in db.items():
-                if k not in ["_GLOBAL_", "_OTURUMLAR_"] and not v.get("is_admin", False) and "cuzdan" in v and "varliklar" in v["cuzdan"]:
-                    for varlik_ismi in v["cuzdan"]["varliklar"]: tum_kullanici_varliklari.add(varlik_ismi)
+            for k, v in db_canli.items():
+                if k not in ["_GLOBAL_", "_OTURUMLAR_"] and not v.get("is_admin", False) and "cuzdan" in v:
+                    for varlik_ismi in v["cuzdan"].get("varliklar", {}): tum_kullanici_varliklari.add(varlik_ismi)
+                    for poz in v["cuzdan"].get("kaldiracli_islemler", []): tum_kullanici_varliklari.add(poz["varlik"])
             
             liderlik_fiyatlar = {}
             for varlik_ismi in tum_kullanici_varliklari:
                 sembol = tum_varliklar_mega.get(varlik_ismi)
                 if sembol:
-                    try:
-                        veri_ld = yf.Ticker(sembol).history(period="1mo")
-                        if isinstance(veri_ld.columns, pd.MultiIndex):
-                            veri_ld.columns = veri_ld.columns.get_level_values(0)
-                        veri_ld.columns = [str(c).title() for c in veri_ld.columns]
-                        veri_ld = veri_ld.dropna(subset=['Close']).ffill()
-                        
-                        fiyat = float(veri_ld['Close'].iloc[-1])
-                        if not sembol.endswith(".IS"): fiyat *= usd_kuru
-                        liderlik_fiyatlar[varlik_ismi] = fiyat
-                    except: liderlik_fiyatlar[varlik_ismi] = 0.0
+                    kat = usd_kuru if not sembol.endswith(".IS") else 1.0
+                    liderlik_fiyatlar[varlik_ismi] = canli_fiyat_getir(sembol, kat)
             
             liderlik_listesi = []
-            for k, v in db.items():
+            for k, v in db_canli.items():
                 if k not in ["_GLOBAL_", "_OTURUMLAR_"] and not v.get("is_admin", False) and "cuzdan" in v:
                     kullanici_cuzdan = v["cuzdan"]
                     kullanici_toplam = kullanici_cuzdan.get("nakit", 1000000.0)
@@ -1091,6 +1092,10 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                             kullanici_toplam += adet * liderlik_fiyatlar.get(v_isim, 0.0)
                     for be in kullanici_cuzdan.get("bekleyen_emirler", []):
                         if be["tip"] == "SAT": kullanici_toplam += be["adet"] * liderlik_fiyatlar.get(be["varlik"], 0.0)
+                    for poz in kullanici_cuzdan.get("kaldiracli_islemler", []):
+                        guncel_p_fiyat = liderlik_fiyatlar.get(poz["varlik"], poz["giris_fiyati"])
+                        pnl = (guncel_p_fiyat - poz["giris_fiyati"]) * poz["adet"] if poz["yon"] == "AL (Long)" else (poz["giris_fiyati"] - guncel_p_fiyat) * poz["adet"]
+                        kullanici_toplam += max(0, poz["teminat"] + pnl)
                             
                     gosterilecek_isim = v.get("nickname", k)
                     liderlik_listesi.append({"Kullanici": gosterilecek_isim, "Toplam": kullanici_toplam})
@@ -1104,16 +1109,15 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                 gosterim_listesi.append({"Sıra": sira, "Yatırımcı (Takma Ad)": user_data["Kullanici"].upper(), "Gizli Kasa Büyüklüğü": maskeli_bakiye})
                 
             st.dataframe(pd.DataFrame(gosterim_listesi).style.hide(axis="index"), use_container_width=True)
-            st.info("💡 **Not:** Güvenlik ve rekabet gizliliği amacıyla kullanıcıların gerçek giriş ID'leri değil takma adları gösterilmektedir. Kasa bakiyeleri ise maskelenmiştir.")
+            
+        if hasattr(st, "fragment"):
+            liderlik_tablosunu_ciz = st.fragment(run_every=30)(liderlik_tablosunu_ciz)
+        liderlik_tablosunu_ciz()
 
-    # =====================================================================================
-    # SİHİRLİ CANLI SOHBET EKRANI (ST.FRAGMENT İLE)
-    # =====================================================================================
     with tab_sohbet:
         st.subheader("💬 Borsa Meydanı")
         st.write("Diğer fon yöneticileriyle piyasa dedikodularını ve stratejilerinizi paylaşın.")
         
-        # Bu fonksiyon sayfanın geri kalanını rahatsız etmeden sadece kendini 2 saniyede bir günceller.
         def sohbet_kutusunu_ciz():
             db_anlik = db_yukle() 
             mesajlar = db_anlik["_GLOBAL_"].get("sohbet", [])
@@ -1131,17 +1135,14 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                         else:
                             st.markdown(f"<div class='sohbet-mesaji'><b><span style='color:#00ffff'>{msg['user']}</span></b> <span style='font-size:11px; color:#aaa;'>🕒 {zaman_str}</span><br>{msg['text']}</div>", unsafe_allow_html=True)
 
-        # Eğer kullanıcının Streamlit sürümü güncelse kusursuz fragment kalkanını devreye sok
         if hasattr(st, "fragment"):
             sohbet_kutusunu_ciz = st.fragment(run_every=2)(sohbet_kutusunu_ciz)
             sohbet_kutusunu_ciz()
         else:
-            # Eski sürümse AutoRefresh kütüphanesini kullan
             if HAS_AUTOREFRESH:
                 st_autorefresh(interval=2000, key="sohbet_yenile")
             sohbet_kutusunu_ciz()
 
-        # Mesaj Gönderme Çubuğu (Burası yenilenmez, sen rahatça yazabilirsin)
         yeni_mesaj = st.chat_input("Piyasa hakkında bir şeyler yaz...")
         if yeni_mesaj:
             db_guncel = db_yukle() 
