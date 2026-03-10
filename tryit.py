@@ -155,7 +155,6 @@ def db_yukle():
                 if k not in ["_GLOBAL_", "_OTURUMLAR_"] and "cuzdan" in v:
                     if "bekleyen_emirler" not in v["cuzdan"]: v["cuzdan"]["bekleyen_emirler"] = []
                     if "kaldiracli_islemler" not in v["cuzdan"]: v["cuzdan"]["kaldiracli_islemler"] = [] 
-                    # YENİ: Banka hesabını oluştur
                     if "banka" not in v["cuzdan"]: v["cuzdan"]["banka"] = {"gecelik": {"miktar": 0.0, "son_guncelleme": time.time()}, "vadeli": []}
             return veri
         except Exception:
@@ -234,13 +233,9 @@ cuzdan = db[aktif_kullanici]["cuzdan"]
 aktif_nickname = db[aktif_kullanici].get("nickname", aktif_kullanici)
 is_admin = db[aktif_kullanici].get("is_admin", False)
 
-# =========================================================================================
-# FAIZ (MERKEZ BANKASI) MOTORU - HER SAYFA YÜKLENDİĞİNDE GİZLİCE ÇALIŞIR
-# =========================================================================================
 banka_verisi = cuzdan.get("banka", {"gecelik": {"miktar": 0.0, "son_guncelleme": su_an}, "vadeli": []})
 degisiklik_gerekli = False
 
-# 1. Gecelik Faiz Hesabı (%40 Yıllık -> Saniye bazında bileşik olmayan getiri)
 if banka_verisi["gecelik"]["miktar"] > 0:
     gecen_saniye = su_an - banka_verisi["gecelik"]["son_guncelleme"]
     if gecen_saniye > 0:
@@ -252,13 +247,12 @@ if banka_verisi["gecelik"]["miktar"] > 0:
 
 banka_verisi["gecelik"]["son_guncelleme"] = su_an
 
-# 2. Vadeli Mevduat Kontrolü
 kalan_vadeli = []
 for v in banka_verisi.get("vadeli", []):
     if su_an >= v["bitis"]:
-        vade_getirisi = v["miktar"] * v["faiz_orani"] * (v["vade_gunu"] / 365)
+        vade_getirisi = v["miktar"] * v["faiz_orani"] * (v["gun"] / 365)
         cuzdan["nakit"] += v["miktar"] + vade_getirisi
-        st.toast(f"🔔 {v['vade_gunu']} Günlük Vadeli Hesabınız doldu! Ana para ve {vade_getirisi:,.2f} ₺ faiz kasanıza yattı.", icon="🏦")
+        st.toast(f"🔔 {v['gun']} Günlük Vadeli Hesabınız doldu! Ana para ve {vade_getirisi:,.2f} ₺ faiz kasanıza yattı.", icon="🏦")
         degisiklik_gerekli = True
     else:
         kalan_vadeli.append(v)
@@ -802,7 +796,7 @@ elif uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                 except: st.error("Haber servisine ulaşılamıyor.")
 
 # =========================================================================================
-# 💼 SANAL PORTFÖY VE OYUN MOTORU (BANKA VE FAIZ DESTEKLİ)
+# 💼 SANAL PORTFÖY VE OYUN MOTORU (CANLI VERİ AKIŞLI)
 # =========================================================================================
 elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
 
@@ -874,10 +868,18 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
             secili_varlik = st.selectbox("Varlık Seçin:", list(tum_varliklar_mega.keys()))
             sembol_islem = tum_varliklar_mega[secili_varlik]
             
-            if secili_varlik in bist_genis: komisyon_orani, komisyon_metni = 0.0015, "%0.15 (Hisse)"
-            elif secili_varlik in abd_hisseleri: komisyon_orani, komisyon_metni = 0.0025, "%0.25 (Yabancı Hisse)"
-            elif secili_varlik in kripto: komisyon_orani, komisyon_metni = 0.0020, "%0.20 (Kripto)"
-            else: komisyon_orani, komisyon_metni = 0.0010, "%0.10 (Emtia)"
+            # YENİ: VADELİ KOMİSYON İNDİRİMİ MATEMATİĞİ (Gerçekçi Hacim Hesabı İçin)
+            if secili_varlik in bist_genis: baz_komisyon = 0.0015
+            elif secili_varlik in abd_hisseleri: baz_komisyon = 0.0025
+            elif secili_varlik in kripto: baz_komisyon = 0.0020
+            else: baz_komisyon = 0.0010
+            
+            if kaldirac_orani > 1:
+                komisyon_orani = baz_komisyon / 10  # Vadeli işlemlerde komisyon oranı çok düşüktür
+                komisyon_metni = f"%{komisyon_orani*100:.3f} (Kaldıraçlı İndirim)"
+            else:
+                komisyon_orani = baz_komisyon
+                komisyon_metni = f"%{komisyon_orani*100:.3f} (Spot)"
 
             try:
                 anlik_fiyat = canli_fiyat_getir(sembol_islem, usd_kuru if not sembol_islem.endswith(".IS") else 1.0)
@@ -946,6 +948,7 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                 girilen_teminat = st.number_input("Bağlanacak Nakit Teminat (₺):", min_value=10.0, max_value=cuzdan["nakit"] if cuzdan["nakit"]>10 else 10.0, step=100.0)
                 islem_hacmi = girilen_teminat * kaldirac_orani
                 alinacak_adet = islem_hacmi / anlik_fiyat if anlik_fiyat > 0 else 0
+                
                 limit_asildi = alinacak_adet > max_islem_limiti
                 if limit_asildi: st.error(f"🚨 Hacim çok büyük! Tahtayı bozmamak için teminatı veya kaldıracı düşürün.")
                 
@@ -995,7 +998,6 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                         kat = usd_kuru if not sembol.endswith(".IS") else 1.0
                         guncel_fiyatlar[v_ismi] = canli_fiyat_getir(sembol, kat)
 
-                # LİMİT EMİR KONTROL
                 kalan_emirler = []
                 for emir in cz_canli.get("bekleyen_emirler", []):
                     anlik = guncel_fiyatlar.get(emir["varlik"], 0.0)
@@ -1018,7 +1020,6 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                     else: kalan_emirler.append(emir)
                 cz_canli["bekleyen_emirler"] = kalan_emirler
 
-                # LİKİDASYON KONTROL
                 kalan_pozisyonlar = []
                 for poz in cz_canli.get("kaldiracli_islemler", []):
                     anlik = guncel_fiyatlar.get(poz["varlik"], 0.0)
@@ -1084,7 +1085,14 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                             </div>
                         """, unsafe_allow_html=True)
                         if st.button("❌ Pozisyonu Kapat", key=f"kapat_{poz['id']}"):
-                            kapanis_komisyonu = (gf * poz["adet"]) * (0.0010 if poz["varlik"] not in bist_genis and poz["varlik"] not in abd_hisseleri else 0.0015)
+                            # YENİ: Kapanış Komisyonunda İndirimli Oranı Kullan
+                            v_isim = poz["varlik"]
+                            if v_isim in bist_genis: kop_oran = 0.0015 / 10
+                            elif v_isim in abd_hisseleri: kop_oran = 0.0025 / 10
+                            elif v_isim in kripto: kop_oran = 0.0020 / 10
+                            else: kop_oran = 0.0010 / 10
+                                
+                            kapanis_komisyonu = (gf * poz["adet"]) * kop_oran
                             nihai_iade = net_nakit_karsiligi - kapanis_komisyonu
                             cz_canli["nakit"] += max(0, nihai_iade)
                             db_canli["_GLOBAL_"]["toplam_komisyon"] += kapanis_komisyonu
@@ -1094,12 +1102,28 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                             time.sleep(1); st.rerun()
                 else: st.caption("Açık kaldıraçlı işleminiz bulunmuyor.")
 
+                st.markdown("<br>", unsafe_allow_html=True)
+                st.subheader("🕒 Bekleyen Spot Emirlerim")
+                if cz_canli.get("bekleyen_emirler"):
+                    for emir in cz_canli["bekleyen_emirler"]:
+                        st.markdown(f"<div style='background-color:rgba(15, 23, 42, 0.8); border:1px solid rgba(0,255,255,0.2); padding:10px; border-radius:10px; margin-bottom:10px; backdrop-filter:blur(5px);'>", unsafe_allow_html=True)
+                        c1, c2, c3, c4 = st.columns([3, 2, 3, 2])
+                        c1.write(f"**{emir['varlik']}**")
+                        c2.write(f"{'🟢 AL' if emir['tip'] == 'AL' else '🔴 SAT'} ({emir['adet']})")
+                        c3.write(f"Hedef: **{emir['hedef_fiyat']:,.2f} ₺**")
+                        if c4.button("❌ İptal", key=f"iptal_{emir['id']}"):
+                            if emir["tip"] == "AL": cz_canli["nakit"] += emir["baglanan_tutar"]
+                            else:
+                                mevcut_veri = cz_canli["varliklar"].get(emir["varlik"], {"adet": 0.0, "maliyet": emir.get("maliyet_rezerv", 0.0)})
+                                cz_canli["varliklar"][emir["varlik"]] = {"adet": mevcut_veri["adet"] + emir["adet"], "maliyet": emir.get("maliyet_rezerv", 0.0)}
+                            cz_canli["bekleyen_emirler"] = [e for e in cz_canli["bekleyen_emirler"] if e["id"] != emir["id"]]
+                            db_kaydet(db_canli); st.rerun()
+                        st.markdown("</div>", unsafe_allow_html=True)
+                else: st.caption("Bekleyen aktif bir emriniz bulunmuyor.")
+
             if hasattr(st, "fragment"): canli_portfoy_motoru = st.fragment(run_every=10)(canli_portfoy_motoru)
             canli_portfoy_motoru()
 
-    # =====================================================================================
-    # YENİ SEKTÖR: BANKA (MERKEZ BANKASI MEVDUAT SİSTEMİ)
-    # =====================================================================================
     with tab_banka:
         st.subheader("🏦 Merkez Bankası (Faiz & Mevduat)")
         st.write("Boşta duran nakit paranızı enflasyona karşı koruyun. Anlık olarak faiz kazanmaya başlayın.")
@@ -1111,25 +1135,21 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
             
             st.markdown("<span class='pulsing-dot'></span> <span style='color:#00ffff; font-size:12px; font-weight:bold;'>Faiz Canlı İşliyor</span>", unsafe_allow_html=True)
             
-            # --- PARA PİYASASI (GECELİK FAİZ) GÖRÜNÜMÜ ---
             st.markdown("<div class='banka-kart'>", unsafe_allow_html=True)
             st.markdown("### 🌙 Para Piyasası Fonu (Gecelik Faiz)")
             st.markdown("<span style='color:#00ff00; font-weight:bold;'>Yıllık Getiri: %40 (Saniye bazlı işler, anında çekilebilir)</span>", unsafe_allow_html=True)
             
             col_b1, col_b2 = st.columns(2)
-            with col_b1:
-                st.metric("Fonda Biriken Para", f"{banka_canli['gecelik']['miktar']:,.4f} ₺")
-            with col_b2:
-                st.metric("Kullanılabilir Nakit (Cüzdan)", f"{cz_canli['nakit']:,.2f} ₺")
+            with col_b1: st.metric("Fonda Biriken Para", f"{banka_canli['gecelik']['miktar']:,.4f} ₺")
+            with col_b2: st.metric("Kullanılabilir Nakit (Cüzdan)", f"{cz_canli['nakit']:,.2f} ₺")
                 
             c_yatir, c_cek = st.columns(2)
             with c_yatir:
-                yatirilacak = st.number_input("Fona Yatır (₺)", min_value=0.0, max_value=cz_canli["nakit"], step=100.0)
+                yatirilacak = st.number_input("Fona Yatır (₺)", min_value=0.0, max_value=float(cz_canli["nakit"]), step=100.0)
                 if st.button("💸 Fona Aktar", use_container_width=True) and yatirilacak > 0:
                     if cz_canli["nakit"] >= yatirilacak:
                         cz_canli["nakit"] -= yatirilacak
                         banka_canli["gecelik"]["miktar"] += yatirilacak
-                        # Parayı eklerken zamanı resetlemezsek, eski az paraya çokmuş gibi faiz yazar (istismar önleme)
                         banka_canli["gecelik"]["son_guncelleme"] = time.time()
                         cz_canli["banka"] = banka_canli
                         db_kaydet(db_canli)
@@ -1145,36 +1165,24 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                         st.rerun()
             st.markdown("</div>", unsafe_allow_html=True)
             
-            # --- VADELİ MEVDUAT GÖRÜNÜMÜ ---
             st.markdown("<div class='banka-kart'>", unsafe_allow_html=True)
             st.markdown("### 📅 Kilitli Vadeli Mevduat")
             st.markdown("Paranızı belirli bir süre kilitlerseniz çok daha yüksek faiz alırsınız. Vade bozulursa faiz yanar!")
             
             with st.form("vadeli_form"):
-                v_miktar = st.number_input("Kilitlenecek Tutar (₺)", min_value=0.0, max_value=cz_canli["nakit"], step=1000.0)
+                v_miktar = st.number_input("Kilitlenecek Tutar (₺)", min_value=0.0, max_value=float(cz_canli["nakit"]), step=1000.0)
                 v_sure = st.selectbox("Vade Seçimi", ["1 Günlük Kilit (%45 Yıllık)", "7 Günlük Kilit (%52 Yıllık)", "30 Günlük Kilit (%60 Yıllık)"])
-                
                 if st.form_submit_button("🔒 Vadeye Bağla"):
                     if v_miktar > 0 and cz_canli["nakit"] >= v_miktar:
                         gun = 1 if "1 Günlük" in v_sure else (7 if "7 Günlük" in v_sure else 30)
                         oran = 0.45 if gun == 1 else (0.52 if gun == 7 else 0.60)
-                        
                         cz_canli["nakit"] -= v_miktar
-                        banka_canli["vadeli"].append({
-                            "id": str(uuid.uuid4()),
-                            "miktar": v_miktar,
-                            "gun": gun,
-                            "faiz_orani": oran,
-                            "baslangic": time.time(),
-                            "bitis": time.time() + (gun * 24 * 3600)
-                        })
+                        banka_canli["vadeli"].append({"id": str(uuid.uuid4()), "miktar": v_miktar, "gun": gun, "faiz_orani": oran, "baslangic": time.time(), "bitis": time.time() + (gun * 24 * 3600)})
                         cz_canli["banka"] = banka_canli
                         db_kaydet(db_canli)
                         st.success("Tebrikler! Paranız yüksek faizle kilitlendi.")
-                        time.sleep(1)
-                        st.rerun()
+                        time.sleep(1); st.rerun()
                         
-            # Aktif Vadeliler
             if banka_canli.get("vadeli"):
                 st.markdown("#### 🔓 Aktif Kilitli Mevduatlarınız")
                 for v in banka_canli["vadeli"]:
@@ -1183,32 +1191,18 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                     kalan_saat = int((kalan_saniye % (24*3600)) // 3600)
                     kalan_dk = int((kalan_saniye % 3600) // 60)
                     beklenen_getiri = v["miktar"] * v["faiz_orani"] * (v["gun"] / 365)
-                    
-                    st.markdown(f"""
-                    <div style='background:rgba(255,255,255,0.05); padding:10px; border-radius:8px; margin-bottom:5px; display:flex; justify-content:space-between; align-items:center;'>
-                        <div>
-                            <b>{v['miktar']:,.2f} ₺</b> ({v['gun']} Günlük)<br>
-                            <span style='color:#00ff00; font-size:12px;'>Vade Sonu Getirisi: +{beklenen_getiri:,.2f} ₺</span><br>
-                            <span style='color:#aaa; font-size:12px;'>⏳ Kalan Süre: {kalan_gun} Gün, {kalan_saat} Saat, {kalan_dk} Dk</span>
-                        </div>
-                    </div>
-                    """, unsafe_allow_html=True)
+                    st.markdown(f"<div style='background:rgba(255,255,255,0.05); padding:10px; border-radius:8px; margin-bottom:5px; display:flex; justify-content:space-between; align-items:center;'><div><b>{v['miktar']:,.2f} ₺</b> ({v['gun']} Günlük)<br><span style='color:#00ff00; font-size:12px;'>Vade Sonu Getirisi: +{beklenen_getiri:,.2f} ₺</span><br><span style='color:#aaa; font-size:12px;'>⏳ Kalan Süre: {kalan_gun} Gün, {kalan_saat} Saat, {kalan_dk} Dk</span></div></div>", unsafe_allow_html=True)
                     if st.button("❌ Vadeyi Boz (Faiz Yanar)", key=f"boz_{v['id']}"):
                         banka_canli["vadeli"] = [x for x in banka_canli["vadeli"] if x["id"] != v["id"]]
-                        cz_canli["nakit"] += v["miktar"] # Sadece anapara döner
+                        cz_canli["nakit"] += v["miktar"] 
                         cz_canli["banka"] = banka_canli
                         db_kaydet(db_canli)
                         st.error("Vade bozuldu. Ana paranız kasaya döndü, faiz hakkınız yandı.")
-                        time.sleep(1)
-                        st.rerun()
+                        time.sleep(1); st.rerun()
             st.markdown("</div>", unsafe_allow_html=True)
 
-        if hasattr(st, "fragment"):
-            canli_banka_motoru = st.fragment(run_every=2)(canli_banka_motoru)
-            canli_banka_motoru()
-        else:
-            if HAS_AUTOREFRESH: st_autorefresh(interval=2000, key="banka_yenile")
-            canli_banka_motoru()
+        if hasattr(st, "fragment"): canli_banka_motoru = st.fragment(run_every=2)(canli_banka_motoru)
+        canli_banka_motoru()
 
     with tab_liderlik:
         st.subheader("🏆 En İyi Fon Yöneticileri")
@@ -1234,11 +1228,8 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                 if k not in ["_GLOBAL_", "_OTURUMLAR_"] and not v.get("is_admin", False) and "cuzdan" in v:
                     kullanici_cuzdan = v["cuzdan"]
                     kullanici_toplam = kullanici_cuzdan.get("nakit", 1000000.0)
-                    
-                    # Bankadaki parayı ekle
                     b_veri = kullanici_cuzdan.get("banka", {"gecelik": {"miktar": 0.0}, "vadeli": []})
                     kullanici_toplam += b_veri["gecelik"]["miktar"] + sum([x["miktar"] for x in b_veri["vadeli"]])
-                    
                     for be in kullanici_cuzdan.get("bekleyen_emirler", []):
                         if be["tip"] == "AL": kullanici_toplam += be["baglanan_tutar"]
                     if "varliklar" in kullanici_cuzdan:
