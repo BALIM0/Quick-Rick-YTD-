@@ -27,56 +27,20 @@ st.set_page_config(page_title="Portföy Analiz ve Yönetimi", layout="wide", pag
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
-    
     html, body, [class*="css"] { font-family: 'Inter', sans-serif !important; }
     .stApp { background: radial-gradient(circle at top right, #131d2b 0%, #0b0f19 100%) !important; }
     [data-testid="stSidebar"] { background-color: #0e131f !important; border-right: 1px solid rgba(0, 255, 255, 0.05) !important; }
-    
-    div[data-testid="metric-container"] { 
-        background: rgba(20, 26, 36, 0.6) !important; 
-        backdrop-filter: blur(12px) !important; 
-        -webkit-backdrop-filter: blur(12px) !important; 
-        border: 1px solid rgba(0, 255, 255, 0.15) !important; 
-        padding: 20px !important; 
-        border-radius: 16px !important; 
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3) !important; 
-        transition: all 0.4s ease-in-out !important; 
-    }
-    div[data-testid="metric-container"]:hover { 
-        transform: translateY(-7px) !important; 
-        border-color: rgba(0, 255, 255, 0.6) !important; 
-        box-shadow: 0 12px 40px 0 rgba(0, 255, 255, 0.15) !important; 
-    }
-    
-    div.stButton > button { 
-        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important; 
-        color: #fff !important; 
-        border: 1px solid rgba(0, 255, 255, 0.3) !important; 
-        border-radius: 10px !important; 
-        padding: 10px 24px !important; 
-        font-weight: 600 !important; 
-        letter-spacing: 0.5px !important; 
-        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important; 
-        width: 100% !important; 
-    }
-    div.stButton > button:hover { 
-        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important; 
-        border-color: #00ffff !important; 
-        color: #00ffff !important; 
-        box-shadow: 0 0 15px rgba(0, 255, 255, 0.3), inset 0 0 10px rgba(0, 255, 255, 0.1) !important; 
-        transform: scale(1.03) !important; 
-    }
-    
+    div[data-testid="metric-container"] { background: rgba(20, 26, 36, 0.6) !important; backdrop-filter: blur(12px) !important; -webkit-backdrop-filter: blur(12px) !important; border: 1px solid rgba(0, 255, 255, 0.15) !important; padding: 20px !important; border-radius: 16px !important; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3) !important; transition: all 0.4s ease-in-out !important; }
+    div[data-testid="metric-container"]:hover { transform: translateY(-7px) !important; border-color: rgba(0, 255, 255, 0.6) !important; box-shadow: 0 12px 40px 0 rgba(0, 255, 255, 0.15) !important; }
+    div.stButton > button { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important; color: #fff !important; border: 1px solid rgba(0, 255, 255, 0.3) !important; border-radius: 10px !important; padding: 10px 24px !important; font-weight: 600 !important; letter-spacing: 0.5px !important; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important; width: 100% !important; }
+    div.stButton > button:hover { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important; border-color: #00ffff !important; color: #00ffff !important; box-shadow: 0 0 15px rgba(0, 255, 255, 0.3), inset 0 0 10px rgba(0, 255, 255, 0.1) !important; transform: scale(1.03) !important; }
     button[data-baseweb="tab"] { background-color: transparent !important; border: none !important; border-bottom: 3px solid transparent !important; padding: 12px 20px !important; font-weight: 600 !important; color: #667085 !important; transition: all 0.3s ease !important; }
     button[data-baseweb="tab"][aria-selected="true"] { color: #00ffff !important; border-bottom: 3px solid #00ffff !important; background-color: rgba(0, 255, 255, 0.05) !important; border-radius: 8px 8px 0 0 !important; }
     button[data-baseweb="tab"]:hover { color: #e2e8f0 !important; background-color: rgba(255, 255, 255, 0.02) !important; }
-    
     div[data-baseweb="select"] > div, input[type="text"], input[type="number"], input[type="password"] { border-radius: 10px !important; border: 1px solid #334155 !important; background-color: rgba(15, 23, 42, 0.8) !important; color: white !important; transition: all 0.3s ease !important; }
     div[data-baseweb="select"] > div:hover, input[type="text"]:focus, input[type="number"]:focus, input[type="password"]:focus { border-color: #00ffff !important; box-shadow: 0 0 8px rgba(0,255,255,0.4) !important; }
-    
     .bagis-panosu { text-align: center; padding: 25px; background: linear-gradient(135deg, rgba(255,215,0,0.1) 0%, rgba(255,140,0,0.1) 100%); border-radius: 16px; border: 1px solid rgba(255,215,0,0.4); margin-bottom: 30px; box-shadow: 0 10px 30px rgba(255, 215, 0, 0.08); backdrop-filter: blur(8px); }
     .bagis-sayi { color: #FFD700; font-size: 34px; font-weight: 800; text-shadow: 0 0 20px rgba(255,215,0,0.5); letter-spacing: 1.5px; }
-    
     div.stRadio { width: 100% !important; }
     div.stRadio > div { width: 100% !important; }
     div.stRadio div[role="radiogroup"] { display: flex !important; width: 100% !important; align-items: stretch !important; }
@@ -84,12 +48,10 @@ st.markdown("""
     div.stRadio div[role="radiogroup"] > label > div:first-child { display: none !important; }
     div.stRadio div[role="radiogroup"] > label p { margin: 0 !important; font-size: 14px !important; width: 100% !important; text-align: center !important; white-space: nowrap !important; }
     div.stRadio div[role="radiogroup"] > label:hover { border-color: #00ffff !important; background-color: #1e293b !important; box-shadow: 0 4px 15px rgba(0, 255, 255, 0.15) !important; }
-    
     [data-testid="stSidebar"] div.stRadio div[role="radiogroup"] { flex-direction: column !important; gap: 12px !important; width: 100% !important; }
     [data-testid="stSidebar"] div.stRadio div[role="radiogroup"] > label { flex: 1 1 100% !important; }
     [data-testid="stSidebar"] div.stRadio div[role="radiogroup"] > label:has(input:checked) { background: linear-gradient(90deg, rgba(0,255,255,0.15) 0%, rgba(0,255,255,0.02) 100%) !important; border-color: #00ffff !important; border-left: 5px solid #00ffff !important; }
     [data-testid="stSidebar"] div.stRadio div[role="radiogroup"] > label:has(input:checked) p { color: #00ffff !important; font-weight: bold !important; }
-    
     [data-testid="stMainBlockContainer"] div.stRadio div[role="radiogroup"] { flex-direction: row !important; flex-wrap: nowrap !important; gap: 15px !important; width: 100% !important; }
     [data-testid="stMainBlockContainer"] div.stRadio div[role="radiogroup"] > label { flex: 1 1 50% !important; width: 50% !important; }
     [data-testid="stMainBlockContainer"] div.stRadio div[role="radiogroup"] > label:nth-child(1):has(input:checked) { background: linear-gradient(90deg, rgba(0,255,0,0.15) 0%, rgba(0,255,0,0.02) 100%) !important; border-color: #00ff00 !important; border-left: 5px solid #00ff00 !important; }
@@ -99,17 +61,15 @@ st.markdown("""
     
     .sohbet-mesaji { background-color: rgba(15, 23, 42, 0.4); padding: 10px; border-radius: 8px; margin-bottom: 8px; border-left: 3px solid #334155; }
     .sohbet-mesaji.admin { border-left: 3px solid #FFD700; background-color: rgba(255, 215, 0, 0.05); }
-    
     .kaldirac-kart { background-color: rgba(15, 23, 42, 0.8); border: 1px solid rgba(0, 255, 255, 0.2); padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: all 0.3s;}
     .kaldirac-kart:hover { transform: scale(1.02); }
     .kaldirac-kart.long { border-left: 5px solid #00ff00; }
     .kaldirac-kart.short { border-left: 5px solid #ff4444; }
-    
     .banka-kart { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border: 1px solid rgba(255, 215, 0, 0.3); padding: 20px; border-radius: 12px; margin-bottom: 15px; }
     .pulsing-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background-color: #00ff00; animation: pulse 2s infinite; margin-right: 5px; }
     @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(0, 255, 0, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(0, 255, 0, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 255, 0, 0); } }
 
-    /* YENİ: LİDERLİK TABLOSU ÖZEL HTML STİLLERİ */
+    /* LİDERLİK TABLOSU ÖZEL HTML STİLLERİ */
     .liderlik-tablosu { width: 100%; border-collapse: collapse; margin-top: 10px; background-color: rgba(15,23,42,0.6); border-radius: 10px; overflow: hidden; }
     .liderlik-tablosu th { color: #aaa; text-transform: uppercase; font-size: 12px; padding: 15px; border-bottom: 1px solid rgba(0,255,255,0.3); text-align: left; background-color: rgba(0,0,0,0.4); }
     .liderlik-tablosu td { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); font-weight: 600; color: white; }
@@ -119,9 +79,19 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Rozet Sözlüğü (Hover metinleri için)
+# ROZET SÖZLÜĞÜ
 ROZET_ANLAMLARI = {
+    "👑": "Oligark: 2.000.000 ₺ (2 Milyon) toplam net varlığa ulaştı.",
     "🐋": "Mavi Balina: Tek işlemde 10.000 ₺ üzerinde net kâr elde etti.",
+    "🐺": "Wall Street Kurdu: Sistemde toplam 50 işlem sayısını geçti.",
+    "🎰": "Büyük Kumarbaz: Tek işleme 500.000 ₺ ve üzeri nakit teminat bağladı.",
+    "🎯": "Keskin Nişancı: Kaldıraçlı bir işlemi %100 (2x) ve üzeri kârla kapattı.",
+    "📉": "Büyük Çöküş: Tek bir 'Açığa Satış' (Short) işleminden 50.000 ₺ üzeri kâr etti.",
+    "🍱": "Sepet Gurmesi: Cüzdanında aynı anda en az 10 farklı spot varlık tuttu.",
+    "💸": "Borsa Sponsoru: Merkez Bankası'na toplam 50.000 ₺'den fazla komisyon ödedi.",
+    "🛡️": "Demir İrade: Oyunda 7 günden fazla hayatta kaldı.",
+    "🧊": "Buzul Kasa: Varlığını 30 Günlük kilitli mevduata bağlayıp unuttu.",
+    "👽": "Kripto Baronu: Sadece kripto varlıklarda tek kalemde 100.000 ₺ hacmi aştı.",
     "⚡": "Kamikaze: Ölümü göze alıp 50x kaldıraçlı işlem açtı.",
     "🏦": "Merkez Bankeri: Parasını vadeli mevduata bağladı.",
     "🐻": "Ayı Pençesi: Piyasalar düşerken açığa satış (Short) yaparak kâr elde etti.",
@@ -166,12 +136,13 @@ def db_yukle():
                 if "sohbet" not in veri["_GLOBAL_"]: veri["_GLOBAL_"]["sohbet"] = []
             if "_OTURUMLAR_" not in veri: veri["_OTURUMLAR_"] = {}
             if ADMIN_ID not in veri:
-                veri[ADMIN_ID] = {"sifre": sifre_sifrele(ADMIN_PASS), "nickname": "👑 SİSTEM YÖNETİCİSİ", "son_isim_degistirme": 0, "kayit_tarihi": time.time(), "rozetler": [], "cuzdan": {"nakit": 0.0, "varliklar": {}, "kaldiracli_islemler": [], "izleme_listesi": [], "bekleyen_emirler": [], "banka": {"gecelik": {"miktar": 0.0, "son_guncelleme": time.time()}, "vadeli": []}}, "is_admin": True}
+                veri[ADMIN_ID] = {"sifre": sifre_sifrele(ADMIN_PASS), "nickname": "👑 SİSTEM YÖNETİCİSİ", "son_isim_degistirme": 0, "kayit_tarihi": time.time(), "rozetler": [], "istatistikler": {"islem_sayisi": 0, "odenen_komisyon": 0.0}, "cuzdan": {"nakit": 0.0, "varliklar": {}, "kaldiracli_islemler": [], "izleme_listesi": [], "bekleyen_emirler": [], "banka": {"gecelik": {"miktar": 0.0, "son_guncelleme": time.time()}, "vadeli": []}}, "is_admin": True}
             
             for k, v in veri.items():
                 if k not in ["_GLOBAL_", "_OTURUMLAR_"]:
                     if "rozetler" not in v: v["rozetler"] = []
-                    if "kayit_tarihi" not in v: v["kayit_tarihi"] = time.time() # Eski hesaplara otomatik tarih ekler
+                    if "kayit_tarihi" not in v: v["kayit_tarihi"] = time.time()
+                    if "istatistikler" not in v: v["istatistikler"] = {"islem_sayisi": 0, "odenen_komisyon": 0.0}
                     if "cuzdan" in v:
                         if "bekleyen_emirler" not in v["cuzdan"]: v["cuzdan"]["bekleyen_emirler"] = []
                         if "kaldiracli_islemler" not in v["cuzdan"]: v["cuzdan"]["kaldiracli_islemler"] = [] 
@@ -179,7 +150,7 @@ def db_yukle():
             return veri
         except Exception:
             pass
-    return {"_GLOBAL_": {"toplam_komisyon": 0.0, "duyuru": "", "sohbet": []}, "_OTURUMLAR_": {}, ADMIN_ID: {"sifre": sifre_sifrele(ADMIN_PASS), "nickname": "👑 SİSTEM YÖNETİCİSİ", "son_isim_degistirme": 0, "kayit_tarihi": time.time(), "rozetler": [], "cuzdan": {"nakit": 0.0, "varliklar": {}, "kaldiracli_islemler": [], "izleme_listesi": [], "bekleyen_emirler": [], "banka": {"gecelik": {"miktar": 0.0, "son_guncelleme": time.time()}, "vadeli": []}}, "is_admin": True}}
+    return {"_GLOBAL_": {"toplam_komisyon": 0.0, "duyuru": "", "sohbet": []}, "_OTURUMLAR_": {}, ADMIN_ID: {"sifre": sifre_sifrele(ADMIN_PASS), "nickname": "👑 SİSTEM YÖNETİCİSİ", "son_isim_degistirme": 0, "kayit_tarihi": time.time(), "rozetler": [], "istatistikler": {"islem_sayisi": 0, "odenen_komisyon": 0.0}, "cuzdan": {"nakit": 0.0, "varliklar": {}, "kaldiracli_islemler": [], "izleme_listesi": [], "bekleyen_emirler": [], "banka": {"gecelik": {"miktar": 0.0, "son_guncelleme": time.time()}, "vadeli": []}}, "is_admin": True}}
 
 def db_kaydet(db):
     gecici_dosya = f"{DB_DOSYASI}.tmp"
@@ -193,6 +164,16 @@ if 'aktif_kullanici' not in st.session_state:
     st.session_state.aktif_kullanici = None
 
 db = db_yukle()
+
+# ROZET VERME FONKSİYONU (Tekrarı engeller, anında Toast atar)
+def rozet_ver(db_ref, k_id, rozet, mesaj):
+    if rozet not in db_ref[k_id].setdefault("rozetler", []):
+        db_ref[k_id]["rozetler"].append(rozet)
+        if k_id == aktif_kullanici:
+            st.toast(f"YENİ BAŞARIM AÇILDI: {rozet} {mesaj}", icon="🏆")
+        return True
+    return False
+
 su_an = time.time()
 silinecek_oturumlar = [t for t, v in db.get("_OTURUMLAR_", {}).items() if su_an > v["bitis"]]
 for t in silinecek_oturumlar: del db["_OTURUMLAR_"][t]
@@ -243,7 +224,7 @@ if st.session_state.aktif_kullanici is None:
             elif k_kullanici.lower() == k_nickname.lower(): st.error("🛡️ Güvenlik İhlali: Kullanıcı adı ile Takma Ad aynı olamaz.")
             elif len(k_kullanici) < 3 or len(k_sifre) < 4 or len(k_nickname) < 3: st.warning("Kullanıcı adı/Takma ad en az 3, şifre en az 4 karakter olmalıdır.")
             else:
-                db[k_kullanici] = {"sifre": sifre_sifrele(k_sifre), "nickname": k_nickname, "son_isim_degistirme": 0, "kayit_tarihi": time.time(), "rozetler": [], "cuzdan": {"nakit": 1000000.0, "varliklar": {}, "kaldiracli_islemler": [], "izleme_listesi": ["Türk Hava Yolları", "Bitcoin", "Altın (Ons)", "NVIDIA", "Apple"], "bekleyen_emirler": [], "banka": {"gecelik": {"miktar": 0.0, "son_guncelleme": time.time()}, "vadeli": []}}, "is_admin": False}
+                db[k_kullanici] = {"sifre": sifre_sifrele(k_sifre), "nickname": k_nickname, "son_isim_degistirme": 0, "kayit_tarihi": time.time(), "rozetler": [], "istatistikler": {"islem_sayisi": 0, "odenen_komisyon": 0.0}, "cuzdan": {"nakit": 1000000.0, "varliklar": {}, "kaldiracli_islemler": [], "izleme_listesi": ["Türk Hava Yolları", "Bitcoin", "Altın (Ons)", "NVIDIA", "Apple"], "bekleyen_emirler": [], "banka": {"gecelik": {"miktar": 0.0, "son_guncelleme": time.time()}, "vadeli": []}}, "is_admin": False}
                 db_kaydet(db)
                 st.success("✅ Hesabınız oluşturuldu! Şimdi 'Giriş Yap' sekmesinden giriş yapabilirsiniz.")
     st.stop()
@@ -564,7 +545,7 @@ elif uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                         sonuclar.append({"Varlık": isim, "Fiyat (₺)": round(son_fiyat, 2), "200G Ort (₺)": round(sma_200_deger, 2), "F/K": fk_metni, "Puan": puan, "Durum": " | ".join(durum_notu) if durum_notu else "Nötr"})
                         
                 except Exception as e:
-                    pass 
+                    st.write(f"⚠️ {isim} atlandı. Hata: {str(e)}") 
                 finally:
                     time.sleep(0.05)
                     islenen += 1
@@ -816,7 +797,7 @@ elif uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                 except: st.error("Haber servisine ulaşılamıyor.")
 
 # =========================================================================================
-# 💼 SANAL PORTFÖY VE OYUN MOTORU (CANLI VERİ AKIŞLI)
+# 💼 SANAL PORTFÖY VE OYUN MOTORU (BAŞARIM & ROZET DESTEKLİ)
 # =========================================================================================
 elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
 
@@ -929,6 +910,10 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
 
                 buton_metni = "🕒 Bekleyen Emir Gir" if "Limit" in emir_turu else "⚡ Siparişi Anında Onayla"
                 if st.button(buton_metni, use_container_width=True) and anlik_fiyat > 0 and not limit_asildi:
+                    # İstatistikleri artır
+                    db[aktif_kullanici]["istatistikler"]["islem_sayisi"] += 1
+                    db[aktif_kullanici]["istatistikler"]["odenen_komisyon"] += komisyon_tutari
+                    
                     if islem_tipi == "AL":
                         if cuzdan["nakit"] >= toplam_islem_maliyeti:
                             cuzdan["nakit"] -= toplam_islem_maliyeti
@@ -941,6 +926,12 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                                 cuzdan["varliklar"][secili_varlik] = {"adet": yeni_adet, "maliyet": ((mevcut_veri["adet"] * mevcut_veri["maliyet"]) + toplam_islem_maliyeti) / yeni_adet}
                                 db["_GLOBAL_"]["toplam_komisyon"] += komisyon_tutari
                                 st.success("⚡ İşlem Başarılı!")
+                            
+                            # ROZET KONTROLLERİ
+                            if db[aktif_kullanici]["istatistikler"]["islem_sayisi"] >= 50: rozet_ver(db, aktif_kullanici, "🐺", "Wall Street Kurdu")
+                            if db[aktif_kullanici]["istatistikler"]["odenen_komisyon"] >= 50000: rozet_ver(db, aktif_kullanici, "💸", "Borsa Sponsoru")
+                            if secili_varlik in kripto and islem_tutari >= 100000: rozet_ver(db, aktif_kullanici, "👽", "Kripto Baronu")
+                                
                             aktif_cuzdan_kaydet()
                             time.sleep(1); st.rerun() 
                         else: st.error("Yetersiz bakiye!")
@@ -949,12 +940,9 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                         if mevcut_veri["adet"] >= islem_miktari:
                             yeni_adet = mevcut_veri["adet"] - islem_miktari
                             
-                            # ROZET KONTROLÜ: Spot Satıştan 10 Bin TL Kâr (Mavi Balina)
                             if "Limit" not in emir_turu:
                                 net_kar = toplam_islem_getirisi - (mevcut_veri["maliyet"] * islem_miktari)
-                                if net_kar >= 10000 and "🐋" not in db[aktif_kullanici].setdefault("rozetler", []):
-                                    db[aktif_kullanici]["rozetler"].append("🐋")
-                                    st.toast("YENİ ROZET KAZANDINIZ: 🐋 Mavi Balina!", icon="🏆")
+                                if net_kar >= 10000: rozet_ver(db, aktif_kullanici, "🐋", "Mavi Balina")
 
                             if yeni_adet <= 0.000001: del cuzdan["varliklar"][secili_varlik]
                             else: cuzdan["varliklar"][secili_varlik]["adet"] = yeni_adet
@@ -965,6 +953,11 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                                 cuzdan["nakit"] += toplam_islem_getirisi
                                 db["_GLOBAL_"]["toplam_komisyon"] += komisyon_tutari
                                 st.success("⚡ İşlem Başarılı!")
+                                
+                            if db[aktif_kullanici]["istatistikler"]["islem_sayisi"] >= 50: rozet_ver(db, aktif_kullanici, "🐺", "Wall Street Kurdu")
+                            if db[aktif_kullanici]["istatistikler"]["odenen_komisyon"] >= 50000: rozet_ver(db, aktif_kullanici, "💸", "Borsa Sponsoru")
+                            if secili_varlik in kripto and islem_tutari >= 100000: rozet_ver(db, aktif_kullanici, "👽", "Kripto Baronu")
+                                
                             aktif_cuzdan_kaydet()
                             time.sleep(1); st.rerun() 
                         else: st.error("Yetersiz adet!")
@@ -991,6 +984,9 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                         cuzdan["nakit"] -= gerekli_nakit
                         db["_GLOBAL_"]["toplam_komisyon"] += komisyon_tutari
                         
+                        db[aktif_kullanici]["istatistikler"]["islem_sayisi"] += 1
+                        db[aktif_kullanici]["istatistikler"]["odenen_komisyon"] += komisyon_tutari
+                        
                         yeni_pozisyon = {
                             "id": str(uuid.uuid4()), "varlik": secili_varlik, "yon": islem_tipi, "kaldirac": kaldirac_orani,
                             "teminat": girilen_teminat, "adet": alinacak_adet, "giris_fiyati": anlik_fiyat,
@@ -998,10 +994,12 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                         }
                         cuzdan["kaldiracli_islemler"].append(yeni_pozisyon)
                         
-                        # ROZET KONTROLÜ: 50x Kaldıraç (Kamikaze)
-                        if kaldirac_orani == 50 and "⚡" not in db[aktif_kullanici].setdefault("rozetler", []):
-                            db[aktif_kullanici]["rozetler"].append("⚡")
-                            st.toast("YENİ ROZET KAZANDINIZ: ⚡ Kamikaze!", icon="🏆")
+                        # ROZET KONTROLLERİ 
+                        if kaldirac_orani == 50: rozet_ver(db, aktif_kullanici, "⚡", "Kamikaze")
+                        if girilen_teminat >= 500000: rozet_ver(db, aktif_kullanici, "🎰", "Büyük Kumarbaz")
+                        if secili_varlik in kripto and islem_hacmi >= 100000: rozet_ver(db, aktif_kullanici, "👽", "Kripto Baronu")
+                        if db[aktif_kullanici]["istatistikler"]["islem_sayisi"] >= 50: rozet_ver(db, aktif_kullanici, "🐺", "Wall Street Kurdu")
+                        if db[aktif_kullanici]["istatistikler"]["odenen_komisyon"] >= 50000: rozet_ver(db, aktif_kullanici, "💸", "Borsa Sponsoru")
                             
                         aktif_cuzdan_kaydet()
                         st.success(f"{kaldirac_orani}x {islem_tipi} Pozisyonu Başarıyla Açıldı!")
@@ -1029,6 +1027,7 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                         kat = usd_kuru if not sembol.endswith(".IS") else 1.0
                         guncel_fiyatlar[v_ismi] = canli_fiyat_getir(sembol, kat)
 
+                # LİMİT EMİR KONTROL
                 kalan_emirler = []
                 for emir in cz_canli.get("bekleyen_emirler", []):
                     anlik = guncel_fiyatlar.get(emir["varlik"], 0.0)
@@ -1051,6 +1050,7 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                     else: kalan_emirler.append(emir)
                 cz_canli["bekleyen_emirler"] = kalan_emirler
 
+                # LİKİDASYON KONTROL
                 kalan_pozisyonlar = []
                 for poz in cz_canli.get("kaldiracli_islemler", []):
                     anlik = guncel_fiyatlar.get(poz["varlik"], 0.0)
@@ -1067,6 +1067,11 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                     else: kalan_pozisyonlar.append(poz)
                 cz_canli["kaldiracli_islemler"] = kalan_pozisyonlar
                 
+                # SEPET GURMESİ ROZET KONTROLÜ
+                if len(cz_canli.get("varliklar", {})) >= 10:
+                    rozet_ver(db_canli, aktif_kullanici, "🍱", "Sepet Gurmesi")
+                    degisiklik_var = True
+
                 if degisiklik_var:
                     db_kaydet(db_canli)
                     for m in mesaj_listesi: st.toast(m, icon="🔥" if "MARGIN" in m else "✅")
@@ -1125,15 +1130,19 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                                 
                             kapanis_komisyonu = (gf * poz["adet"]) * kop_oran
                             nihai_iade = net_nakit_karsiligi - kapanis_komisyonu
+                            
                             cz_canli["nakit"] += max(0, nihai_iade)
                             db_canli["_GLOBAL_"]["toplam_komisyon"] += kapanis_komisyonu
+                            db_canli[aktif_kullanici]["istatistikler"]["odenen_komisyon"] += kapanis_komisyonu
+                            db_canli[aktif_kullanici]["istatistikler"]["islem_sayisi"] += 1
                             cz_canli["kaldiracli_islemler"] = [p for p in cz_canli["kaldiracli_islemler"] if p["id"] != poz["id"]]
                             
-                            # ROZET KONTROLLERİ (Mavi Balina ve Ayı Pençesi)
-                            if pnl >= 10000 and "🐋" not in db_canli[aktif_kullanici].setdefault("rozetler", []):
-                                db_canli[aktif_kullanici]["rozetler"].append("🐋")
-                            if poz["yon"] == "SAT (Short)" and pnl > 0 and "🐻" not in db_canli[aktif_kullanici].setdefault("rozetler", []):
-                                db_canli[aktif_kullanici]["rozetler"].append("🐻")
+                            # ROZET KONTROLLERİ (Kaldıraç Kapatma)
+                            if pnl >= 10000: rozet_ver(db_canli, aktif_kullanici, "🐋", "Mavi Balina")
+                            if pnl >= 50000 and poz["yon"] == "SAT (Short)": rozet_ver(db_canli, aktif_kullanici, "📉", "Büyük Çöküş")
+                            if roe_yuzde >= 100: rozet_ver(db_canli, aktif_kullanici, "🎯", "Keskin Nişancı")
+                            if db_canli[aktif_kullanici]["istatistikler"]["odenen_komisyon"] >= 50000: rozet_ver(db_canli, aktif_kullanici, "💸", "Borsa Sponsoru")
+                            if db_canli[aktif_kullanici]["istatistikler"]["islem_sayisi"] >= 50: rozet_ver(db_canli, aktif_kullanici, "🐺", "Wall Street Kurdu")
                             
                             db_kaydet(db_canli)
                             st.success(f"Pozisyon kapandı! Kasanıza {max(0, nihai_iade):,.2f} ₺ eklendi.")
@@ -1218,10 +1227,9 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                         banka_canli["vadeli"].append({"id": str(uuid.uuid4()), "miktar": v_miktar, "gun": gun, "faiz_orani": oran, "baslangic": time.time(), "bitis": time.time() + (gun * 24 * 3600)})
                         cz_canli["banka"] = banka_canli
                         
-                        # ROZET KONTROLÜ: Bankaya para bağlandıysa (Merkez Bankeri)
-                        if "🏦" not in db_canli[aktif_kullanici].setdefault("rozetler", []):
-                            db_canli[aktif_kullanici]["rozetler"].append("🏦")
-                            st.toast("YENİ ROZET KAZANDINIZ: 🏦 Merkez Bankeri!", icon="🏆")
+                        # ROZET KONTROLÜ
+                        rozet_ver(db_canli, aktif_kullanici, "🏦", "Merkez Bankeri")
+                        if gun == 30: rozet_ver(db_canli, aktif_kullanici, "🧊", "Buzul Kasa")
                             
                         db_kaydet(db_canli)
                         st.success("Tebrikler! Paranız yüksek faizle kilitlendi.")
@@ -1250,7 +1258,7 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
 
     with tab_liderlik:
         st.subheader("🏆 En İyi Fon Yöneticileri")
-        st.write("Sistemdeki tüm yatırımcıların toplam fon büyüklüklerine göre rekabet sıralaması.")
+        st.write("Sistemdeki tüm yatırımcıların başarımları ve portföy büyüklükleri.")
         
         def liderlik_tablosunu_ciz():
             db_canli = db_yukle()
@@ -1271,11 +1279,9 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
             for k, v in db_canli.items():
                 if k not in ["_GLOBAL_", "_OTURUMLAR_"] and not v.get("is_admin", False) and "cuzdan" in v:
                     
-                    # ROZET KONTROLÜ: Hesap 1 günden eski mi? (Kıdemli Kurt)
-                    if time.time() - v.get("kayit_tarihi", time.time()) > 86400:
-                        if "⏳" not in v.setdefault("rozetler", []):
-                            v["rozetler"].append("⏳")
-                            db_kaydet(db_canli) # Sessizce kaydet
+                    # ROZET KONTROLÜ: Demir İrade (7 Gün Hayatta Kalma)
+                    if time.time() - v.get("kayit_tarihi", time.time()) > 7 * 86400:
+                        rozet_ver(db_canli, k, "🛡️", "Demir İrade")
                     
                     kullanici_cuzdan = v["cuzdan"]
                     kullanici_toplam = kullanici_cuzdan.get("nakit", 1000000.0)
@@ -1293,9 +1299,14 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                         guncel_p_fiyat = liderlik_fiyatlar.get(poz["varlik"], poz["giris_fiyati"])
                         pnl = (guncel_p_fiyat - poz["giris_fiyati"]) * poz["adet"] if poz["yon"] == "AL (Long)" else (poz["giris_fiyati"] - guncel_p_fiyat) * poz["adet"]
                         kullanici_toplam += max(0, poz["teminat"] + pnl)
+                        
+                    # ROZET KONTROLÜ: Oligark (2 Milyon Bakiye)
+                    if kullanici_toplam >= 2000000:
+                        rozet_ver(db_canli, k, "👑", "Oligark")
                             
                     gosterilecek_isim = v.get("nickname", k)
-                    # Rozetleri ismin yanına yapıştırıyoruz (HTML Tooltip ile)
+                    
+                    # HTML ile Rozetleri İşleme (Mouse üzerine gelince açıklaması çıkar)
                     rozet_html = "".join([f"<span class='rozet' title='{ROZET_ANLAMLARI.get(r, '')}'>{r}</span>" for r in v.get("rozetler", [])])
                     isim_ve_rozet = f"{gosterilecek_isim} {rozet_html}"
                     
@@ -1303,20 +1314,17 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
             
             liderlik_listesi = sorted(liderlik_listesi, key=lambda x: x["Toplam"], reverse=True)
             
-            # YENİ: PREMIUM HTML TABLO (Rozet Tooltiplerinin çalışması için)
+            # PREMIUM HTML LİDERLİK TABLOSU
             html_tablo = "<table class='liderlik-tablosu'><tr><th>Sıra</th><th>Yatırımcı & Başarımlar</th><th>Gizli Kasa Büyüklüğü</th></tr>"
-            
             for i, user_data in enumerate(liderlik_listesi):
                 bakiye_str = str(int(user_data["Toplam"]))
                 maskeli_bakiye = bakiye_str[0] + ("*" * (len(bakiye_str) - 1)) + " ₺"
                 sira = "🥇 1" if i == 0 else "🥈 2" if i == 1 else "🥉 3" if i == 2 else str(i + 1)
-                
                 html_tablo += f"<tr><td>{sira}</td><td>{user_data['Kullanici']}</td><td>{maskeli_bakiye}</td></tr>"
-            
             html_tablo += "</table>"
             st.markdown(html_tablo, unsafe_allow_html=True)
             
-            # Alt tarafa Rozet Açıklamaları Kutusu (Ne olur ne olmaz diye)
+            st.markdown("<br>", unsafe_allow_html=True)
             with st.expander("💡 Başarım Rozetleri Ne Anlama Geliyor?"):
                 for emoji, aciklama in ROZET_ANLAMLARI.items():
                     st.write(f"**{emoji}** {aciklama}")
