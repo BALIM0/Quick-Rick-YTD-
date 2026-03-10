@@ -108,8 +108,25 @@ st.markdown("""
     .banka-kart { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border: 1px solid rgba(255, 215, 0, 0.3); padding: 20px; border-radius: 12px; margin-bottom: 15px; }
     .pulsing-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background-color: #00ff00; animation: pulse 2s infinite; margin-right: 5px; }
     @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(0, 255, 0, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(0, 255, 0, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 255, 0, 0); } }
+
+    /* YENİ: LİDERLİK TABLOSU ÖZEL HTML STİLLERİ */
+    .liderlik-tablosu { width: 100%; border-collapse: collapse; margin-top: 10px; background-color: rgba(15,23,42,0.6); border-radius: 10px; overflow: hidden; }
+    .liderlik-tablosu th { color: #aaa; text-transform: uppercase; font-size: 12px; padding: 15px; border-bottom: 1px solid rgba(0,255,255,0.3); text-align: left; background-color: rgba(0,0,0,0.4); }
+    .liderlik-tablosu td { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); font-weight: 600; color: white; }
+    .liderlik-tablosu tr:hover { background-color: rgba(255,255,255,0.05); }
+    .rozet { cursor: help; font-size: 18px; margin-left: 6px; display: inline-block; transition: transform 0.2s; }
+    .rozet:hover { transform: scale(1.4); }
 </style>
 """, unsafe_allow_html=True)
+
+# Rozet Sözlüğü (Hover metinleri için)
+ROZET_ANLAMLARI = {
+    "🐋": "Mavi Balina: Tek işlemde 10.000 ₺ üzerinde net kâr elde etti.",
+    "⚡": "Kamikaze: Ölümü göze alıp 50x kaldıraçlı işlem açtı.",
+    "🏦": "Merkez Bankeri: Parasını vadeli mevduata bağladı.",
+    "🐻": "Ayı Pençesi: Piyasalar düşerken açığa satış (Short) yaparak kâr elde etti.",
+    "⏳": "Kıdemli Kurt: Sistemde 24 saatten uzun süredir aktif (Tecrübeli Oyuncu)."
+}
 
 DB_DOSYASI = "kullanicilar_db.json"
 
@@ -149,17 +166,20 @@ def db_yukle():
                 if "sohbet" not in veri["_GLOBAL_"]: veri["_GLOBAL_"]["sohbet"] = []
             if "_OTURUMLAR_" not in veri: veri["_OTURUMLAR_"] = {}
             if ADMIN_ID not in veri:
-                veri[ADMIN_ID] = {"sifre": sifre_sifrele(ADMIN_PASS), "nickname": "👑 SİSTEM YÖNETİCİSİ", "son_isim_degistirme": 0, "cuzdan": {"nakit": 0.0, "varliklar": {}, "kaldiracli_islemler": [], "izleme_listesi": [], "bekleyen_emirler": [], "banka": {"gecelik": {"miktar": 0.0, "son_guncelleme": time.time()}, "vadeli": []}}, "is_admin": True}
+                veri[ADMIN_ID] = {"sifre": sifre_sifrele(ADMIN_PASS), "nickname": "👑 SİSTEM YÖNETİCİSİ", "son_isim_degistirme": 0, "kayit_tarihi": time.time(), "rozetler": [], "cuzdan": {"nakit": 0.0, "varliklar": {}, "kaldiracli_islemler": [], "izleme_listesi": [], "bekleyen_emirler": [], "banka": {"gecelik": {"miktar": 0.0, "son_guncelleme": time.time()}, "vadeli": []}}, "is_admin": True}
             
             for k, v in veri.items():
-                if k not in ["_GLOBAL_", "_OTURUMLAR_"] and "cuzdan" in v:
-                    if "bekleyen_emirler" not in v["cuzdan"]: v["cuzdan"]["bekleyen_emirler"] = []
-                    if "kaldiracli_islemler" not in v["cuzdan"]: v["cuzdan"]["kaldiracli_islemler"] = [] 
-                    if "banka" not in v["cuzdan"]: v["cuzdan"]["banka"] = {"gecelik": {"miktar": 0.0, "son_guncelleme": time.time()}, "vadeli": []}
+                if k not in ["_GLOBAL_", "_OTURUMLAR_"]:
+                    if "rozetler" not in v: v["rozetler"] = []
+                    if "kayit_tarihi" not in v: v["kayit_tarihi"] = time.time() # Eski hesaplara otomatik tarih ekler
+                    if "cuzdan" in v:
+                        if "bekleyen_emirler" not in v["cuzdan"]: v["cuzdan"]["bekleyen_emirler"] = []
+                        if "kaldiracli_islemler" not in v["cuzdan"]: v["cuzdan"]["kaldiracli_islemler"] = [] 
+                        if "banka" not in v["cuzdan"]: v["cuzdan"]["banka"] = {"gecelik": {"miktar": 0.0, "son_guncelleme": time.time()}, "vadeli": []}
             return veri
         except Exception:
             pass
-    return {"_GLOBAL_": {"toplam_komisyon": 0.0, "duyuru": "", "sohbet": []}, "_OTURUMLAR_": {}, ADMIN_ID: {"sifre": sifre_sifrele(ADMIN_PASS), "nickname": "👑 SİSTEM YÖNETİCİSİ", "son_isim_degistirme": 0, "cuzdan": {"nakit": 0.0, "varliklar": {}, "kaldiracli_islemler": [], "izleme_listesi": [], "bekleyen_emirler": [], "banka": {"gecelik": {"miktar": 0.0, "son_guncelleme": time.time()}, "vadeli": []}}, "is_admin": True}}
+    return {"_GLOBAL_": {"toplam_komisyon": 0.0, "duyuru": "", "sohbet": []}, "_OTURUMLAR_": {}, ADMIN_ID: {"sifre": sifre_sifrele(ADMIN_PASS), "nickname": "👑 SİSTEM YÖNETİCİSİ", "son_isim_degistirme": 0, "kayit_tarihi": time.time(), "rozetler": [], "cuzdan": {"nakit": 0.0, "varliklar": {}, "kaldiracli_islemler": [], "izleme_listesi": [], "bekleyen_emirler": [], "banka": {"gecelik": {"miktar": 0.0, "son_guncelleme": time.time()}, "vadeli": []}}, "is_admin": True}}
 
 def db_kaydet(db):
     gecici_dosya = f"{DB_DOSYASI}.tmp"
@@ -223,7 +243,7 @@ if st.session_state.aktif_kullanici is None:
             elif k_kullanici.lower() == k_nickname.lower(): st.error("🛡️ Güvenlik İhlali: Kullanıcı adı ile Takma Ad aynı olamaz.")
             elif len(k_kullanici) < 3 or len(k_sifre) < 4 or len(k_nickname) < 3: st.warning("Kullanıcı adı/Takma ad en az 3, şifre en az 4 karakter olmalıdır.")
             else:
-                db[k_kullanici] = {"sifre": sifre_sifrele(k_sifre), "nickname": k_nickname, "son_isim_degistirme": 0, "cuzdan": {"nakit": 1000000.0, "varliklar": {}, "kaldiracli_islemler": [], "izleme_listesi": ["Türk Hava Yolları", "Bitcoin", "Altın (Ons)", "NVIDIA", "Apple"], "bekleyen_emirler": [], "banka": {"gecelik": {"miktar": 0.0, "son_guncelleme": time.time()}, "vadeli": []}}, "is_admin": False}
+                db[k_kullanici] = {"sifre": sifre_sifrele(k_sifre), "nickname": k_nickname, "son_isim_degistirme": 0, "kayit_tarihi": time.time(), "rozetler": [], "cuzdan": {"nakit": 1000000.0, "varliklar": {}, "kaldiracli_islemler": [], "izleme_listesi": ["Türk Hava Yolları", "Bitcoin", "Altın (Ons)", "NVIDIA", "Apple"], "bekleyen_emirler": [], "banka": {"gecelik": {"miktar": 0.0, "son_guncelleme": time.time()}, "vadeli": []}}, "is_admin": False}
                 db_kaydet(db)
                 st.success("✅ Hesabınız oluşturuldu! Şimdi 'Giriş Yap' sekmesinden giriş yapabilirsiniz.")
     st.stop()
@@ -544,7 +564,7 @@ elif uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                         sonuclar.append({"Varlık": isim, "Fiyat (₺)": round(son_fiyat, 2), "200G Ort (₺)": round(sma_200_deger, 2), "F/K": fk_metni, "Puan": puan, "Durum": " | ".join(durum_notu) if durum_notu else "Nötr"})
                         
                 except Exception as e:
-                    st.write(f"⚠️ {isim} atlandı. Hata: {str(e)}") 
+                    pass 
                 finally:
                     time.sleep(0.05)
                     islenen += 1
@@ -804,7 +824,6 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
     
     with tab_portfoy:
         
-        # 1. Spot Varlıkların Anlık Değerini Hesaplama (Net Değer için gerekli)
         toplam_varlik_degeri = 0
         guncel_fiyatlar_metrik = {}
         
@@ -823,7 +842,6 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                     guncel_fiyatlar_metrik[varlik_ismi] = anlik_f
                     toplam_varlik_degeri += (anlik_f * adet)
 
-        # 2. Kaldıraçlı İşlemlerin Net Değerini Hesaplama
         toplam_kaldirac_net_deger = 0
         for poz in cuzdan.get("kaldiracli_islemler", []):
             if poz["varlik"] not in guncel_fiyatlar_metrik:
@@ -838,11 +856,9 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                 pnl = (poz["giris_fiyati"] - g_fiyat) * poz["adet"]
             toplam_kaldirac_net_deger += max(0, poz["teminat"] + pnl)
 
-        # 3. Bankadaki Toplam Parayı Hesaplama
         banka_mevcut = cuzdan.get("banka", {"gecelik": {"miktar": 0.0}, "vadeli": []})
         toplam_banka = banka_mevcut["gecelik"]["miktar"] + sum([v["miktar"] for v in banka_mevcut["vadeli"]])
 
-        # GENEL TOPLAM
         toplam_portfoy = cuzdan["nakit"] + toplam_varlik_degeri + toplam_kaldirac_net_deger + toplam_banka
         
         col1, col2, col3, col4 = st.columns(4)
@@ -868,14 +884,13 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
             secili_varlik = st.selectbox("Varlık Seçin:", list(tum_varliklar_mega.keys()))
             sembol_islem = tum_varliklar_mega[secili_varlik]
             
-            # YENİ: VADELİ KOMİSYON İNDİRİMİ MATEMATİĞİ (Gerçekçi Hacim Hesabı İçin)
             if secili_varlik in bist_genis: baz_komisyon = 0.0015
             elif secili_varlik in abd_hisseleri: baz_komisyon = 0.0025
             elif secili_varlik in kripto: baz_komisyon = 0.0020
             else: baz_komisyon = 0.0010
             
             if kaldirac_orani > 1:
-                komisyon_orani = baz_komisyon / 10  # Vadeli işlemlerde komisyon oranı çok düşüktür
+                komisyon_orani = baz_komisyon / 10 
                 komisyon_metni = f"%{komisyon_orani*100:.3f} (Kaldıraçlı İndirim)"
             else:
                 komisyon_orani = baz_komisyon
@@ -919,28 +934,38 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                             cuzdan["nakit"] -= toplam_islem_maliyeti
                             if "Limit" in emir_turu:
                                 cuzdan["bekleyen_emirler"].append({"id": str(uuid.uuid4()), "tarih": time.time(), "tip": "AL", "varlik": secili_varlik, "adet": islem_miktari, "hedef_fiyat": hedef_fiyat, "baglanan_tutar": toplam_islem_maliyeti, "komisyon": komisyon_tutari})
-                                aktif_cuzdan_kaydet(); st.success("🕒 Alım Limit Emriniz Kaydedildi!")
+                                st.success("🕒 Alım Limit Emriniz Kaydedildi!")
                             else:
                                 mevcut_veri = cuzdan["varliklar"].get(secili_varlik, {"adet": 0.0, "maliyet": 0.0})
                                 yeni_adet = mevcut_veri["adet"] + islem_miktari
                                 cuzdan["varliklar"][secili_varlik] = {"adet": yeni_adet, "maliyet": ((mevcut_veri["adet"] * mevcut_veri["maliyet"]) + toplam_islem_maliyeti) / yeni_adet}
                                 db["_GLOBAL_"]["toplam_komisyon"] += komisyon_tutari
-                                aktif_cuzdan_kaydet(); st.success("⚡ İşlem Başarılı!")
+                                st.success("⚡ İşlem Başarılı!")
+                            aktif_cuzdan_kaydet()
                             time.sleep(1); st.rerun() 
                         else: st.error("Yetersiz bakiye!")
                     elif islem_tipi == "SAT":
                         mevcut_veri = cuzdan["varliklar"].get(secili_varlik, {"adet": 0.0, "maliyet": 0.0})
                         if mevcut_veri["adet"] >= islem_miktari:
                             yeni_adet = mevcut_veri["adet"] - islem_miktari
+                            
+                            # ROZET KONTROLÜ: Spot Satıştan 10 Bin TL Kâr (Mavi Balina)
+                            if "Limit" not in emir_turu:
+                                net_kar = toplam_islem_getirisi - (mevcut_veri["maliyet"] * islem_miktari)
+                                if net_kar >= 10000 and "🐋" not in db[aktif_kullanici].setdefault("rozetler", []):
+                                    db[aktif_kullanici]["rozetler"].append("🐋")
+                                    st.toast("YENİ ROZET KAZANDINIZ: 🐋 Mavi Balina!", icon="🏆")
+
                             if yeni_adet <= 0.000001: del cuzdan["varliklar"][secili_varlik]
                             else: cuzdan["varliklar"][secili_varlik]["adet"] = yeni_adet
                             if "Limit" in emir_turu:
                                 cuzdan["bekleyen_emirler"].append({"id": str(uuid.uuid4()), "tarih": time.time(), "tip": "SAT", "varlik": secili_varlik, "adet": islem_miktari, "hedef_fiyat": hedef_fiyat, "beklenen_getiri": toplam_islem_getirisi, "komisyon": komisyon_tutari, "maliyet_rezerv": mevcut_veri["maliyet"]})
-                                aktif_cuzdan_kaydet(); st.success("🕒 Satış Limit Emriniz Kaydedildi!")
+                                st.success("🕒 Satış Limit Emriniz Kaydedildi!")
                             else:
                                 cuzdan["nakit"] += toplam_islem_getirisi
                                 db["_GLOBAL_"]["toplam_komisyon"] += komisyon_tutari
-                                aktif_cuzdan_kaydet(); st.success("⚡ İşlem Başarılı!")
+                                st.success("⚡ İşlem Başarılı!")
+                            aktif_cuzdan_kaydet()
                             time.sleep(1); st.rerun() 
                         else: st.error("Yetersiz adet!")
             
@@ -972,6 +997,12 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                             "liq_fiyati": liq_fiyat, "tarih": time.time()
                         }
                         cuzdan["kaldiracli_islemler"].append(yeni_pozisyon)
+                        
+                        # ROZET KONTROLÜ: 50x Kaldıraç (Kamikaze)
+                        if kaldirac_orani == 50 and "⚡" not in db[aktif_kullanici].setdefault("rozetler", []):
+                            db[aktif_kullanici]["rozetler"].append("⚡")
+                            st.toast("YENİ ROZET KAZANDINIZ: ⚡ Kamikaze!", icon="🏆")
+                            
                         aktif_cuzdan_kaydet()
                         st.success(f"{kaldirac_orani}x {islem_tipi} Pozisyonu Başarıyla Açıldı!")
                         time.sleep(1); st.rerun()
@@ -1084,8 +1115,8 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                                 </div>
                             </div>
                         """, unsafe_allow_html=True)
+                        
                         if st.button("❌ Pozisyonu Kapat", key=f"kapat_{poz['id']}"):
-                            # YENİ: Kapanış Komisyonunda İndirimli Oranı Kullan
                             v_isim = poz["varlik"]
                             if v_isim in bist_genis: kop_oran = 0.0015 / 10
                             elif v_isim in abd_hisseleri: kop_oran = 0.0025 / 10
@@ -1097,6 +1128,13 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                             cz_canli["nakit"] += max(0, nihai_iade)
                             db_canli["_GLOBAL_"]["toplam_komisyon"] += kapanis_komisyonu
                             cz_canli["kaldiracli_islemler"] = [p for p in cz_canli["kaldiracli_islemler"] if p["id"] != poz["id"]]
+                            
+                            # ROZET KONTROLLERİ (Mavi Balina ve Ayı Pençesi)
+                            if pnl >= 10000 and "🐋" not in db_canli[aktif_kullanici].setdefault("rozetler", []):
+                                db_canli[aktif_kullanici]["rozetler"].append("🐋")
+                            if poz["yon"] == "SAT (Short)" and pnl > 0 and "🐻" not in db_canli[aktif_kullanici].setdefault("rozetler", []):
+                                db_canli[aktif_kullanici]["rozetler"].append("🐻")
+                            
                             db_kaydet(db_canli)
                             st.success(f"Pozisyon kapandı! Kasanıza {max(0, nihai_iade):,.2f} ₺ eklendi.")
                             time.sleep(1); st.rerun()
@@ -1179,6 +1217,12 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                         cz_canli["nakit"] -= v_miktar
                         banka_canli["vadeli"].append({"id": str(uuid.uuid4()), "miktar": v_miktar, "gun": gun, "faiz_orani": oran, "baslangic": time.time(), "bitis": time.time() + (gun * 24 * 3600)})
                         cz_canli["banka"] = banka_canli
+                        
+                        # ROZET KONTROLÜ: Bankaya para bağlandıysa (Merkez Bankeri)
+                        if "🏦" not in db_canli[aktif_kullanici].setdefault("rozetler", []):
+                            db_canli[aktif_kullanici]["rozetler"].append("🏦")
+                            st.toast("YENİ ROZET KAZANDINIZ: 🏦 Merkez Bankeri!", icon="🏆")
+                            
                         db_kaydet(db_canli)
                         st.success("Tebrikler! Paranız yüksek faizle kilitlendi.")
                         time.sleep(1); st.rerun()
@@ -1226,6 +1270,13 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
             liderlik_listesi = []
             for k, v in db_canli.items():
                 if k not in ["_GLOBAL_", "_OTURUMLAR_"] and not v.get("is_admin", False) and "cuzdan" in v:
+                    
+                    # ROZET KONTROLÜ: Hesap 1 günden eski mi? (Kıdemli Kurt)
+                    if time.time() - v.get("kayit_tarihi", time.time()) > 86400:
+                        if "⏳" not in v.setdefault("rozetler", []):
+                            v["rozetler"].append("⏳")
+                            db_kaydet(db_canli) # Sessizce kaydet
+                    
                     kullanici_cuzdan = v["cuzdan"]
                     kullanici_toplam = kullanici_cuzdan.get("nakit", 1000000.0)
                     b_veri = kullanici_cuzdan.get("banka", {"gecelik": {"miktar": 0.0}, "vadeli": []})
@@ -1244,17 +1295,31 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                         kullanici_toplam += max(0, poz["teminat"] + pnl)
                             
                     gosterilecek_isim = v.get("nickname", k)
-                    liderlik_listesi.append({"Kullanici": gosterilecek_isim, "Toplam": kullanici_toplam})
+                    # Rozetleri ismin yanına yapıştırıyoruz (HTML Tooltip ile)
+                    rozet_html = "".join([f"<span class='rozet' title='{ROZET_ANLAMLARI.get(r, '')}'>{r}</span>" for r in v.get("rozetler", [])])
+                    isim_ve_rozet = f"{gosterilecek_isim} {rozet_html}"
+                    
+                    liderlik_listesi.append({"Kullanici": isim_ve_rozet, "Toplam": kullanici_toplam})
             
             liderlik_listesi = sorted(liderlik_listesi, key=lambda x: x["Toplam"], reverse=True)
-            gosterim_listesi = []
+            
+            # YENİ: PREMIUM HTML TABLO (Rozet Tooltiplerinin çalışması için)
+            html_tablo = "<table class='liderlik-tablosu'><tr><th>Sıra</th><th>Yatırımcı & Başarımlar</th><th>Gizli Kasa Büyüklüğü</th></tr>"
+            
             for i, user_data in enumerate(liderlik_listesi):
                 bakiye_str = str(int(user_data["Toplam"]))
                 maskeli_bakiye = bakiye_str[0] + ("*" * (len(bakiye_str) - 1)) + " ₺"
                 sira = "🥇 1" if i == 0 else "🥈 2" if i == 1 else "🥉 3" if i == 2 else str(i + 1)
-                gosterim_listesi.append({"Sıra": sira, "Yatırımcı (Takma Ad)": user_data["Kullanici"].upper(), "Gizli Kasa Büyüklüğü": maskeli_bakiye})
                 
-            st.dataframe(pd.DataFrame(gosterim_listesi).style.hide(axis="index"), use_container_width=True)
+                html_tablo += f"<tr><td>{sira}</td><td>{user_data['Kullanici']}</td><td>{maskeli_bakiye}</td></tr>"
+            
+            html_tablo += "</table>"
+            st.markdown(html_tablo, unsafe_allow_html=True)
+            
+            # Alt tarafa Rozet Açıklamaları Kutusu (Ne olur ne olmaz diye)
+            with st.expander("💡 Başarım Rozetleri Ne Anlama Geliyor?"):
+                for emoji, aciklama in ROZET_ANLAMLARI.items():
+                    st.write(f"**{emoji}** {aciklama}")
             
         if hasattr(st, "fragment"): liderlik_tablosunu_ciz = st.fragment(run_every=30)(liderlik_tablosunu_ciz)
         liderlik_tablosunu_ciz()
