@@ -1,8 +1,7 @@
-streamlit
+streamlit>=1.38.0
 yfinance
-pandas
+pandas>=2.0.0
 numpy
 plotly
 scikit-learn
 textblob
-streamlit-autorefresh
