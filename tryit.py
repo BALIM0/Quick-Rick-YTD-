@@ -108,6 +108,17 @@ st.markdown("""
     .banka-kart { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border: 1px solid rgba(255, 215, 0, 0.3); padding: 20px; border-radius: 12px; margin-bottom: 15px; }
     .pulsing-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background-color: #00ff00; animation: pulse 2s infinite; margin-right: 5px; }
     @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(0, 255, 0, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(0, 255, 0, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 255, 0, 0); } }
+
+    .liderlik-tablosu { width: 100%; border-collapse: collapse; margin-top: 10px; background-color: rgba(15,23,42,0.6); border-radius: 10px; overflow: hidden; }
+    .liderlik-tablosu th { color: #aaa; text-transform: uppercase; font-size: 12px; padding: 15px; border-bottom: 1px solid rgba(0,255,255,0.3); text-align: left; background-color: rgba(0,0,0,0.4); }
+    .liderlik-tablosu td { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); font-weight: 600; color: white; }
+    .liderlik-tablosu tr:hover { background-color: rgba(255,255,255,0.05); }
+    .rozet { cursor: help; font-size: 18px; margin-left: 6px; display: inline-block; transition: transform 0.2s; }
+    .rozet:hover { transform: scale(1.4); }
+    
+    /* Çevrimiçi Kullanıcı Listesi Stili */
+    .online-user-box { display: flex; align-items: center; padding: 8px 10px; margin-bottom: 5px; background: rgba(255,255,255,0.03); border-radius: 8px; border-left: 2px solid #334155; }
+    .online-user-box.admin-online { border-left: 2px solid #FFD700; background: rgba(255,215,0,0.05); }
 </style>
 """, unsafe_allow_html=True)
 
@@ -265,6 +276,93 @@ cuzdan = db[aktif_kullanici]["cuzdan"]
 aktif_nickname = db[aktif_kullanici].get("nickname", aktif_kullanici)
 is_admin = db[aktif_kullanici].get("is_admin", False)
 
+# =========================================================================================
+# YENİ: SOL MENÜDE "ÇEVRİMİÇİ TÜCCARLAR" KISMI (Canlı Listeleme)
+# =========================================================================================
+st.sidebar.header("🕹️ Uygulama Modu")
+modlar = ["🔍 Algoritmik Piyasa Tarama", "💼 Sanal Portföy (Oyun)"]
+if is_admin: modlar.append("👑 Yönetici Paneli (Kurucu)")
+uygulama_modu = st.sidebar.radio("Mod Seçiniz:", modlar, label_visibility="collapsed")
+st.sidebar.markdown("---")
+
+# Oturum havuzunu tarayarak aktif kullanıcıları bul
+online_user_ids = set()
+for token, v_data in db.get("_OTURUMLAR_", {}).items():
+    if su_an <= v_data["bitis"]:
+        online_user_ids.add(v_data["kullanici"])
+
+with st.sidebar.expander(f"🟢 Çevrimiçi Tüccarlar ({len(online_user_ids)})", expanded=True):
+    if not online_user_ids:
+        st.caption("Şu an kimse aktif değil.")
+    else:
+        for uid in online_user_ids:
+            if uid in db and uid not in ["_GLOBAL_", "_OTURUMLAR_"]:
+                nick = db[uid].get("nickname", uid)
+                rozetler_str = "".join(db[uid].get("rozetler", []))
+                if db[uid].get("is_admin", False):
+                    st.markdown(f"<div class='online-user-box admin-online'><span class='pulsing-dot'></span> <span><b style='color:#FFD700;'>👑 {nick}</b> {rozetler_str}</span></div>", unsafe_allow_html=True)
+                else:
+                    st.markdown(f"<div class='online-user-box'><span class='pulsing-dot'></span> <span><b style='color:white;'>{nick}</b> {rozetler_str}</span></div>", unsafe_allow_html=True)
+
+st.sidebar.markdown("---")
+
+if st.sidebar.button("🚪 Çıkış Yap", use_container_width=True):
+    mevcut_token = st.query_params.get("oturum")
+    if mevcut_token and mevcut_token in db.get("_OTURUMLAR_", {}):
+        del db["_OTURUMLAR_"][mevcut_token]
+        db_kaydet(db)
+    st.query_params.clear()
+    st.session_state.aktif_kullanici = None
+    st.rerun()
+
+with st.sidebar.expander("⚙️ Hesap Ayarları", expanded=False):
+    tab_sifre, tab_isim, tab_sil = st.tabs(["🔑 Şifre", "🏷️ İsim", "❌ Sil"])
+    with tab_sifre:
+        with st.form("sifre_degistir_form"):
+            eski_sifre = st.text_input("Mevcut Şifre", type="password")
+            yeni_sifre = st.text_input("Yeni Şifre", type="password")
+            yeni_sifre_tekrar = st.text_input("Yeni Şifre (Tekrar)", type="password")
+            if st.form_submit_button("Güncelle", use_container_width=True):
+                if db[aktif_kullanici]["sifre"] != sifre_sifrele(eski_sifre): st.error("❌ Mevcut şifreniz yanlış!")
+                elif yeni_sifre != yeni_sifre_tekrar: st.error("❌ Yeni şifreler eşleşmiyor!")
+                elif len(yeni_sifre) < 4: st.warning("⚠️ Şifre en az 4 karakter olmalı.")
+                else:
+                    db[aktif_kullanici]["sifre"] = sifre_sifrele(yeni_sifre)
+                    db_kaydet(db)
+                    st.success("✅ Şifre güncellendi!")
+    with tab_isim:
+        son_degisim = db[aktif_kullanici].get("son_isim_degistirme", 0)
+        kalan_saniye = (7 * 24 * 60 * 60) - (su_an - son_degisim)
+        if kalan_saniye > 0 and not is_admin:
+            kalan_gun, kalan_saat = int(kalan_saniye // (24 * 3600)), int((kalan_saniye % (24 * 3600)) // 3600)
+            st.info(f"⏳ Takma adınızı değiştirmek için **{kalan_gun} gün {kalan_saat} saat** beklemelisiniz.")
+        else:
+            with st.form("isim_degistir_form"):
+                st.caption("Sadece Liderlik Tablosunda görünür.")
+                yeni_isim = st.text_input("Yeni Takma Ad (Nickname)")
+                if st.form_submit_button("İsmi Güncelle", use_container_width=True):
+                    mevcut_nicknameler = [v.get("nickname", "").lower() for k, v in db.items() if k not in ["_GLOBAL_", "_OTURUMLAR_"]]
+                    if yeni_isim.lower() in mevcut_nicknameler and yeni_isim.lower() != aktif_nickname.lower(): st.error("❌ Bu isim kullanılıyor!")
+                    elif yeni_isim.lower() == aktif_kullanici.lower() and not is_admin: st.error("❌ Güvenlik: Giriş ID'niz ile aynı olamaz!")
+                    elif len(yeni_isim) < 3: st.warning("⚠️ En az 3 characters olmalı.")
+                    else:
+                        db[aktif_kullanici]["nickname"] = yeni_isim
+                        db[aktif_kullanici]["son_isim_degistirme"] = su_an
+                        db_kaydet(db)
+                        st.success("✅ İsim güncellendi!")
+                        time.sleep(1); st.rerun()
+    with tab_sil:
+        st.markdown("<span style='font-size: 13px; color: #ff4444;'>Dikkat: Bu işlem kalıcıdır.</span>", unsafe_allow_html=True)
+        sil_onay = st.checkbox("Silme işlemini onaylıyorum")
+        if st.button("❌ Hesabımı Sil", use_container_width=True, disabled=not sil_onay):
+            if is_admin: st.error("Kurucu hesap silinemez!")
+            else:
+                if aktif_kullanici in db: del db[aktif_kullanici]; db_kaydet(db)
+                st.query_params.clear(); st.session_state.aktif_kullanici = None; st.rerun()
+
+st.sidebar.markdown("---")
+st.sidebar.warning("**⚠️ YASAL UYARI (YTD)**\nBurada yer alan yatırım bilgi, yorum ve yapay zeka tahminleri yatırım danışmanlığı kapsamında değildir.")
+
 banka_verisi = cuzdan.get("banka", {"gecelik": {"miktar": 0.0, "son_guncelleme": su_an}, "vadeli": []})
 degisiklik_gerekli = False
 
@@ -313,66 +411,6 @@ kripto = {"Bitcoin": "BTC-USD", "Ethereum": "ETH-USD", "Solana": "SOL-USD", "Bin
 madenler_emtia = {"Altın (Ons)": "GC=F", "Gümüş (Ons)": "SI=F", "Bakır": "HG=F", "Platin": "PL=F", "Paladyum": "PA=F", "Alüminyum": "ALI=F", "Ham Petrol (WTI)": "CL=F", "Brent Petrol": "BZ=F", "Doğal Gaz": "NG=F", "Isıtma Yakıtı": "HO=F", "Buğday": "ZW=F", "Mısır": "ZC=F", "Soya Fasulyesi": "ZS=F", "Kahve": "KC=F", "Şeker": "SB=F", "Pamuk": "CT=F", "Kakao": "CC=F", "Yulaf": "ZO=F", "Pirinç (Kaba)": "ZR=F", "Canlı Sığır": "LE=F", "Yağsız Domuz": "HE=F", "Kereste": "LBS=F"}
 
 tum_varliklar_mega = {**bist_genis, **abd_hisseleri, **kripto, **madenler_emtia}
-
-st.sidebar.header("🕹️ Uygulama Modu")
-modlar = ["🔍 Algoritmik Piyasa Tarama", "💼 Sanal Portföy (Oyun)"]
-if is_admin: modlar.append("👑 Yönetici Paneli (Kurucu)")
-uygulama_modu = st.sidebar.radio("Mod Seçiniz:", modlar, label_visibility="collapsed")
-st.sidebar.markdown("---")
-
-if st.sidebar.button("🚪 Çıkış Yap", use_container_width=True):
-    mevcut_token = st.query_params.get("oturum")
-    if mevcut_token and mevcut_token in db.get("_OTURUMLAR_", {}):
-        del db["_OTURUMLAR_"][mevcut_token]
-        db_kaydet(db)
-    st.query_params.clear()
-    st.session_state.aktif_kullanici = None
-    st.rerun()
-
-with st.sidebar.expander("⚙️ Hesap Ayarları", expanded=False):
-    tab_sifre, tab_isim, tab_sil = st.tabs(["🔑 Şifre", "🏷️ İsim", "❌ Sil"])
-    with tab_sifre:
-        with st.form("sifre_degistir_form"):
-            eski_sifre = st.text_input("Mevcut Şifre", type="password")
-            yeni_sifre = st.text_input("Yeni Şifre", type="password")
-            yeni_sifre_tekrar = st.text_input("Yeni Şifre (Tekrar)", type="password")
-            if st.form_submit_button("Güncelle", use_container_width=True):
-                if db[aktif_kullanici]["sifre"] != sifre_sifrele(eski_sifre): st.error("❌ Mevcut şifreniz yanlış!")
-                elif yeni_sifre != yeni_sifre_tekrar: st.error("❌ Yeni şifreler eşleşmiyor!")
-                elif len(yeni_sifre) < 4: st.warning("⚠️ Şifre en az 4 karakter olmalı.")
-                else:
-                    db[aktif_kullanici]["sifre"] = sifre_sifrele(yeni_sifre)
-                    db_kaydet(db)
-                    st.success("✅ Şifre güncellendi!")
-    with tab_isim:
-        son_degisim = db[aktif_kullanici].get("son_isim_degistirme", 0)
-        kalan_saniye = (7 * 24 * 60 * 60) - (su_an - son_degisim)
-        if kalan_saniye > 0 and not is_admin:
-            kalan_gun, kalan_saat = int(kalan_saniye // (24 * 3600)), int((kalan_saniye % (24 * 3600)) // 3600)
-            st.info(f"⏳ Takma adınızı değiştirmek için **{kalan_gun} gün {kalan_saat} saat** beklemelisiniz.")
-        else:
-            with st.form("isim_degistir_form"):
-                st.caption("Sadece Liderlik Tablosunda görünür.")
-                yeni_isim = st.text_input("Yeni Takma Ad (Nickname)")
-                if st.form_submit_button("İsmi Güncelle", use_container_width=True):
-                    mevcut_nicknameler = [v.get("nickname", "").lower() for k, v in db.items() if k not in ["_GLOBAL_", "_OTURUMLAR_"]]
-                    if yeni_isim.lower() in mevcut_nicknameler and yeni_isim.lower() != aktif_nickname.lower(): st.error("❌ Bu isim kullanılıyor!")
-                    elif yeni_isim.lower() == aktif_kullanici.lower() and not is_admin: st.error("❌ Güvenlik: Giriş ID'niz ile aynı olamaz!")
-                    elif len(yeni_isim) < 3: st.warning("⚠️ En az 3 karakter olmalı.")
-                    else:
-                        db[aktif_kullanici]["nickname"] = yeni_isim
-                        db[aktif_kullanici]["son_isim_degistirme"] = su_an
-                        db_kaydet(db)
-                        st.success("✅ İsim güncellendi!")
-                        time.sleep(1); st.rerun()
-    with tab_sil:
-        st.markdown("<span style='font-size: 13px; color: #ff4444;'>Dikkat: Bu işlem kalıcıdır.</span>", unsafe_allow_html=True)
-        sil_onay = st.checkbox("Silme işlemini onaylıyorum")
-        if st.button("❌ Hesabımı Sil", use_container_width=True, disabled=not sil_onay):
-            if is_admin: st.error("Kurucu hesap silinemez!")
-            else:
-                if aktif_kullanici in db: del db[aktif_kullanici]; db_kaydet(db)
-                st.query_params.clear(); st.session_state.aktif_kullanici = None; st.rerun()
 
 if uygulama_modu == "👑 Yönetici Paneli (Kurucu)":
     st.header("👑 SİSTEM YÖNETİCİSİ (ADMIN) PANELİ")
@@ -827,7 +865,7 @@ elif uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                 except: st.error("Haber servisine ulaşılamıyor.")
 
 # =========================================================================================
-# 💼 SANAL PORTFÖY VE OYUN MOTORU 
+# 💼 SANAL PORTFÖY VE OYUN MOTORU (CANLI VERİ AKIŞLI)
 # =========================================================================================
 elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
 
@@ -1108,7 +1146,7 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                         for m in mesaj_listesi: st.toast(m, icon="🔥" if "MARGIN" in m else "✅")
                         time.sleep(1); st.rerun()
 
-                    # CÜZDAN TABLOSU ÇİZİMİ (HATADAN ARINDIRILDI)
+                    # CÜZDAN TABLOSU 
                     st.subheader("Cüzdan")
                     if cz_canli.get("varliklar"):
                         liste = []
@@ -1123,7 +1161,7 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                             try: return 'color: #00ff00; font-weight:bold;' if float(val) > 0 else 'color: #ff4444; font-weight:bold;' if float(val) < 0 else ''
                             except: return ''
                             
-                        # PANDAS KORUMASI 
+                        # PANDAS KORUMASI EKLENDİ
                         if hasattr(df_p.style, "map"):
                             styled_p = df_p.style.map(renk_ver, subset=['K/Z (₺)', '% K/Z'])
                         else:
