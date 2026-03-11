@@ -22,6 +22,17 @@ except ImportError:
 st.set_page_config(page_title="Portföy Analiz ve Yönetimi", layout="wide", page_icon="📊")
 
 # =========================================================================================
+# TÜRKİYE STANDARTLARI SAYI FORMATLAYICI (Binlik = Nokta, Onluk = Virgül)
+# =========================================================================================
+def format_tr(val, decimals=2):
+    if pd.isna(val): return ""
+    try:
+        s = f"{float(val):,.{decimals}f}"
+        return s.replace(",", "X").replace(".", ",").replace("X", ".")
+    except:
+        return str(val)
+
+# =========================================================================================
 # --- GELİŞMİŞ UI / UX TASARIMI (PREMIUM ARAYÜZ MÜHENDİSLİĞİ) ---
 # =========================================================================================
 st.markdown("""
@@ -116,7 +127,6 @@ st.markdown("""
     .rozet { cursor: help; font-size: 18px; margin-left: 6px; display: inline-block; transition: transform 0.2s; }
     .rozet:hover { transform: scale(1.4); }
     
-    /* Çevrimiçi Kullanıcı Listesi Stili */
     .online-user-box { display: flex; align-items: center; padding: 8px 10px; margin-bottom: 5px; background: rgba(255,255,255,0.03); border-radius: 8px; border-left: 2px solid #334155; }
     .online-user-box.admin-online { border-left: 2px solid #FFD700; background: rgba(255,215,0,0.05); }
 </style>
@@ -226,7 +236,7 @@ if mevcut_token:
     if mevcut_token in db.get("_OTURUMLAR_", {}):
         st.session_state.aktif_kullanici = db["_OTURUMLAR_"][mevcut_token]["kullanici"]
         db["_OTURUMLAR_"][mevcut_token]["bitis"] = su_an + 600
-        db["_OTURUMLAR_"][mevcut_token]["son_hareket"] = su_an # YENİ: 30 Saniye online tespiti için eklendi
+        db["_OTURUMLAR_"][mevcut_token]["son_hareket"] = su_an 
         db_kaydet(db)
     else:
         st.warning("⏱️ Hareketsizlik sebebiyle oturum süreniz (10 dk) doldu. Lütfen tekrar giriş yapın.")
@@ -296,7 +306,7 @@ for v in banka_verisi.get("vadeli", []):
     if su_an >= v["bitis"]:
         vade_getirisi = v["miktar"] * v["faiz_orani"] * (v["gun"] / 365)
         cuzdan["nakit"] += v["miktar"] + vade_getirisi
-        st.toast(f"🔔 {v['gun']} Günlük Vadeli Hesabınız doldu! Ana para ve {vade_getirisi:,.2f} ₺ faiz kasanıza yattı.", icon="🏦")
+        st.toast(f"🔔 {v['gun']} Günlük Vadeli Hesabınız doldu! Ana para ve {format_tr(vade_getirisi)} ₺ faiz kasanıza yattı.", icon="🏦")
         degisiklik_gerekli = True
     else:
         kalan_vadeli.append(v)
@@ -312,22 +322,25 @@ def aktif_cuzdan_kaydet():
 
 usd_kuru = guncel_kur_getir()
 
-st.title("📊 Portföy Analiz ve Yönetimi")
-global_duyuru = db["_GLOBAL_"].get("duyuru", "")
-if global_duyuru: st.error(f"📢 **SİSTEM DUYURUSU:** {global_duyuru}")
-st.caption(f"👤 Fon Yöneticisi: **{aktif_nickname.upper()}** | 💵 Güncel Kur (USD/TRY): **{usd_kuru:.2f} ₺**")
-
+# =========================================================================================
+# YENİ VARLIKLAR İLE ZENGİNLEŞTİRİLMİŞ PİYASA LİSTELERİ (200+ Varlık)
+# =========================================================================================
 bist_30 = {"Akbank": "AKBNK.IS", "Alarko": "ALARK.IS", "Aselsan": "ASELS.IS", "Astor": "ASTOR.IS", "BİM": "BIMAS.IS", "Borusan": "BRSAN.IS", "Coca-Cola İçecek": "CCOLA.IS", "Emlak Konut": "EKGYO.IS", "Enka": "ENKAI.IS", "Ereğli": "EREGL.IS", "Ford Otosan": "FROTO.IS", "Garanti": "GARAN.IS", "Gübre Fab": "GUBRF.IS", "Hektaş": "HEKTS.IS", "İş Bankası": "ISCTR.IS", "Koç Hol": "KCHOL.IS", "Kontrolmatik": "KONTR.IS", "Koza Altın": "KOZAL.IS", "Kardemir": "KRDMD.IS", "Odaş": "ODAS.IS", "Petkim": "PETKM.IS", "Pegasus": "PGSUS.IS", "Sabancı Hol": "SAHOL.IS", "Sasa": "SASA.IS", "Şişecam": "SISE.IS", "Turkcell": "TCELL.IS", "THY": "THYAO.IS", "Tofaş": "TOASO.IS", "Tüpraş": "TUPRS.IS", "Yapı Kredi": "YKBNK.IS"}
+
 bist_100 = {**bist_30, **{"Alfa Solar": "ALFAS.IS", "Arçelik": "ARCLK.IS", "Brisa": "BRISA.IS", "Çimsa": "CIMSA.IS", "CW Enerji": "CWENE.IS", "Doğuş Oto": "DOAS.IS", "Doğan Hol": "DOHOL.IS", "Eczacıbaşı": "ECILC.IS", "Ege Endüstri": "EGEEN.IS", "Enerjisa": "ENJSA.IS", "Europower": "EUPWR.IS", "Girişim Elk": "GESAN.IS", "Halkbank": "HALKB.IS", "İskenderun D.": "ISDMR.IS", "İş GYO": "ISGYO.IS", "İş Yatırım": "ISMEN.IS", "Konya Çimento": "KONYA.IS", "Kordsa": "KORDS.IS", "Koza Anadolu": "KOZAA.IS", "Mavi": "MAVI.IS", "Migros": "MGROS.IS", "Mia Teknoloji": "MIATK.IS", "Otokar": "OTKAR.IS", "Oyak Çimento": "OYAKC.IS", "Qua Granite": "QUAGR.IS", "Şekerbank": "SKBNK.IS", "Smart Güneş": "SMRTG.IS", "Şok Market": "SOKM.IS", "TAV": "TAVHL.IS", "Tekfen": "TKFEN.IS", "TSKB": "TSKB.IS", "Türk Telekom": "TTKOM.IS", "Türk Traktör": "TTRAK.IS", "Tukaş": "TUKAS.IS", "Ülker": "ULKER.IS", "Vakıfbank": "VAKBN.IS", "Vestel Beyaz": "VESBE.IS", "Vestel": "VESTL.IS", "Yeo Teknoloji": "YEOTK.IS", "Zorlu Enerji": "ZOREN.IS"}}
-bist_genis = {**bist_100, **{"Agrotech": "AGROT.IS", "Akfen Yenilenebilir": "AKFYE.IS", "Anadolu Efes": "AEFES.IS", "Anadolu Sigorta": "ANSGR.IS", "Aygaz": "AYGAZ.IS", "Bera Holding": "BERA.IS", "Bien Seramik": "BIENY.IS", "Biotrend": "BIOEN.IS", "Borusan Yatırım": "BRYAT.IS", "Bülbüloğlu Vinç": "BVSAN.IS", "Can Termik": "CANTE.IS", "Çan2 Termik": "CANTE.IS", "CVK Maden": "CVKMD.IS", "Eksun Gıda": "EKSUN.IS", "Esenboğa Elektrik": "ESEN.IS", "Forte Bilgi": "FORTE.IS", "Galata Wind": "GWIND.IS", "GSD Holding": "GSDHO.IS", "Hat-San Gemi": "HATSN.IS", "İmaş Makina": "IMASM.IS", "İnfo Yatırım": "INFO.IS", "İzdemir Enerji": "IZENR.IS", "Kaleseramik": "KLSER.IS", "Kayseri Şeker": "KAYSE.IS", "Kocaer Çelik": "KCAER.IS", "Kuştur Kuşadası": "KSTUR.IS", "Margün Enerji": "MAGEN.IS", "Mercan Kimya": "MERCN.IS", "Naten": "NATEN.IS", "Oyak Yatırım": "OYYAT.IS", "Özsu Balık": "OZSUB.IS", "Penta": "PENTA.IS", "Reeder Teknoloji": "REEDR.IS", "Rubenis Tekstil": "RUBNS.IS", "SDT Uzay": "SDTTR.IS", "Tarkim": "TARKM.IS", "Tatlıpınar Enerji": "TATEN.IS", "Tezol": "TEZOL.IS", "VBT Yazılım": "VBTYZ.IS", "Ziraat GYO": "ZRGYO.IS", "Tab Gıda": "TABGD.IS", "Ebebek": "EBEBK.IS", "Fuzul GYO": "FZLGY.IS", "Aydem": "AYDEM.IS", "Söke Değirmencilik": "SOKE.IS", "Enerya": "ENSRV.IS", "Koton": "KOTON.IS", "Lilak Kağıt": "LILAK.IS", "Rönesans GYO": "RGYAS.IS", "Hareket Proje": "HRKET.IS", "Koç Metalurji": "KOCMT.IS"}}
+
+bist_genis = {**bist_100, **{"Agrotech": "AGROT.IS", "Akfen Yenilenebilir": "AKFYE.IS", "Anadolu Efes": "AEFES.IS", "Anadolu Sigorta": "ANSGR.IS", "Aygaz": "AYGAZ.IS", "Bera Holding": "BERA.IS", "Bien Seramik": "BIENY.IS", "Biotrend": "BIOEN.IS", "Borusan Yatırım": "BRYAT.IS", "Bülbüloğlu Vinç": "BVSAN.IS", "Can Termik": "CANTE.IS", "Çan2 Termik": "CANTE.IS", "CVK Maden": "CVKMD.IS", "Eksun Gıda": "EKSUN.IS", "Esenboğa Elektrik": "ESEN.IS", "Forte Bilgi": "FORTE.IS", "Galata Wind": "GWIND.IS", "GSD Holding": "GSDHO.IS", "Hat-San Gemi": "HATSN.IS", "İmaş Makina": "IMASM.IS", "İnfo Yatırım": "INFO.IS", "İzdemir Enerji": "IZENR.IS", "Kaleseramik": "KLSER.IS", "Kayseri Şeker": "KAYSE.IS", "Kocaer Çelik": "KCAER.IS", "Kuştur Kuşadası": "KSTUR.IS", "Margün Enerji": "MAGEN.IS", "Mercan Kimya": "MERCN.IS", "Naten": "NATEN.IS", "Oyak Yatırım": "OYYAT.IS", "Özsu Balık": "OZSUB.IS", "Penta": "PENTA.IS", "Reeder Teknoloji": "REEDR.IS", "Rubenis Tekstil": "RUBNS.IS", "SDT Uzay": "SDTTR.IS", "Tarkim": "TARKM.IS", "Tatlıpınar Enerji": "TATEN.IS", "Tezol": "TEZOL.IS", "VBT Yazılım": "VBTYZ.IS", "Ziraat GYO": "ZRGYO.IS", "Tab Gıda": "TABGD.IS", "Ebebek": "EBEBK.IS", "Fuzul GYO": "FZLGY.IS", "Aydem": "AYDEM.IS", "Söke Değirmencilik": "SOKE.IS", "Enerya": "ENSRV.IS", "Koton": "KOTON.IS", "Lilak Kağıt": "LILAK.IS", "Rönesans GYO": "RGYAS.IS", "Hareket Proje": "HRKET.IS", "Koç Metalurji": "KOCMT.IS", "Aksa Akrilik": "AKSA.IS", "Aksa Enerji": "AKSEN.IS", "Aksigorta": "AKGRT.IS", "AgeSA Hayat": "AGESA.IS", "Alkim Kimya": "ALKIM.IS", "Afyon Çimento": "AFYON.IS", "Anadolu Isuzu": "ASUZU.IS", "Ard Bilişim": "ARDYZ.IS", "Bursa Çimento": "BUCIM.IS", "Çelebi Hava Servisi": "CLEBI.IS", "Desa Deri": "DESA.IS", "Derimod": "DERIM.IS", "Ege Seramik": "EGSER.IS", "Eczacıbaşı Yatırım": "ECZYT.IS", "Erbosan": "ERBOS.IS", "Goodyear": "GOODY.IS", "Göltaş Çimento": "GOLTS.IS", "Global Yatırım": "GLYHO.IS", "Gedik Yatırım": "GEDIK.IS", "Halk GYO": "HLGYO.IS", "İş Finansal": "ISFIN.IS", "İhlas Holding": "IHLAS.IS", "Jantsa": "JANTS.IS", "Karsan": "KARSN.IS", "Kartonsan": "KARTN.IS", "Karel Elektronik": "KAREL.IS", "Kerevitaş": "KERVT.IS", "Kervan Gıda": "KRVGD.IS", "Kütahya Porselen": "KUTPO.IS", "Klimasan": "KLMSN.IS", "Logo Yazılım": "LOGO.IS", "Lider Turizm": "LIDER.IS", "Net Holding": "NTHOL.IS", "Nuh Çimento": "NUHCM.IS", "Özak GYO": "OZKGY.IS", "Osmanlı Yatırım": "OSMEN.IS", "Papilon Savunma": "PAPIL.IS", "Pınar Süt": "PNSUT.IS", "Pınar Et": "PETUN.IS", "Sinpaş GYO": "SNGYO.IS", "Suwen": "SUWEN.IS", "Torunlar GYO": "TRGYO.IS", "Tat Gıda": "TATGD.IS", "Tümosan": "TMSN.IS", "Vakko": "VAKKO.IS", "Vakıf Finansal": "VAKFN.IS", "Vakıf GYO": "VKGYO.IS", "Yataş": "YATAS.IS", "Yayla Gıda": "YYLGD.IS", "Pasifik GYO": "PSGYO.IS", "Koleksiyon Mobilya": "KLSYN.IS", "Hitit Bilgisayar": "HTTBT.IS", "Orge Enerji": "ORGE.IS", "Arena Bilgisayar": "ARENA.IS", "Lokman Hekim": "LKMNH.IS", "Gentaş": "GENTS.IS", "Bossa": "BOSSA.IS", "E-Data": "EDATA.IS", "Ege Profil": "EGPRO.IS", "Kalekim": "KLKIM.IS", "Ulusoy Un": "ULUUN.IS", "Sarkuysan": "SARKY.IS", "Türkiye Sigorta": "TURSG.IS", "Anadolu Hayat": "ANHYT.IS", "İş Girişim": "ISGSY.IS", "Gözde Girişim": "GOZDE.IS", "Verusa Holding": "VERUS.IS", "İzmir Demir Çelik": "IZMDC.IS", "Çemtaş": "CEMTS.IS", "Banvit": "BANVT.IS"}}
+
 abd_hisseleri = {"Apple": "AAPL", "Microsoft": "MSFT", "NVIDIA": "NVDA", "Tesla": "TSLA", "Amazon": "AMZN", "Alphabet (Google)": "GOOGL", "Meta (Facebook)": "META", "AMD": "AMD", "Netflix": "NFLX", "Intel": "INTC", "Coca-Cola (ABD)": "KO", "PepsiCo": "PEP", "McDonald's": "MCD", "Boeing": "BA", "Ford Motor (ABD)": "F", "General Motors": "GM", "Uber": "UBER", "Airbnb": "ABNB", "Disney": "DIS", "Pfizer": "PFE", "Johnson & Johnson": "JNJ", "Visa": "V", "Mastercard": "MA", "JPMorgan Chase": "JPM", "Bank of America": "BAC", "Goldman Sachs": "GS", "Walmart": "WMT", "Nike": "NKE", "Starbucks": "SBUX", "Alibaba": "BABA"}
-kripto = {"Bitcoin": "BTC-USD", "Ethereum": "ETH-USD", "Solana": "SOL-USD", "Binance Coin": "BNB-USD", "Ripple (XRP)": "XRP-USD", "Cardano": "ADA-USD", "Avalanche": "AVAX-USD", "Dogecoin": "DOGE-USD", "Chainlink": "LINK-USD", "Polkadot": "DOT-USD", "Polygon (MATIC)": "MATIC-USD", "Shiba Inu": "SHIB-USD", "Litecoin": "LTC-USD", "TRON": "TRX-USD", "Bitcoin Cash": "BCH-USD", "Uniswap": "UNI-USD", "Cosmos": "ATOM-USD", "Monero": "XMR-USD", "Stellar": "XLM-USD", "Ethereum Classic": "ETC-USD", "VeChain": "VET-USD", "Filecoin": "FIL-USD", "Aave": "AAVE-USD", "Algorand": "ALGO-USD", "EOS": "EOS-USD", "The Sandbox": "SAND-USD", "Decentraland": "MANA-USD", "ApeCoin": "APE-USD", "Fantom": "FTM-USD"}
+
+kripto = {"Bitcoin": "BTC-USD", "Ethereum": "ETH-USD", "Solana": "SOL-USD", "Binance Coin": "BNB-USD", "Ripple (XRP)": "XRP-USD", "Cardano": "ADA-USD", "Avalanche": "AVAX-USD", "Dogecoin": "DOGE-USD", "Chainlink": "LINK-USD", "Polkadot": "DOT-USD", "Polygon (MATIC)": "MATIC-USD", "Shiba Inu": "SHIB-USD", "Litecoin": "LTC-USD", "TRON": "TRX-USD", "Bitcoin Cash": "BCH-USD", "Uniswap": "UNI-USD", "Cosmos": "ATOM-USD", "Monero": "XMR-USD", "Stellar": "XLM-USD", "Ethereum Classic": "ETC-USD", "VeChain": "VET-USD", "Filecoin": "FIL-USD", "Aave": "AAVE-USD", "Algorand": "ALGO-USD", "EOS": "EOS-USD", "The Sandbox": "SAND-USD", "Decentraland": "MANA-USD", "ApeCoin": "APE-USD", "Fantom": "FTM-USD", "Near Protocol": "NEAR-USD", "Aptos": "APT-USD", "Arbitrum": "ARB-USD", "Injective": "INJ-USD", "Optimism": "OP-USD", "Render": "RNDR-USD", "Kaspa": "KAS-USD", "Pepe": "PEPE-USD", "Bonk": "BONK-USD", "Floki": "FLOKI-USD", "Gala": "GALA-USD", "Fetch.ai": "FET-USD", "dogwifhat": "WIF-USD", "Jupiter": "JUP-USD", "Theta Network": "THETA-USD", "Hedera": "HBAR-USD", "Synthetix": "SNX-USD", "Maker": "MKR-USD", "Celestia": "TIA-USD", "Sei": "SEI-USD", "Manta Network": "MANTA-USD", "Starknet": "STRK-USD", "Ondo": "ONDO-USD", "Pyth Network": "PYTH-USD", "Arweave": "AR-USD", "Immutable": "IMX-USD", "Mantle": "MNT-USD", "Lido DAO": "LDO-USD"}
+
 madenler_emtia = {"Altın (Ons)": "GC=F", "Gümüş (Ons)": "SI=F", "Bakır": "HG=F", "Platin": "PL=F", "Paladyum": "PA=F", "Alüminyum": "ALI=F", "Ham Petrol (WTI)": "CL=F", "Brent Petrol": "BZ=F", "Doğal Gaz": "NG=F", "Isıtma Yakıtı": "HO=F", "Buğday": "ZW=F", "Mısır": "ZC=F", "Soya Fasulyesi": "ZS=F", "Kahve": "KC=F", "Şeker": "SB=F", "Pamuk": "CT=F", "Kakao": "CC=F", "Yulaf": "ZO=F", "Pirinç (Kaba)": "ZR=F", "Canlı Sığır": "LE=F", "Yağsız Domuz": "HE=F", "Kereste": "LBS=F"}
 
 tum_varliklar_mega = {**bist_genis, **abd_hisseleri, **kripto, **madenler_emtia}
 
 # =========================================================================================
-# YENİ: TEK SAYFA DÜZENİ & SOL MENÜ (ONLINE LİSTESİ)
+# SOL MENÜ (ONLINE LİSTESİ VE AYARLAR)
 # =========================================================================================
 st.sidebar.header("🕹️ Uygulama Modu")
 modlar = ["🔍 Algoritmik Piyasa Tarama", "💼 Sanal Portföy (Oyun)"]
@@ -338,9 +351,8 @@ st.sidebar.markdown("---")
 # 30 Saniye Kuralı ile Online Oyuncu Tespiti
 online_user_ids = set()
 for token, v_data in db.get("_OTURUMLAR_", {}).items():
-    # Eğer "son_hareket" yoksa bitişten 10 dk öncesini (işlem başlangıcını) varsay
     son_hareket = v_data.get("son_hareket", v_data["bitis"] - 600)
-    if su_an - son_hareket <= 30: # Son 30 saniyede işlem yapanlar
+    if su_an - son_hareket <= 30: 
         online_user_ids.add(v_data["kullanici"])
 
 with st.sidebar.expander(f"🟢 Çevrimiçi Tüccarlar ({len(online_user_ids)})", expanded=True):
@@ -412,6 +424,9 @@ with st.sidebar.expander("⚙️ Hesap Ayarları", expanded=False):
                 if aktif_kullanici in db: del db[aktif_kullanici]; db_kaydet(db)
                 st.query_params.clear(); st.session_state.aktif_kullanici = None; st.rerun()
 
+st.sidebar.markdown("---")
+st.sidebar.warning("**⚠️ YASAL UYARI (YTD)**\nBurada yer alan yatırım bilgi, yorum ve yapay zeka tahminleri yatırım danışmanlığı kapsamında değildir.")
+
 if uygulama_modu == "👑 Yönetici Paneli (Kurucu)":
     st.header("👑 SİSTEM YÖNETİCİSİ (ADMIN) PANELİ")
     st.markdown("Merkez bankası yetkileriyle donatılmış, oyunu ve oyuncuları yöneteceğiniz kontrol paneline hoş geldiniz.")
@@ -422,7 +437,7 @@ if uygulama_modu == "👑 Yönetici Paneli (Kurucu)":
         for k, v in db.items():
             if k not in ["_GLOBAL_", "_OTURUMLAR_"] and not v.get("is_admin", False):
                 bakiye = v["cuzdan"].get("nakit", 0)
-                oyuncu_listesi.append({"ID (Gizli)": k, "Takma Ad": v.get("nickname"), "Nakit Bakiye": f"{bakiye:,.2f} ₺"})
+                oyuncu_listesi.append({"ID (Gizli)": k, "Takma Ad": v.get("nickname"), "Nakit Bakiye": f"{format_tr(bakiye)} ₺"})
         if oyuncu_listesi:
             st.dataframe(pd.DataFrame(oyuncu_listesi), use_container_width=True)
             st.markdown("---")
@@ -434,7 +449,7 @@ if uygulama_modu == "👑 Yönetici Paneli (Kurucu)":
 
     with tab_ekonomi:
         st.subheader("Ekonomik Müdahaleler")
-        st.metric("Merkez Havuzda Biriken Komisyon", f"{db['_GLOBAL_'].get('toplam_komisyon', 0.0):,.2f} ₺")
+        st.metric("Merkez Havuzda Biriken Komisyon", f"{format_tr(db['_GLOBAL_'].get('toplam_komisyon', 0.0))} ₺")
         
         st.markdown("---")
         st.markdown("### 🎯 Bireysel Fon Aktarımı (Tek Kullanıcıya)")
@@ -446,7 +461,7 @@ if uygulama_modu == "👑 Yönetici Paneli (Kurucu)":
             if st.button("💰 Belirtilen Oyuncuya Gönder", use_container_width=True):
                 if secilen_id in db:
                     db[secilen_id]["cuzdan"]["nakit"] += bireysel_miktar
-                    db_kaydet(db); st.success(f"Başarılı! {kullanicilar[secilen_id]} adlı oyuncuya {bireysel_miktar:,.2f} ₺ aktarıldı."); time.sleep(1); st.rerun()
+                    db_kaydet(db); st.success(f"Başarılı! {kullanicilar[secilen_id]} adlı oyuncuya {format_tr(bireysel_miktar)} ₺ aktarıldı."); time.sleep(1); st.rerun()
         else: st.info("Sistemde şu an para gönderilecek aktif bir oyuncu yok.")
             
         st.markdown("---")
@@ -460,7 +475,7 @@ if uygulama_modu == "👑 Yönetici Paneli (Kurucu)":
                     if k not in ["_GLOBAL_", "_OTURUMLAR_"] and not v.get("is_admin", False):
                         db[k]["cuzdan"]["nakit"] += hibe_miktari
                         dagitilan_kisi += 1
-                db_kaydet(db); st.success(f"Başarılı! {dagitilan_kisi} kişiye toplam {dagitilan_kisi * hibe_miktari:,.2f} ₺ dağıtıldı.")
+                db_kaydet(db); st.success(f"Başarılı! {dagitilan_kisi} kişiye toplam {format_tr(dagitilan_kisi * hibe_miktari)} ₺ dağıtıldı.")
         with c2:
             st.markdown("### 🧹 Havuzu Sıfırla")
             if st.button("🔄 Havuzu Sıfırla (0 ₺ Yap)"):
@@ -587,7 +602,7 @@ elif uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                         if macd_val > macd_sinyal_val: puan += 1; durum_notu.append("MACD: Pozitif")
                         if son_fiyat < son_alt_bant and son_alt_bant > 0: puan += 2; durum_notu.append("BB: Aşırı Düştü")
                             
-                        sonuclar.append({"Varlık": isim, "Fiyat (₺)": round(son_fiyat, 2), "RSI": round(son_rsi, 1), "MFI (Hacim)": round(son_mfi, 1), "Puan": puan, "Durum": " | ".join(durum_notu) if durum_notu else "Nötr"})
+                        sonuclar.append({"Varlık": isim, "Fiyat (₺)": son_fiyat, "RSI": son_rsi, "MFI (Hacim)": son_mfi, "Puan": puan, "Durum": " | ".join(durum_notu) if durum_notu else "Nötr"})
 
                     else:
                         sma_50 = veri['Close'].rolling(window=50, min_periods=1).mean()
@@ -615,7 +630,7 @@ elif uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                             if fk_orani < 15: puan += 2; durum_notu.append("F/K Ucuz")
                             elif fk_orani > 30: puan -= 2
 
-                        sonuclar.append({"Varlık": isim, "Fiyat (₺)": round(son_fiyat, 2), "200G Ort (₺)": round(sma_200_deger, 2), "F/K": fk_metni, "Puan": puan, "Durum": " | ".join(durum_notu) if durum_notu else "Nötr"})
+                        sonuclar.append({"Varlık": isim, "Fiyat (₺)": son_fiyat, "200G Ort (₺)": sma_200_deger, "F/K": fk_metni, "Puan": puan, "Durum": " | ".join(durum_notu) if durum_notu else "Nötr"})
                         
                 except Exception:
                     pass 
@@ -646,9 +661,9 @@ elif uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                     return ''
                 if hasattr(st.session_state.df_sonuc.style, "map"): styled_df = st.session_state.df_sonuc.style.map(style_rsi, subset=['RSI'])
                 else: styled_df = st.session_state.df_sonuc.style.applymap(style_rsi, subset=['RSI'])
-                st.dataframe(styled_df.format({"Fiyat (₺)": "{:,.2f}"}), use_container_width=True)
+                st.dataframe(styled_df.format({"Fiyat (₺)": format_tr, "RSI": lambda x: format_tr(x, 1), "MFI (Hacim)": lambda x: format_tr(x, 1)}), use_container_width=True)
             else:
-                st.dataframe(st.session_state.df_sonuc.style.format({"Fiyat (₺)": "{:,.2f}", "200G Ort (₺)": "{:,.2f}"}), use_container_width=True)
+                st.dataframe(st.session_state.df_sonuc.style.format({"Fiyat (₺)": format_tr, "200G Ort (₺)": format_tr}), use_container_width=True)
         except: st.dataframe(st.session_state.df_sonuc, use_container_width=True)
             
         if piyasa_secimi == "👤 Kendi İzleme Listem" and not st.session_state.ozel_portfoy_verisi.empty:
@@ -673,8 +688,8 @@ elif uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                         fig_pie.update_traces(textposition='inside', textinfo='percent+label')
                         st.plotly_chart(fig_pie, use_container_width=True)
                     with col_text:
-                        st.write(f"**Beklenen Yıllık Getiri:** %{round(results[0,max_sharpe_idx]*100, 2)}")
-                        st.write(f"**Tahmini Yıllık Risk:** %{round(results[1,max_sharpe_idx]*100, 2)}")
+                        st.write(f"**Beklenen Yıllık Getiri:** %{format_tr(results[0,max_sharpe_idx]*100)}")
+                        st.write(f"**Tahmini Yıllık Risk:** %{format_tr(results[1,max_sharpe_idx]*100)}")
                 else: st.warning("Yeterli geçmiş veri yok.")
                     
             with st.expander("🗺️ Varlık Korelasyon Matrisi", expanded=False):
@@ -771,8 +786,8 @@ elif uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                             elif row['RSI'] > 70 and adet > 0: nakit = adet * row['Close']; adet = 0; sat_t.append(index); sat_f.append(row['Close'])
                         son_deger = nakit if adet == 0 else adet * df_bt['Close'].iloc[-1]
                         c1, c2 = st.columns(2)
-                        c1.metric("Al-Sat Getirisi", f"%{round(((son_deger - 10000) / 10000) * 100, 2)}")
-                        c2.metric("Bekleme Getirisi", f"%{round(((df_bt['Close'].iloc[-1] - df_bt['Close'].dropna().iloc[0]) / df_bt['Close'].dropna().iloc[0]) * 100, 2)}")
+                        c1.metric("Al-Sat Getirisi", f"%{format_tr(((son_deger - 10000) / 10000) * 100)}")
+                        c2.metric("Bekleme Getirisi", f"%{format_tr(((df_bt['Close'].iloc[-1] - df_bt['Close'].dropna().iloc[0]) / df_bt['Close'].dropna().iloc[0]) * 100)}")
                         fig3 = go.Figure().add_trace(go.Scatter(x=df_bt.index, y=df_bt['Close'], mode='lines', name='Fiyat', line=dict(color='white')))
                         if al_t: fig3.add_trace(go.Scatter(x=al_t, y=al_f, mode='markers', name='AL', marker=dict(color='green', size=12, symbol='triangle-up')))
                         if sat_t: fig3.add_trace(go.Scatter(x=sat_t, y=sat_f, mode='markers', name='SAT', marker=dict(color='red', size=12, symbol='triangle-down')))
@@ -798,7 +813,7 @@ elif uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                                     fig_heat.update_traces(textfont=dict(color="white", weight="bold"))
                                     st.plotly_chart(fig_heat, use_container_width=True)
                                     avg_ret = heatmap_df.mean()
-                                    st.info(f"💡 Tarihsel olarak **en çok kazandıran ay: {avg_ret.idxmax()}** (Ort. %{avg_ret.max():.2f}) | **En riskli ay: {avg_ret.idxmin()}** (Ort. %{avg_ret.min():.2f})")
+                                    st.info(f"💡 Tarihsel olarak **en çok kazandıran ay: {avg_ret.idxmax()}** (Ort. %{format_tr(avg_ret.max())}) | **En riskli ay: {avg_ret.idxmin()}** (Ort. %{format_tr(avg_ret.min())})")
                                 else: st.warning("Yeterli tarihsel veri yok.")
                             except: st.error("Mevsimsellik hesaplanamadı.")
 
@@ -828,7 +843,7 @@ elif uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                                         son_z = float(df_pair['Z_Score'].dropna().iloc[-1])
                                         if son_z > 2.0: st.error(f"🚨 **ARBİTRAJ FIRSATI (Aşırı Değerli):** {secilen_isim}, {ikinci_varlik_isim}'e kıyasla ortalamanın çok üzerinde.")
                                         elif son_z < -2.0: st.success(f"🟢 **ARBİTRAJ FIRSATI (Aşırı Ucuz):** {secilen_isim}, {ikinci_varlik_isim}'e kıyasla ortalamanın çok altında.")
-                                        else: st.info(f"⚖️ **Denge Durumu:** İki varlık arasındaki oran tarihsel normaller (Z-Skoru: {son_z:.2f}) içinde seyrediyor.")
+                                        else: st.info(f"⚖️ **Denge Durumu:** İki varlık arasındaki oran tarihsel normaller (Z-Skoru: {format_tr(son_z)}) içinde seyrediyor.")
                                     else: st.warning("Eşleşen yeterli tarihsel veri bulunamadı.")
                                 except Exception as e: st.warning("Veriler eşleştirilirken bir uyumsuzluk yaşandı.")
                         elif ikinci_sembol == secilen_sembol: st.warning("Lütfen karşılaştırmak için farklı bir varlık seçin.")
@@ -865,9 +880,12 @@ elif uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                 except: st.error("Haber servisine ulaşılamıyor.")
 
 # =========================================================================================
-# 💼 SANAL PORTFÖY VE OYUN MOTORU (CANLI VERİ AKIŞLI)
+# 💼 SANAL PORTFÖY VE OYUN MOTORU 
 # =========================================================================================
 elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
+
+    toplam_komisyon = db["_GLOBAL_"].get("toplam_komisyon", 0.0)
+    st.markdown(f"<div class='bagis-panosu'>🌟 <b>Merkez Bankası Komisyon ve Likidasyon Havuzu:</b> <br><span class='bagis-sayi'>{format_tr(toplam_komisyon)} ₺</span></div>", unsafe_allow_html=True)
 
     tab_portfoy, tab_banka, tab_liderlik, tab_sohbet = st.tabs(["💼 Portföyüm", "🏦 Banka (Faiz)", "🏆 Liderlik Tablosu", "💬 Borsa Meydanı"])
     
@@ -911,10 +929,10 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
         toplam_portfoy = cuzdan["nakit"] + toplam_varlik_degeri + toplam_kaldirac_net_deger + toplam_banka
         
         col1, col2, col3, col4 = st.columns(4)
-        col1.metric("Toplam Net Değer", f"{toplam_portfoy:,.2f} ₺", f"% {((toplam_portfoy - 1000000.0) / 1000000.0) * 100:.2f}")
-        col2.metric("Boş Nakit", f"{cuzdan['nakit']:,.2f} ₺")
-        col3.metric("Yatırımdaki Varlıklar", f"{(toplam_varlik_degeri + toplam_kaldirac_net_deger):,.2f} ₺")
-        col4.metric("Bankadaki Nakit (Faiz)", f"{toplam_banka:,.2f} ₺")
+        col1.metric("Toplam Net Değer", f"{format_tr(toplam_portfoy)} ₺", f"% {format_tr(((toplam_portfoy - 1000000.0) / 1000000.0) * 100)}")
+        col2.metric("Boş Nakit", f"{format_tr(cuzdan['nakit'])} ₺")
+        col3.metric("Yatırımdaki Varlıklar", f"{format_tr(toplam_varlik_degeri + toplam_kaldirac_net_deger)} ₺")
+        col4.metric("Bankadaki Nakit (Faiz)", f"{format_tr(toplam_banka)} ₺")
         st.markdown("---")
 
         col_islem, col_durum = st.columns([1, 2])
@@ -940,17 +958,17 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
             
             if kaldirac_orani > 1:
                 komisyon_orani = baz_komisyon / 10 
-                komisyon_metni = f"%{komisyon_orani*100:.3f} (Kaldıraçlı İndirim)"
+                komisyon_metni = f"%{format_tr(komisyon_orani*100, 3)} (Kaldıraçlı İndirim)"
             else:
                 komisyon_orani = baz_komisyon
-                komisyon_metni = f"%{komisyon_orani*100:.3f} (Spot)"
+                komisyon_metni = f"%{format_tr(komisyon_orani*100, 3)} (Spot)"
 
             try:
                 anlik_fiyat = canli_fiyat_getir(sembol_islem, usd_kuru if not sembol_islem.endswith(".IS") else 1.0)
                 if anlik_fiyat == 0.0: raise ValueError("Fiyat sıfır geldi")
                 son_hacim = 1000000.0 
                 max_islem_limiti = son_hacim * 0.10 
-                st.write(f"Anlık Fiyat: **{anlik_fiyat:,.2f} ₺**")
+                st.write(f"Anlık Fiyat: **{format_tr(anlik_fiyat)} ₺**")
             except Exception as e:
                 anlik_fiyat, max_islem_limiti = 0.0, float('inf')
                 st.warning(f"Fiyat çekilemedi. Hata: {str(e)}")
@@ -958,7 +976,7 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
             if kaldirac_orani == 1:
                 islem_miktari = st.number_input("Adet / Miktar:", min_value=0.01, step=1.0)
                 limit_asildi = islem_miktari > max_islem_limiti
-                if limit_asildi: st.error(f"🚨 LİKİDİTE KISITI: En fazla {max_islem_limiti:,.2f} adet alabilirsiniz!")
+                if limit_asildi: st.error(f"🚨 LİKİDİTE KISITI: En fazla {format_tr(max_islem_limiti)} adet alabilirsiniz!")
                 
                 if "Limit" in emir_turu:
                     hedef_fiyat = st.number_input("Hedef Fiyat (₺):", min_value=0.01, value=float(anlik_fiyat) if anlik_fiyat>0 else 1.0, step=1.0)
@@ -971,10 +989,10 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                 toplam_islem_maliyeti = islem_tutari + komisyon_tutari 
                 toplam_islem_getirisi = islem_tutari - komisyon_tutari 
 
-                st.write(f"İşlem Hacmi: **{islem_tutari:,.2f} ₺**")
-                st.write(f"Komisyon ({komisyon_metni}): **{komisyon_tutari:,.2f} ₺**")
-                if islem_tipi == "AL": st.info(f"Kasadan Çıkacak: **{toplam_islem_maliyeti:,.2f} ₺**")
-                else: st.success(f"Kasaya Girecek: **{toplam_islem_getirisi:,.2f} ₺**")
+                st.write(f"İşlem Hacmi: **{format_tr(islem_tutari)} ₺**")
+                st.write(f"Komisyon ({komisyon_metni}): **{format_tr(komisyon_tutari)} ₺**")
+                if islem_tipi == "AL": st.info(f"Kasadan Çıkacak: **{format_tr(toplam_islem_maliyeti)} ₺**")
+                else: st.success(f"Kasaya Girecek: **{format_tr(toplam_islem_getirisi)} ₺**")
 
                 buton_metni = "🕒 Bekleyen Emir Gir" if "Limit" in emir_turu else "⚡ Siparişi Anında Onayla"
                 if st.button(buton_metni, use_container_width=True) and anlik_fiyat > 0 and not limit_asildi:
@@ -1040,10 +1058,10 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                 if islem_tipi == "AL (Long)": liq_fiyat = anlik_fiyat * (1 - (1/kaldirac_orani))
                 else: liq_fiyat = anlik_fiyat * (1 + (1/kaldirac_orani))
                 
-                st.info(f"📊 Pozisyon Büyüklüğü: **{islem_hacmi:,.2f} ₺** ({alinacak_adet:,.4f} Adet)")
+                st.info(f"📊 Pozisyon Büyüklüğü: **{format_tr(islem_hacmi)} ₺** ({format_tr(alinacak_adet, 4)} Adet)")
                 komisyon_tutari = islem_hacmi * komisyon_orani
-                st.write(f"Sisteme Ödenecek Komisyon: **{komisyon_tutari:,.2f} ₺**")
-                st.error(f"🚨 **Likidasyon Fiyatı:** {liq_fiyat:,.2f} ₺ (Fiyat buraya gelirse paranız yanar!)")
+                st.write(f"Sisteme Ödenecek Komisyon: **{format_tr(komisyon_tutari)} ₺**")
+                st.error(f"🚨 **Likidasyon Fiyatı:** {format_tr(liq_fiyat)} ₺ (Fiyat buraya gelirse paranız yanar!)")
 
                 if st.button("🚀 Kaldıraçlı Pozisyonu Aç", use_container_width=True) and anlik_fiyat > 0 and not limit_asildi:
                     gerekli_nakit = girilen_teminat + komisyon_tutari
@@ -1071,7 +1089,7 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                         st.success(f"{kaldirac_orani}x {islem_tipi} Pozisyonu Başarıyla Açıldı!")
                         time.sleep(1); st.rerun()
                     else:
-                        st.error(f"Yetersiz Nakit! Teminat + Komisyon için {gerekli_nakit:,.2f} ₺ gerekiyor.")
+                        st.error(f"Yetersiz Nakit! Teminat + Komisyon için {format_tr(gerekli_nakit)} ₺ gerekiyor.")
 
         with col_durum:
             def canli_portfoy_motoru():
@@ -1126,7 +1144,7 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                             
                             if patladi:
                                 db_canli["_GLOBAL_"]["toplam_komisyon"] += poz["teminat"]
-                                mesaj_listesi.append(f"🚨 {poz['varlik']} {poz['kaldirac']}x {poz['yon']} MARGIN CALL! ({poz['teminat']} ₺ Yandı)")
+                                mesaj_listesi.append(f"🚨 {poz['varlik']} {poz['kaldirac']}x {poz['yon']} MARGIN CALL! ({format_tr(poz['teminat'])} ₺ Yandı)")
                                 degisiklik_var = True
                             else: kalan_pozisyonlar.append(poz)
                         else: kalan_pozisyonlar.append(poz)
@@ -1151,16 +1169,19 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                             liste.append({"Varlık": v, "Adet": adet, "Maliyet (₺)": maliyet, "Fiyat (₺)": gf, "Değer (₺)": adet * gf, "K/Z (₺)": (adet * gf) - (adet * maliyet), "% K/Z": ((gf - maliyet) / maliyet * 100) if maliyet > 0 else 0})
                         df_p = pd.DataFrame(liste).sort_values("Değer (₺)", ascending=False)
                         
-                        def renk_ver(val):
-                            try: return 'color: #00ff00; font-weight:bold;' if float(val) > 0 else 'color: #ff4444; font-weight:bold;' if float(val) < 0 else ''
-                            except: return ''
-                            
                         if hasattr(df_p.style, "map"):
-                            styled_p = df_p.style.map(renk_ver, subset=['K/Z (₺)', '% K/Z'])
+                            styled_p = df_p.style.map(lambda val: 'color: #00ff00; font-weight:bold;' if float(val) > 0 else 'color: #ff4444; font-weight:bold;' if float(val) < 0 else '', subset=['K/Z (₺)', '% K/Z'])
                         else:
-                            styled_p = df_p.style.applymap(renk_ver, subset=['K/Z (₺)', '% K/Z'])
+                            styled_p = df_p.style.applymap(lambda val: 'color: #00ff00; font-weight:bold;' if float(val) > 0 else 'color: #ff4444; font-weight:bold;' if float(val) < 0 else '', subset=['K/Z (₺)', '% K/Z'])
                             
-                        st.dataframe(styled_p.format({"Adet": "{:,.4f}", "Maliyet (₺)": "{:,.2f}", "Fiyat (₺)": "{:,.2f}", "Değer (₺)": "{:,.2f}", "K/Z (₺)": "{:,.2f}", "% K/Z": "% {:,.2f}"}), use_container_width=True)
+                        st.dataframe(styled_p.format({
+                            "Adet": lambda x: format_tr(x, 4), 
+                            "Maliyet (₺)": format_tr, 
+                            "Fiyat (₺)": format_tr, 
+                            "Değer (₺)": format_tr, 
+                            "K/Z (₺)": format_tr, 
+                            "% K/Z": lambda x: f"% {format_tr(x)}"
+                        }), use_container_width=True)
                     else: st.caption("Spot cüzdanınız boş.")
 
                     st.markdown("<br>", unsafe_allow_html=True)
@@ -1179,15 +1200,15 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                                         <span style='background:#1e293b; padding:2px 8px; border-radius:5px;'>{poz['kaldirac']}x {poz['yon']}</span>
                                     </div>
                                     <div style='display:flex; justify-content:space-between; font-size:14px; color:#aaa;'>
-                                        <span>Giriş: {poz['giris_fiyati']:,.2f} ₺</span>
-                                        <span>Anlık: <span style='color:white'>{gf:,.2f} ₺</span></span>
+                                        <span>Giriş: {format_tr(poz['giris_fiyati'])} ₺</span>
+                                        <span>Anlık: <span style='color:white'>{format_tr(gf)} ₺</span></span>
                                     </div>
                                     <div style='display:flex; justify-content:space-between; font-size:14px; margin-top:5px;'>
-                                        <span>Liq: <span style='color:#ff4444'>{poz['liq_fiyati']:,.2f} ₺</span></span>
-                                        <span>Bağlanan: {poz['teminat']:,.2f} ₺</span>
+                                        <span>Liq: <span style='color:#ff4444'>{format_tr(poz['liq_fiyati'])} ₺</span></span>
+                                        <span>Bağlanan: {format_tr(poz['teminat'])} ₺</span>
                                     </div>
                                     <div style='text-align:right; margin-top:10px; font-size:18px; font-weight:bold; color:{"#00ff00" if pnl > 0 else "#ff4444"};'>
-                                        {pnl:,.2f} ₺ ( %{roe_yuzde:,.2f} )
+                                        {format_tr(pnl)} ₺ ( %{format_tr(roe_yuzde)} )
                                     </div>
                                 </div>
                             """, unsafe_allow_html=True)
@@ -1215,7 +1236,7 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                                 if db_canli[aktif_kullanici]["istatistikler"]["islem_sayisi"] >= 50: rozet_ver(db_canli, aktif_kullanici, "🐺", "Wall Street Kurdu")
                                 
                                 db_kaydet(db_canli)
-                                st.success(f"Pozisyon kapandı! Kasanıza {max(0, nihai_iade):,.2f} ₺ eklendi.")
+                                st.success(f"Pozisyon kapandı! Kasanıza {format_tr(max(0, nihai_iade))} ₺ eklendi.")
                                 time.sleep(1); st.rerun()
                     else: st.caption("Açık kaldıraçlı işleminiz bulunmuyor.")
 
@@ -1226,8 +1247,8 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                             st.markdown(f"<div style='background-color:rgba(15, 23, 42, 0.8); border:1px solid rgba(0,255,255,0.2); padding:10px; border-radius:10px; margin-bottom:10px; backdrop-filter:blur(5px);'>", unsafe_allow_html=True)
                             c1, c2, c3, c4 = st.columns([3, 2, 3, 2])
                             c1.write(f"**{emir['varlik']}**")
-                            c2.write(f"{'🟢 AL' if emir['tip'] == 'AL' else '🔴 SAT'} ({emir['adet']})")
-                            c3.write(f"Hedef: **{emir['hedef_fiyat']:,.2f} ₺**")
+                            c2.write(f"{'🟢 AL' if emir['tip'] == 'AL' else '🔴 SAT'} ({format_tr(emir['adet'])})")
+                            c3.write(f"Hedef: **{format_tr(emir['hedef_fiyat'])} ₺**")
                             if c4.button("❌ İptal", key=f"iptal_{emir['id']}"):
                                 if emir["tip"] == "AL": cz_canli["nakit"] += emir["baglanan_tutar"]
                                 else:
@@ -1261,8 +1282,8 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                 st.markdown("<span style='color:#00ff00; font-weight:bold;'>Yıllık Getiri: %40 (Saniye bazlı işler, anında çekilebilir)</span>", unsafe_allow_html=True)
                 
                 col_b1, col_b2 = st.columns(2)
-                with col_b1: st.metric("Fonda Biriken Para", f"{banka_canli['gecelik']['miktar']:,.4f} ₺")
-                with col_b2: st.metric("Kullanılabilir Nakit (Cüzdan)", f"{cz_canli['nakit']:,.2f} ₺")
+                with col_b1: st.metric("Fonda Biriken Para", f"{format_tr(banka_canli['gecelik']['miktar'], 4)} ₺")
+                with col_b2: st.metric("Kullanılabilir Nakit (Cüzdan)", f"{format_tr(cz_canli['nakit'])} ₺")
                     
                 c_yatir, c_cek = st.columns(2)
                 with c_yatir:
@@ -1316,7 +1337,7 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                         kalan_saat = int((kalan_saniye % (24*3600)) // 3600)
                         kalan_dk = int((kalan_saniye % 3600) // 60)
                         beklenen_getiri = v["miktar"] * v["faiz_orani"] * (v["gun"] / 365)
-                        st.markdown(f"<div style='background:rgba(255,255,255,0.05); padding:10px; border-radius:8px; margin-bottom:5px; display:flex; justify-content:space-between; align-items:center;'><div><b>{v['miktar']:,.2f} ₺</b> ({v['gun']} Günlük)<br><span style='color:#00ff00; font-size:12px;'>Vade Sonu Getirisi: +{beklenen_getiri:,.2f} ₺</span><br><span style='color:#aaa; font-size:12px;'>⏳ Kalan Süre: {kalan_gun} Gün, {kalan_saat} Saat, {kalan_dk} Dk</span></div></div>", unsafe_allow_html=True)
+                        st.markdown(f"<div style='background:rgba(255,255,255,0.05); padding:10px; border-radius:8px; margin-bottom:5px; display:flex; justify-content:space-between; align-items:center;'><div><b>{format_tr(v['miktar'])} ₺</b> ({v['gun']} Günlük)<br><span style='color:#00ff00; font-size:12px;'>Vade Sonu Getirisi: +{format_tr(beklenen_getiri)} ₺</span><br><span style='color:#aaa; font-size:12px;'>⏳ Kalan Süre: {kalan_gun} Gün, {kalan_saat} Saat, {kalan_dk} Dk</span></div></div>", unsafe_allow_html=True)
                         if st.button("❌ Vadeyi Boz (Faiz Yanar)", key=f"boz_{v['id']}"):
                             banka_canli["vadeli"] = [x for x in banka_canli["vadeli"] if x["id"] != v["id"]]
                             cz_canli["nakit"] += v["miktar"] 
@@ -1325,7 +1346,7 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                             st.error("Vade bozuldu. Ana paranız kasaya döndü, faiz hakkınız yandı.")
                             time.sleep(1); st.rerun()
                 st.markdown("</div>", unsafe_allow_html=True)
-            except Exception as e:
+            except Exception:
                 st.error("Banka motoru durduruldu. Sayfayı yenileyin.")
 
         if hasattr(st, "fragment"): canli_banka_motoru = st.fragment(run_every=2)(canli_banka_motoru)
@@ -1381,8 +1402,6 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                             rozet_ver(db_canli, k, "👑", "Oligark")
                                 
                         gosterilecek_isim = v.get("nickname", k)
-                        
-                        # ÇÖZÜM BURADA: Emojileri HTML etiketi olmadan düz metin olarak ismin yanına yazdırıyoruz
                         rozet_str = "".join(v.get("rozetler", []))
                         isim_ve_rozet = f"{gosterilecek_isim} {rozet_str}"
                         
@@ -1392,8 +1411,8 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                 
                 gosterim_listesi = []
                 for i, user_data in enumerate(liderlik_listesi):
-                    bakiye_str = str(int(user_data["Toplam"]))
-                    maskeli_bakiye = bakiye_str[0] + ("*" * (len(bakiye_str) - 1)) + " ₺"
+                    int_str = format_tr(user_data["Toplam"]).split(",")[0]
+                    maskeli_bakiye = int_str[0] + "".join(["*" if c.isdigit() else c for c in int_str[1:]]) + " ₺"
                     sira = "🥇 1" if i == 0 else "🥈 2" if i == 1 else "🥉 3" if i == 2 else str(i + 1)
                     
                     gosterim_listesi.append({
@@ -1402,13 +1421,13 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                         "Gizli Kasa Büyüklüğü": maskeli_bakiye
                     })
                     
-                # Streamlit'in kendi orijinal (çökmeyen) veri tablosunu kullanıyoruz
                 st.dataframe(pd.DataFrame(gosterim_listesi).style.hide(axis="index"), use_container_width=True)
                 
                 st.markdown("<br>", unsafe_allow_html=True)
                 with st.expander("💡 Başarım Rozetleri Ne Anlama Geliyor?"):
                     for emoji, aciklama in ROZET_ANLAMLARI.items():
                         st.write(f"**{emoji}** {aciklama}")
+                        
             except Exception:
                 pass
             
