@@ -213,19 +213,25 @@ def db_kaydet(db):
         os.fsync(f.fileno()) 
     os.replace(gecici_dosya, DB_DOSYASI) 
 
-if 'aktif_kullanici' not in st.session_state:
-    st.session_state.aktif_kullanici = None
-
-db = db_yukle()
-
+# =========================================================================================
+# ROZET SPAMI ÖNLEYİCİ GÜÇLENDİRİLMİŞ MOTOR
+# =========================================================================================
 def rozet_ver(db_ref, k_id, rozet, mesaj):
+    # Eğer rozet kullanıcının listesinde YENİ ise
     if rozet not in db_ref[k_id].setdefault("rozetler", []):
         db_ref[k_id]["rozetler"].append(rozet)
-        if k_id == aktif_kullanici:
+        db_kaydet(db_ref)  # ANINDA DOSYAYA KAYDET (Spamı önleyen kilit nokta)
+        
+        # Eğer o an sayfada olan kişi rozeti kazanan kişiyse, sadece ona 1 kez toast göster
+        if st.session_state.get("aktif_kullanici") == k_id:
             st.toast(f"YENİ BAŞARIM AÇILDI: {rozet} {mesaj}", icon="🏆")
         return True
     return False
 
+if 'aktif_kullanici' not in st.session_state:
+    st.session_state.aktif_kullanici = None
+
+db = db_yukle()
 su_an = time.time()
 silinecek_oturumlar = [t for t, v in db.get("_OTURUMLAR_", {}).items() if su_an > v["bitis"]]
 for t in silinecek_oturumlar: del db["_OTURUMLAR_"][t]
@@ -322,33 +328,21 @@ def aktif_cuzdan_kaydet():
 
 usd_kuru = guncel_kur_getir()
 
-# =========================================================================================
-# YENİ VARLIKLAR İLE ZENGİNLEŞTİRİLMİŞ PİYASA LİSTELERİ (200+ Varlık)
-# =========================================================================================
 bist_30 = {"Akbank": "AKBNK.IS", "Alarko": "ALARK.IS", "Aselsan": "ASELS.IS", "Astor": "ASTOR.IS", "BİM": "BIMAS.IS", "Borusan": "BRSAN.IS", "Coca-Cola İçecek": "CCOLA.IS", "Emlak Konut": "EKGYO.IS", "Enka": "ENKAI.IS", "Ereğli": "EREGL.IS", "Ford Otosan": "FROTO.IS", "Garanti": "GARAN.IS", "Gübre Fab": "GUBRF.IS", "Hektaş": "HEKTS.IS", "İş Bankası": "ISCTR.IS", "Koç Hol": "KCHOL.IS", "Kontrolmatik": "KONTR.IS", "Koza Altın": "KOZAL.IS", "Kardemir": "KRDMD.IS", "Odaş": "ODAS.IS", "Petkim": "PETKM.IS", "Pegasus": "PGSUS.IS", "Sabancı Hol": "SAHOL.IS", "Sasa": "SASA.IS", "Şişecam": "SISE.IS", "Turkcell": "TCELL.IS", "THY": "THYAO.IS", "Tofaş": "TOASO.IS", "Tüpraş": "TUPRS.IS", "Yapı Kredi": "YKBNK.IS"}
-
 bist_100 = {**bist_30, **{"Alfa Solar": "ALFAS.IS", "Arçelik": "ARCLK.IS", "Brisa": "BRISA.IS", "Çimsa": "CIMSA.IS", "CW Enerji": "CWENE.IS", "Doğuş Oto": "DOAS.IS", "Doğan Hol": "DOHOL.IS", "Eczacıbaşı": "ECILC.IS", "Ege Endüstri": "EGEEN.IS", "Enerjisa": "ENJSA.IS", "Europower": "EUPWR.IS", "Girişim Elk": "GESAN.IS", "Halkbank": "HALKB.IS", "İskenderun D.": "ISDMR.IS", "İş GYO": "ISGYO.IS", "İş Yatırım": "ISMEN.IS", "Konya Çimento": "KONYA.IS", "Kordsa": "KORDS.IS", "Koza Anadolu": "KOZAA.IS", "Mavi": "MAVI.IS", "Migros": "MGROS.IS", "Mia Teknoloji": "MIATK.IS", "Otokar": "OTKAR.IS", "Oyak Çimento": "OYAKC.IS", "Qua Granite": "QUAGR.IS", "Şekerbank": "SKBNK.IS", "Smart Güneş": "SMRTG.IS", "Şok Market": "SOKM.IS", "TAV": "TAVHL.IS", "Tekfen": "TKFEN.IS", "TSKB": "TSKB.IS", "Türk Telekom": "TTKOM.IS", "Türk Traktör": "TTRAK.IS", "Tukaş": "TUKAS.IS", "Ülker": "ULKER.IS", "Vakıfbank": "VAKBN.IS", "Vestel Beyaz": "VESBE.IS", "Vestel": "VESTL.IS", "Yeo Teknoloji": "YEOTK.IS", "Zorlu Enerji": "ZOREN.IS"}}
-
 bist_genis = {**bist_100, **{"Agrotech": "AGROT.IS", "Akfen Yenilenebilir": "AKFYE.IS", "Anadolu Efes": "AEFES.IS", "Anadolu Sigorta": "ANSGR.IS", "Aygaz": "AYGAZ.IS", "Bera Holding": "BERA.IS", "Bien Seramik": "BIENY.IS", "Biotrend": "BIOEN.IS", "Borusan Yatırım": "BRYAT.IS", "Bülbüloğlu Vinç": "BVSAN.IS", "Can Termik": "CANTE.IS", "Çan2 Termik": "CANTE.IS", "CVK Maden": "CVKMD.IS", "Eksun Gıda": "EKSUN.IS", "Esenboğa Elektrik": "ESEN.IS", "Forte Bilgi": "FORTE.IS", "Galata Wind": "GWIND.IS", "GSD Holding": "GSDHO.IS", "Hat-San Gemi": "HATSN.IS", "İmaş Makina": "IMASM.IS", "İnfo Yatırım": "INFO.IS", "İzdemir Enerji": "IZENR.IS", "Kaleseramik": "KLSER.IS", "Kayseri Şeker": "KAYSE.IS", "Kocaer Çelik": "KCAER.IS", "Kuştur Kuşadası": "KSTUR.IS", "Margün Enerji": "MAGEN.IS", "Mercan Kimya": "MERCN.IS", "Naten": "NATEN.IS", "Oyak Yatırım": "OYYAT.IS", "Özsu Balık": "OZSUB.IS", "Penta": "PENTA.IS", "Reeder Teknoloji": "REEDR.IS", "Rubenis Tekstil": "RUBNS.IS", "SDT Uzay": "SDTTR.IS", "Tarkim": "TARKM.IS", "Tatlıpınar Enerji": "TATEN.IS", "Tezol": "TEZOL.IS", "VBT Yazılım": "VBTYZ.IS", "Ziraat GYO": "ZRGYO.IS", "Tab Gıda": "TABGD.IS", "Ebebek": "EBEBK.IS", "Fuzul GYO": "FZLGY.IS", "Aydem": "AYDEM.IS", "Söke Değirmencilik": "SOKE.IS", "Enerya": "ENSRV.IS", "Koton": "KOTON.IS", "Lilak Kağıt": "LILAK.IS", "Rönesans GYO": "RGYAS.IS", "Hareket Proje": "HRKET.IS", "Koç Metalurji": "KOCMT.IS", "Aksa Akrilik": "AKSA.IS", "Aksa Enerji": "AKSEN.IS", "Aksigorta": "AKGRT.IS", "AgeSA Hayat": "AGESA.IS", "Alkim Kimya": "ALKIM.IS", "Afyon Çimento": "AFYON.IS", "Anadolu Isuzu": "ASUZU.IS", "Ard Bilişim": "ARDYZ.IS", "Bursa Çimento": "BUCIM.IS", "Çelebi Hava Servisi": "CLEBI.IS", "Desa Deri": "DESA.IS", "Derimod": "DERIM.IS", "Ege Seramik": "EGSER.IS", "Eczacıbaşı Yatırım": "ECZYT.IS", "Erbosan": "ERBOS.IS", "Goodyear": "GOODY.IS", "Göltaş Çimento": "GOLTS.IS", "Global Yatırım": "GLYHO.IS", "Gedik Yatırım": "GEDIK.IS", "Halk GYO": "HLGYO.IS", "İş Finansal": "ISFIN.IS", "İhlas Holding": "IHLAS.IS", "Jantsa": "JANTS.IS", "Karsan": "KARSN.IS", "Kartonsan": "KARTN.IS", "Karel Elektronik": "KAREL.IS", "Kerevitaş": "KERVT.IS", "Kervan Gıda": "KRVGD.IS", "Kütahya Porselen": "KUTPO.IS", "Klimasan": "KLMSN.IS", "Logo Yazılım": "LOGO.IS", "Lider Turizm": "LIDER.IS", "Net Holding": "NTHOL.IS", "Nuh Çimento": "NUHCM.IS", "Özak GYO": "OZKGY.IS", "Osmanlı Yatırım": "OSMEN.IS", "Papilon Savunma": "PAPIL.IS", "Pınar Süt": "PNSUT.IS", "Pınar Et": "PETUN.IS", "Sinpaş GYO": "SNGYO.IS", "Suwen": "SUWEN.IS", "Torunlar GYO": "TRGYO.IS", "Tat Gıda": "TATGD.IS", "Tümosan": "TMSN.IS", "Vakko": "VAKKO.IS", "Vakıf Finansal": "VAKFN.IS", "Vakıf GYO": "VKGYO.IS", "Yataş": "YATAS.IS", "Yayla Gıda": "YYLGD.IS", "Pasifik GYO": "PSGYO.IS", "Koleksiyon Mobilya": "KLSYN.IS", "Hitit Bilgisayar": "HTTBT.IS", "Orge Enerji": "ORGE.IS", "Arena Bilgisayar": "ARENA.IS", "Lokman Hekim": "LKMNH.IS", "Gentaş": "GENTS.IS", "Bossa": "BOSSA.IS", "E-Data": "EDATA.IS", "Ege Profil": "EGPRO.IS", "Kalekim": "KLKIM.IS", "Ulusoy Un": "ULUUN.IS", "Sarkuysan": "SARKY.IS", "Türkiye Sigorta": "TURSG.IS", "Anadolu Hayat": "ANHYT.IS", "İş Girişim": "ISGSY.IS", "Gözde Girişim": "GOZDE.IS", "Verusa Holding": "VERUS.IS", "İzmir Demir Çelik": "IZMDC.IS", "Çemtaş": "CEMTS.IS", "Banvit": "BANVT.IS"}}
-
 abd_hisseleri = {"Apple": "AAPL", "Microsoft": "MSFT", "NVIDIA": "NVDA", "Tesla": "TSLA", "Amazon": "AMZN", "Alphabet (Google)": "GOOGL", "Meta (Facebook)": "META", "AMD": "AMD", "Netflix": "NFLX", "Intel": "INTC", "Coca-Cola (ABD)": "KO", "PepsiCo": "PEP", "McDonald's": "MCD", "Boeing": "BA", "Ford Motor (ABD)": "F", "General Motors": "GM", "Uber": "UBER", "Airbnb": "ABNB", "Disney": "DIS", "Pfizer": "PFE", "Johnson & Johnson": "JNJ", "Visa": "V", "Mastercard": "MA", "JPMorgan Chase": "JPM", "Bank of America": "BAC", "Goldman Sachs": "GS", "Walmart": "WMT", "Nike": "NKE", "Starbucks": "SBUX", "Alibaba": "BABA"}
-
 kripto = {"Bitcoin": "BTC-USD", "Ethereum": "ETH-USD", "Solana": "SOL-USD", "Binance Coin": "BNB-USD", "Ripple (XRP)": "XRP-USD", "Cardano": "ADA-USD", "Avalanche": "AVAX-USD", "Dogecoin": "DOGE-USD", "Chainlink": "LINK-USD", "Polkadot": "DOT-USD", "Polygon (MATIC)": "MATIC-USD", "Shiba Inu": "SHIB-USD", "Litecoin": "LTC-USD", "TRON": "TRX-USD", "Bitcoin Cash": "BCH-USD", "Uniswap": "UNI-USD", "Cosmos": "ATOM-USD", "Monero": "XMR-USD", "Stellar": "XLM-USD", "Ethereum Classic": "ETC-USD", "VeChain": "VET-USD", "Filecoin": "FIL-USD", "Aave": "AAVE-USD", "Algorand": "ALGO-USD", "EOS": "EOS-USD", "The Sandbox": "SAND-USD", "Decentraland": "MANA-USD", "ApeCoin": "APE-USD", "Fantom": "FTM-USD", "Near Protocol": "NEAR-USD", "Aptos": "APT-USD", "Arbitrum": "ARB-USD", "Injective": "INJ-USD", "Optimism": "OP-USD", "Render": "RNDR-USD", "Kaspa": "KAS-USD", "Pepe": "PEPE-USD", "Bonk": "BONK-USD", "Floki": "FLOKI-USD", "Gala": "GALA-USD", "Fetch.ai": "FET-USD", "dogwifhat": "WIF-USD", "Jupiter": "JUP-USD", "Theta Network": "THETA-USD", "Hedera": "HBAR-USD", "Synthetix": "SNX-USD", "Maker": "MKR-USD", "Celestia": "TIA-USD", "Sei": "SEI-USD", "Manta Network": "MANTA-USD", "Starknet": "STRK-USD", "Ondo": "ONDO-USD", "Pyth Network": "PYTH-USD", "Arweave": "AR-USD", "Immutable": "IMX-USD", "Mantle": "MNT-USD", "Lido DAO": "LDO-USD"}
-
 madenler_emtia = {"Altın (Ons)": "GC=F", "Gümüş (Ons)": "SI=F", "Bakır": "HG=F", "Platin": "PL=F", "Paladyum": "PA=F", "Alüminyum": "ALI=F", "Ham Petrol (WTI)": "CL=F", "Brent Petrol": "BZ=F", "Doğal Gaz": "NG=F", "Isıtma Yakıtı": "HO=F", "Buğday": "ZW=F", "Mısır": "ZC=F", "Soya Fasulyesi": "ZS=F", "Kahve": "KC=F", "Şeker": "SB=F", "Pamuk": "CT=F", "Kakao": "CC=F", "Yulaf": "ZO=F", "Pirinç (Kaba)": "ZR=F", "Canlı Sığır": "LE=F", "Yağsız Domuz": "HE=F", "Kereste": "LBS=F"}
 
 tum_varliklar_mega = {**bist_genis, **abd_hisseleri, **kripto, **madenler_emtia}
 
-# =========================================================================================
-# SOL MENÜ (ONLINE LİSTESİ VE AYARLAR)
-# =========================================================================================
 st.sidebar.header("🕹️ Uygulama Modu")
 modlar = ["🔍 Algoritmik Piyasa Tarama", "💼 Sanal Portföy (Oyun)"]
 if is_admin: modlar.append("👑 Yönetici Paneli (Kurucu)")
 uygulama_modu = st.sidebar.radio("Mod Seçiniz:", modlar, label_visibility="collapsed")
 st.sidebar.markdown("---")
 
-# 30 Saniye Kuralı ile Online Oyuncu Tespiti
 online_user_ids = set()
 for token, v_data in db.get("_OTURUMLAR_", {}).items():
     son_hareket = v_data.get("son_hareket", v_data["bitis"] - 600)
@@ -428,7 +422,7 @@ st.sidebar.markdown("---")
 st.sidebar.warning("**⚠️ YASAL UYARI (YTD)**\nBurada yer alan yatırım bilgi, yorum ve yapay zeka tahminleri yatırım danışmanlığı kapsamında değildir.")
 
 if uygulama_modu == "👑 Yönetici Paneli (Kurucu)":
-    st.header("👑 SİSTEM YÖNETİCİSİ (ADMIN) PANELİ")
+    st.title("👑 SİSTEM YÖNETİCİSİ (ADMIN) PANELİ")
     st.markdown("Merkez bankası yetkileriyle donatılmış, oyunu ve oyuncuları yöneteceğiniz kontrol paneline hoş geldiniz.")
     tab_oyuncular, tab_ekonomi, tab_duyuru = st.tabs(["👥 Kullanıcı Yönetimi (Ban/Sil)", "🏦 Merkez Bankası (Ekonomi)", "📢 Duyuru & Sohbet"])
     with tab_oyuncular:
@@ -492,6 +486,11 @@ if uygulama_modu == "👑 Yönetici Paneli (Kurucu)":
             db["_GLOBAL_"]["sohbet"] = []; db_kaydet(db); st.success("Tüm sohbet geçmişi silindi!"); time.sleep(1); st.rerun()
 
 elif uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
+    st.title("📊 Portföy Analiz ve Yönetimi")
+    global_duyuru = db["_GLOBAL_"].get("duyuru", "")
+    if global_duyuru: st.error(f"📢 **SİSTEM DUYURUSU:** {global_duyuru}")
+    st.caption(f"👤 Fon Yöneticisi: **{aktif_nickname.upper()}** | 💵 Güncel Kur (USD/TRY): **{format_tr(usd_kuru)} ₺**")
+
     st.sidebar.header("⚙️ Tarama Ayarları")
     st.sidebar.markdown("<b>1. Yatırım Vadesi</b>", unsafe_allow_html=True)
     vade_secimi = st.sidebar.radio("Vade:", ["⏱️ Kısa Vadeli (1-3 Ay / Al-Sat)", "📅 Uzun Vadeli (1+ Yıl / Yatırım)"], label_visibility="collapsed")
@@ -883,6 +882,11 @@ elif uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
 # 💼 SANAL PORTFÖY VE OYUN MOTORU 
 # =========================================================================================
 elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
+
+    st.title("📊 Portföy Analiz ve Yönetimi")
+    global_duyuru = db["_GLOBAL_"].get("duyuru", "")
+    if global_duyuru: st.error(f"📢 **SİSTEM DUYURUSU:** {global_duyuru}")
+    st.caption(f"👤 Fon Yöneticisi: **{aktif_nickname.upper()}** | 💵 Güncel Kur (USD/TRY): **{format_tr(usd_kuru)} ₺**")
 
     toplam_komisyon = db["_GLOBAL_"].get("toplam_komisyon", 0.0)
     st.markdown(f"<div class='bagis-panosu'>🌟 <b>Merkez Bankası Komisyon ve Likidasyon Havuzu:</b> <br><span class='bagis-sayi'>{format_tr(toplam_komisyon)} ₺</span></div>", unsafe_allow_html=True)
