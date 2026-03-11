@@ -8,10 +8,11 @@ from plotly.subplots import make_subplots
 from sklearn.linear_model import LinearRegression
 from textblob import TextBlob
 import json
-import os
 import time
 import hashlib
 import uuid
+import firebase_admin
+from firebase_admin import credentials, db as firebase_db
 
 try:
     from streamlit_autorefresh import st_autorefresh
@@ -20,6 +21,79 @@ except ImportError:
     HAS_AUTOREFRESH = False
 
 st.set_page_config(page_title="Portföy Analiz ve Yönetimi", layout="wide", page_icon="📊")
+
+# =========================================================================================
+# 🔥 FIREBASE VERİTABANI BAĞLANTISI (YENİ ÇELİK KASA MOTORU)
+# =========================================================================================
+if not firebase_admin._apps:
+    try:
+        cert_dict = json.loads(st.secrets["FIREBASE_SECRET"])
+        cred = credentials.Certificate(cert_dict)
+        firebase_admin.initialize_app(cred, {
+            'databaseURL': st.secrets["FIREBASE_URL"]
+        })
+    except Exception as e:
+        st.error(f"🚨 Firebase Bağlantı Hatası! Secrets ayarlarınızı kontrol edin. Detay: {e}")
+        st.stop()
+
+try:
+    ADMIN_ID = st.secrets["ADMIN_ID"]
+    ADMIN_PASS = st.secrets["ADMIN_PASS"]
+except:
+    ADMIN_ID = "admin_master"
+    ADMIN_PASS = "supergizli123"
+
+def sifre_sifrele(sifre):
+    return hashlib.sha256(sifre.encode()).hexdigest()
+
+def db_yukle():
+    try:
+        veri = firebase_db.reference('/').get()
+        degisiklik_var = False
+        
+        if veri is None:
+            veri = {}
+            degisiklik_var = True
+            
+        if "_GLOBAL_" not in veri: 
+            veri["_GLOBAL_"] = {"toplam_komisyon": 0.0, "duyuru": "", "sohbet": []}
+            degisiklik_var = True
+        else:
+            if "sohbet" not in veri["_GLOBAL_"]: 
+                veri["_GLOBAL_"]["sohbet"] = []
+                degisiklik_var = True
+                
+        if "_OTURUMLAR_" not in veri: 
+            veri["_OTURUMLAR_"] = {}
+            degisiklik_var = True
+            
+        if ADMIN_ID not in veri:
+            veri[ADMIN_ID] = {"sifre": sifre_sifrele(ADMIN_PASS), "nickname": "👑 SİSTEM YÖNETİCİSİ", "son_isim_degistirme": 0, "kayit_tarihi": time.time(), "rozetler": [], "istatistikler": {"islem_sayisi": 0, "odenen_komisyon": 0.0}, "cuzdan": {"nakit": 0.0, "varliklar": {}, "kaldiracli_islemler": [], "izleme_listesi": [], "bekleyen_emirler": [], "banka": {"gecelik": {"miktar": 0.0, "son_guncelleme": time.time()}, "vadeli": []}}, "is_admin": True}
+            degisiklik_var = True
+            
+        for k, v in veri.items():
+            if k not in ["_GLOBAL_", "_OTURUMLAR_"]:
+                if "rozetler" not in v: v["rozetler"] = []; degisiklik_var = True
+                if "kayit_tarihi" not in v: v["kayit_tarihi"] = time.time(); degisiklik_var = True
+                if "istatistikler" not in v: v["istatistikler"] = {"islem_sayisi": 0, "odenen_komisyon": 0.0}; degisiklik_var = True
+                if "cuzdan" in v:
+                    if "bekleyen_emirler" not in v["cuzdan"]: v["cuzdan"]["bekleyen_emirler"] = []; degisiklik_var = True
+                    if "kaldiracli_islemler" not in v["cuzdan"]: v["cuzdan"]["kaldiracli_islemler"] = []; degisiklik_var = True
+                    if "banka" not in v["cuzdan"]: v["cuzdan"]["banka"] = {"gecelik": {"miktar": 0.0, "son_guncelleme": time.time()}, "vadeli": []}; degisiklik_var = True
+        
+        if degisiklik_var:
+            firebase_db.reference('/').set(veri)
+            
+        return veri
+    except Exception as e:
+        st.error(f"Veritabanı Okuma Hatası: {e}")
+        return {}
+
+def db_kaydet(veritabani):
+    try:
+        firebase_db.reference('/').set(veritabani)
+    except Exception as e:
+        st.error(f"Veritabanı Yazma Hatası: {e}")
 
 # =========================================================================================
 # TÜRKİYE STANDARTLARI SAYI FORMATLAYICI (Binlik = Nokta, Onluk = Virgül)
@@ -38,97 +112,28 @@ def format_tr(val, decimals=2):
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
-    
     html, body, [class*="css"] { font-family: 'Inter', sans-serif !important; }
     .stApp { background: radial-gradient(circle at top right, #131d2b 0%, #0b0f19 100%) !important; }
     [data-testid="stSidebar"] { background-color: #0e131f !important; border-right: 1px solid rgba(0, 255, 255, 0.05) !important; }
-    
-    div[data-testid="metric-container"] { 
-        background: rgba(20, 26, 36, 0.6) !important; 
-        backdrop-filter: blur(12px) !important; 
-        -webkit-backdrop-filter: blur(12px) !important; 
-        border: 1px solid rgba(0, 255, 255, 0.15) !important; 
-        padding: 20px !important; 
-        border-radius: 16px !important; 
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3) !important; 
-        transition: all 0.4s ease-in-out !important; 
-    }
-    div[data-testid="metric-container"]:hover { 
-        transform: translateY(-7px) !important; 
-        border-color: rgba(0, 255, 255, 0.6) !important; 
-        box-shadow: 0 12px 40px 0 rgba(0, 255, 255, 0.15) !important; 
-    }
-    
-    div.stButton > button { 
-        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important; 
-        color: #fff !important; 
-        border: 1px solid rgba(0, 255, 255, 0.3) !important; 
-        border-radius: 10px !important; 
-        padding: 10px 24px !important; 
-        font-weight: 600 !important; 
-        letter-spacing: 0.5px !important; 
-        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important; 
-        width: 100% !important; 
-    }
-    div.stButton > button:hover { 
-        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important; 
-        border-color: #00ffff !important; 
-        color: #00ffff !important; 
-        box-shadow: 0 0 15px rgba(0, 255, 255, 0.3), inset 0 0 10px rgba(0, 255, 255, 0.1) !important; 
-        transform: scale(1.03) !important; 
-    }
-    
+    div[data-testid="metric-container"] { background: rgba(20, 26, 36, 0.6) !important; backdrop-filter: blur(12px) !important; border: 1px solid rgba(0, 255, 255, 0.15) !important; padding: 20px !important; border-radius: 16px !important; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3) !important; transition: all 0.4s ease-in-out !important; }
+    div[data-testid="metric-container"]:hover { transform: translateY(-7px) !important; border-color: rgba(0, 255, 255, 0.6) !important; box-shadow: 0 12px 40px 0 rgba(0, 255, 255, 0.15) !important; }
+    div.stButton > button { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important; color: #fff !important; border: 1px solid rgba(0, 255, 255, 0.3) !important; border-radius: 10px !important; padding: 10px 24px !important; font-weight: 600 !important; letter-spacing: 0.5px !important; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important; width: 100% !important; }
+    div.stButton > button:hover { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important; border-color: #00ffff !important; color: #00ffff !important; box-shadow: 0 0 15px rgba(0, 255, 255, 0.3), inset 0 0 10px rgba(0, 255, 255, 0.1) !important; transform: scale(1.03) !important; }
     button[data-baseweb="tab"] { background-color: transparent !important; border: none !important; border-bottom: 3px solid transparent !important; padding: 12px 20px !important; font-weight: 600 !important; color: #667085 !important; transition: all 0.3s ease !important; }
     button[data-baseweb="tab"][aria-selected="true"] { color: #00ffff !important; border-bottom: 3px solid #00ffff !important; background-color: rgba(0, 255, 255, 0.05) !important; border-radius: 8px 8px 0 0 !important; }
     button[data-baseweb="tab"]:hover { color: #e2e8f0 !important; background-color: rgba(255, 255, 255, 0.02) !important; }
-    
     div[data-baseweb="select"] > div, input[type="text"], input[type="number"], input[type="password"] { border-radius: 10px !important; border: 1px solid #334155 !important; background-color: rgba(15, 23, 42, 0.8) !important; color: white !important; transition: all 0.3s ease !important; }
     div[data-baseweb="select"] > div:hover, input[type="text"]:focus, input[type="number"]:focus, input[type="password"]:focus { border-color: #00ffff !important; box-shadow: 0 0 8px rgba(0,255,255,0.4) !important; }
-    
     .bagis-panosu { text-align: center; padding: 25px; background: linear-gradient(135deg, rgba(255,215,0,0.1) 0%, rgba(255,140,0,0.1) 100%); border-radius: 16px; border: 1px solid rgba(255,215,0,0.4); margin-bottom: 30px; box-shadow: 0 10px 30px rgba(255, 215, 0, 0.08); backdrop-filter: blur(8px); }
     .bagis-sayi { color: #FFD700; font-size: 34px; font-weight: 800; text-shadow: 0 0 20px rgba(255,215,0,0.5); letter-spacing: 1.5px; }
-    
-    div.stRadio { width: 100% !important; }
-    div.stRadio > div { width: 100% !important; }
-    div.stRadio div[role="radiogroup"] { display: flex !important; width: 100% !important; align-items: stretch !important; }
-    div.stRadio div[role="radiogroup"] > label { width: 100% !important; min-height: 45px !important; display: flex !important; align-items: center !important; justify-content: center !important; text-align: center !important; padding: 5px 10px !important; border: 1px solid #334155 !important; border-radius: 10px !important; background-color: #0f172a !important; transition: all 0.3s ease !important; cursor: pointer !important; margin: 0 !important; box-sizing: border-box !important; white-space: nowrap !important; overflow: hidden !important; }
-    div.stRadio div[role="radiogroup"] > label > div:first-child { display: none !important; }
-    div.stRadio div[role="radiogroup"] > label p { margin: 0 !important; font-size: 14px !important; width: 100% !important; text-align: center !important; white-space: nowrap !important; }
-    div.stRadio div[role="radiogroup"] > label:hover { border-color: #00ffff !important; background-color: #1e293b !important; box-shadow: 0 4px 15px rgba(0, 255, 255, 0.15) !important; }
-    
-    [data-testid="stSidebar"] div.stRadio div[role="radiogroup"] { flex-direction: column !important; gap: 12px !important; width: 100% !important; }
-    [data-testid="stSidebar"] div.stRadio div[role="radiogroup"] > label { flex: 1 1 100% !important; }
-    [data-testid="stSidebar"] div.stRadio div[role="radiogroup"] > label:has(input:checked) { background: linear-gradient(90deg, rgba(0,255,255,0.15) 0%, rgba(0,255,255,0.02) 100%) !important; border-color: #00ffff !important; border-left: 5px solid #00ffff !important; }
-    [data-testid="stSidebar"] div.stRadio div[role="radiogroup"] > label:has(input:checked) p { color: #00ffff !important; font-weight: bold !important; }
-    
-    [data-testid="stMainBlockContainer"] div.stRadio div[role="radiogroup"] { flex-direction: row !important; flex-wrap: nowrap !important; gap: 15px !important; width: 100% !important; }
-    [data-testid="stMainBlockContainer"] div.stRadio div[role="radiogroup"] > label { flex: 1 1 50% !important; width: 50% !important; }
-    [data-testid="stMainBlockContainer"] div.stRadio div[role="radiogroup"] > label:nth-child(1):has(input:checked) { background: linear-gradient(90deg, rgba(0,255,0,0.15) 0%, rgba(0,255,0,0.02) 100%) !important; border-color: #00ff00 !important; border-left: 5px solid #00ff00 !important; }
-    [data-testid="stMainBlockContainer"] div.stRadio div[role="radiogroup"] > label:nth-child(1):has(input:checked) p { color: #00ff00 !important; font-weight: bold !important; }
-    [data-testid="stMainBlockContainer"] div.stRadio div[role="radiogroup"] > label:nth-child(2):has(input:checked) { background: linear-gradient(90deg, rgba(255,68,68,0.15) 0%, rgba(255,68,68,0.02) 100%) !important; border-color: #ff4444 !important; border-left: 5px solid #ff4444 !important; }
-    [data-testid="stMainBlockContainer"] div.stRadio div[role="radiogroup"] > label:nth-child(2):has(input:checked) p { color: #ff4444 !important; font-weight: bold !important; }
-    
-    .sohbet-mesaji { background-color: rgba(15, 23, 42, 0.4); padding: 10px; border-radius: 8px; margin-bottom: 8px; border-left: 3px solid #334155; }
-    .sohbet-mesaji.admin { border-left: 3px solid #FFD700; background-color: rgba(255, 215, 0, 0.05); }
-    
-    .kaldirac-kart { background-color: rgba(15, 23, 42, 0.8); border: 1px solid rgba(0, 255, 255, 0.2); padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: all 0.3s;}
-    .kaldirac-kart:hover { transform: scale(1.02); }
-    .kaldirac-kart.long { border-left: 5px solid #00ff00; }
-    .kaldirac-kart.short { border-left: 5px solid #ff4444; }
-    
-    .banka-kart { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border: 1px solid rgba(255, 215, 0, 0.3); padding: 20px; border-radius: 12px; margin-bottom: 15px; }
-    .pulsing-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background-color: #00ff00; animation: pulse 2s infinite; margin-right: 5px; }
-    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(0, 255, 0, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(0, 255, 0, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 255, 0, 0); } }
-
-    .liderlik-tablosu { width: 100%; border-collapse: collapse; margin-top: 10px; background-color: rgba(15,23,42,0.6); border-radius: 10px; overflow: hidden; }
-    .liderlik-tablosu th { color: #aaa; text-transform: uppercase; font-size: 12px; padding: 15px; border-bottom: 1px solid rgba(0,255,255,0.3); text-align: left; background-color: rgba(0,0,0,0.4); }
-    .liderlik-tablosu td { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); font-weight: 600; color: white; }
-    .liderlik-tablosu tr:hover { background-color: rgba(255,255,255,0.05); }
-    .rozet { cursor: help; font-size: 18px; margin-left: 6px; display: inline-block; transition: transform 0.2s; }
-    .rozet:hover { transform: scale(1.4); }
-    
-    .online-user-box { display: flex; align-items: center; padding: 8px 10px; margin-bottom: 5px; background: rgba(255,255,255,0.03); border-radius: 8px; border-left: 2px solid #334155; }
-    .online-user-box.admin-online { border-left: 2px solid #FFD700; background: rgba(255,215,0,0.05); }
+    div.stRadio { width: 100% !important; } div.stRadio > div { width: 100% !important; } div.stRadio div[role="radiogroup"] { display: flex !important; width: 100% !important; align-items: stretch !important; } div.stRadio div[role="radiogroup"] > label { width: 100% !important; min-height: 45px !important; display: flex !important; align-items: center !important; justify-content: center !important; text-align: center !important; padding: 5px 10px !important; border: 1px solid #334155 !important; border-radius: 10px !important; background-color: #0f172a !important; transition: all 0.3s ease !important; cursor: pointer !important; margin: 0 !important; box-sizing: border-box !important; white-space: nowrap !important; overflow: hidden !important; } div.stRadio div[role="radiogroup"] > label > div:first-child { display: none !important; } div.stRadio div[role="radiogroup"] > label p { margin: 0 !important; font-size: 14px !important; width: 100% !important; text-align: center !important; white-space: nowrap !important; } div.stRadio div[role="radiogroup"] > label:hover { border-color: #00ffff !important; background-color: #1e293b !important; box-shadow: 0 4px 15px rgba(0, 255, 255, 0.15) !important; }
+    [data-testid="stSidebar"] div.stRadio div[role="radiogroup"] { flex-direction: column !important; gap: 12px !important; width: 100% !important; } [data-testid="stSidebar"] div.stRadio div[role="radiogroup"] > label { flex: 1 1 100% !important; } [data-testid="stSidebar"] div.stRadio div[role="radiogroup"] > label:has(input:checked) { background: linear-gradient(90deg, rgba(0,255,255,0.15) 0%, rgba(0,255,255,0.02) 100%) !important; border-color: #00ffff !important; border-left: 5px solid #00ffff !important; } [data-testid="stSidebar"] div.stRadio div[role="radiogroup"] > label:has(input:checked) p { color: #00ffff !important; font-weight: bold !important; }
+    [data-testid="stMainBlockContainer"] div.stRadio div[role="radiogroup"] { flex-direction: row !important; flex-wrap: nowrap !important; gap: 15px !important; width: 100% !important; } [data-testid="stMainBlockContainer"] div.stRadio div[role="radiogroup"] > label { flex: 1 1 50% !important; width: 50% !important; } [data-testid="stMainBlockContainer"] div.stRadio div[role="radiogroup"] > label:nth-child(1):has(input:checked) { background: linear-gradient(90deg, rgba(0,255,0,0.15) 0%, rgba(0,255,0,0.02) 100%) !important; border-color: #00ff00 !important; border-left: 5px solid #00ff00 !important; } [data-testid="stMainBlockContainer"] div.stRadio div[role="radiogroup"] > label:nth-child(1):has(input:checked) p { color: #00ff00 !important; font-weight: bold !important; } [data-testid="stMainBlockContainer"] div.stRadio div[role="radiogroup"] > label:nth-child(2):has(input:checked) { background: linear-gradient(90deg, rgba(255,68,68,0.15) 0%, rgba(255,68,68,0.02) 100%) !important; border-color: #ff4444 !important; border-left: 5px solid #ff4444 !important; } [data-testid="stMainBlockContainer"] div.stRadio div[role="radiogroup"] > label:nth-child(2):has(input:checked) p { color: #ff4444 !important; font-weight: bold !important; }
+    .sohbet-mesaji { background-color: rgba(15, 23, 42, 0.4); padding: 10px; border-radius: 8px; margin-bottom: 8px; border-left: 3px solid #334155; } .sohbet-mesaji.admin { border-left: 3px solid #FFD700; background-color: rgba(255, 215, 0, 0.05); }
+    .kaldirac-kart { background-color: rgba(15, 23, 42, 0.8); border: 1px solid rgba(0, 255, 255, 0.2); padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: all 0.3s;} .kaldirac-kart:hover { transform: scale(1.02); } .kaldirac-kart.long { border-left: 5px solid #00ff00; } .kaldirac-kart.short { border-left: 5px solid #ff4444; }
+    .banka-kart { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border: 1px solid rgba(255, 215, 0, 0.3); padding: 20px; border-radius: 12px; margin-bottom: 15px; } .pulsing-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background-color: #00ff00; animation: pulse 2s infinite; margin-right: 5px; } @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(0, 255, 0, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(0, 255, 0, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 255, 0, 0); } }
+    .liderlik-tablosu { width: 100%; border-collapse: collapse; margin-top: 10px; background-color: rgba(15,23,42,0.6); border-radius: 10px; overflow: hidden; } .liderlik-tablosu th { color: #aaa; text-transform: uppercase; font-size: 12px; padding: 15px; border-bottom: 1px solid rgba(0,255,255,0.3); text-align: left; background-color: rgba(0,0,0,0.4); } .liderlik-tablosu td { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); font-weight: 600; color: white; } .liderlik-tablosu tr:hover { background-color: rgba(255,255,255,0.05); } .rozet { cursor: help; font-size: 18px; margin-left: 6px; display: inline-block; transition: transform 0.2s; } .rozet:hover { transform: scale(1.4); }
+    .online-user-box { display: flex; align-items: center; padding: 8px 10px; margin-bottom: 5px; background: rgba(255,255,255,0.03); border-radius: 8px; border-left: 2px solid #334155; } .online-user-box.admin-online { border-left: 2px solid #FFD700; background: rgba(255,215,0,0.05); }
 </style>
 """, unsafe_allow_html=True)
 
@@ -151,87 +156,32 @@ ROZET_ANLAMLARI = {
     "⏳": "Kıdemli Kurt: Sistemde 24 saatten uzun süredir aktif (Tecrübeli Oyuncu)."
 }
 
-DB_DOSYASI = "kullanicilar_db.json"
-
-try:
-    ADMIN_ID = st.secrets["ADMIN_ID"]
-    ADMIN_PASS = st.secrets["ADMIN_PASS"]
-except:
-    ADMIN_ID = "admin_master"
-    ADMIN_PASS = "supergizli123"
-
 @st.cache_data(ttl=10, show_spinner=False)
 def canli_fiyat_getir(sembol, katsayi=1.0):
     try:
         veri = yf.Ticker(sembol).history(period="5d")
-        if isinstance(veri.columns, pd.MultiIndex):
-            veri.columns = veri.columns.get_level_values(0)
+        if isinstance(veri.columns, pd.MultiIndex): veri.columns = veri.columns.get_level_values(0)
         veri.columns = [str(c).title() for c in veri.columns]
         veri = veri.dropna(subset=['Close']).ffill()
         return float(veri['Close'].iloc[-1]) * katsayi
-    except:
-        return 0.0
+    except: return 0.0
 
 @st.cache_data(ttl=300)
-def guncel_kur_getir():
-    return canli_fiyat_getir("TRY=X", 1.0) or 34.50
+def guncel_kur_getir(): return canli_fiyat_getir("TRY=X", 1.0) or 34.50
 
-def sifre_sifrele(sifre):
-    return hashlib.sha256(sifre.encode()).hexdigest()
+if 'aktif_kullanici' not in st.session_state: st.session_state.aktif_kullanici = None
 
-def db_yukle():
-    if os.path.exists(DB_DOSYASI):
-        try:
-            with open(DB_DOSYASI, "r", encoding="utf-8") as f:
-                veri = json.load(f)
-            if "_GLOBAL_" not in veri: veri["_GLOBAL_"] = {"toplam_komisyon": 0.0, "duyuru": "", "sohbet": []}
-            else:
-                if "sohbet" not in veri["_GLOBAL_"]: veri["_GLOBAL_"]["sohbet"] = []
-            if "_OTURUMLAR_" not in veri: veri["_OTURUMLAR_"] = {}
-            if ADMIN_ID not in veri:
-                veri[ADMIN_ID] = {"sifre": sifre_sifrele(ADMIN_PASS), "nickname": "👑 SİSTEM YÖNETİCİSİ", "son_isim_degistirme": 0, "kayit_tarihi": time.time(), "rozetler": [], "istatistikler": {"islem_sayisi": 0, "odenen_komisyon": 0.0}, "cuzdan": {"nakit": 0.0, "varliklar": {}, "kaldiracli_islemler": [], "izleme_listesi": [], "bekleyen_emirler": [], "banka": {"gecelik": {"miktar": 0.0, "son_guncelleme": time.time()}, "vadeli": []}}, "is_admin": True}
-            
-            for k, v in veri.items():
-                if k not in ["_GLOBAL_", "_OTURUMLAR_"]:
-                    if "rozetler" not in v: v["rozetler"] = []
-                    if "kayit_tarihi" not in v: v["kayit_tarihi"] = time.time()
-                    if "istatistikler" not in v: v["istatistikler"] = {"islem_sayisi": 0, "odenen_komisyon": 0.0}
-                    if "cuzdan" in v:
-                        if "bekleyen_emirler" not in v["cuzdan"]: v["cuzdan"]["bekleyen_emirler"] = []
-                        if "kaldiracli_islemler" not in v["cuzdan"]: v["cuzdan"]["kaldiracli_islemler"] = [] 
-                        if "banka" not in v["cuzdan"]: v["cuzdan"]["banka"] = {"gecelik": {"miktar": 0.0, "son_guncelleme": time.time()}, "vadeli": []}
-            return veri
-        except Exception:
-            pass
-    return {"_GLOBAL_": {"toplam_komisyon": 0.0, "duyuru": "", "sohbet": []}, "_OTURUMLAR_": {}, ADMIN_ID: {"sifre": sifre_sifrele(ADMIN_PASS), "nickname": "👑 SİSTEM YÖNETİCİSİ", "son_isim_degistirme": 0, "kayit_tarihi": time.time(), "rozetler": [], "istatistikler": {"islem_sayisi": 0, "odenen_komisyon": 0.0}, "cuzdan": {"nakit": 0.0, "varliklar": {}, "kaldiracli_islemler": [], "izleme_listesi": [], "bekleyen_emirler": [], "banka": {"gecelik": {"miktar": 0.0, "son_guncelleme": time.time()}, "vadeli": []}}, "is_admin": True}}
+db = db_yukle()
 
-def db_kaydet(db):
-    gecici_dosya = f"{DB_DOSYASI}.tmp"
-    with open(gecici_dosya, "w", encoding="utf-8") as f:
-        json.dump(db, f, indent=4)
-        f.flush()
-        os.fsync(f.fileno()) 
-    os.replace(gecici_dosya, DB_DOSYASI) 
-
-# =========================================================================================
-# ROZET SPAMI ÖNLEYİCİ GÜÇLENDİRİLMİŞ MOTOR
-# =========================================================================================
 def rozet_ver(db_ref, k_id, rozet, mesaj):
-    # Eğer rozet kullanıcının listesinde YENİ ise
     if rozet not in db_ref[k_id].setdefault("rozetler", []):
         db_ref[k_id]["rozetler"].append(rozet)
-        db_kaydet(db_ref)  # ANINDA DOSYAYA KAYDET (Spamı önleyen kilit nokta)
-        
-        # Eğer o an sayfada olan kişi rozeti kazanan kişiyse, sadece ona 1 kez toast göster
-        if st.session_state.get("aktif_kullanici") == k_id:
+        db_kaydet(db_ref) # SPAMI ÖNLEYEN HAYATİ KAYIT EMRİ
+        if k_id == st.session_state.get("aktif_kullanici"):
             st.toast(f"YENİ BAŞARIM AÇILDI: {rozet} {mesaj}", icon="🏆")
         return True
     return False
 
-if 'aktif_kullanici' not in st.session_state:
-    st.session_state.aktif_kullanici = None
-
-db = db_yukle()
 su_an = time.time()
 silinecek_oturumlar = [t for t, v in db.get("_OTURUMLAR_", {}).items() if su_an > v["bitis"]]
 for t in silinecek_oturumlar: del db["_OTURUMLAR_"][t]
@@ -422,7 +372,7 @@ st.sidebar.markdown("---")
 st.sidebar.warning("**⚠️ YASAL UYARI (YTD)**\nBurada yer alan yatırım bilgi, yorum ve yapay zeka tahminleri yatırım danışmanlığı kapsamında değildir.")
 
 if uygulama_modu == "👑 Yönetici Paneli (Kurucu)":
-    st.title("👑 SİSTEM YÖNETİCİSİ (ADMIN) PANELİ")
+    st.header("👑 SİSTEM YÖNETİCİSİ (ADMIN) PANELİ")
     st.markdown("Merkez bankası yetkileriyle donatılmış, oyunu ve oyuncuları yöneteceğiniz kontrol paneline hoş geldiniz.")
     tab_oyuncular, tab_ekonomi, tab_duyuru = st.tabs(["👥 Kullanıcı Yönetimi (Ban/Sil)", "🏦 Merkez Bankası (Ekonomi)", "📢 Duyuru & Sohbet"])
     with tab_oyuncular:
@@ -878,9 +828,6 @@ elif uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                         else: st.write("Gösterilecek haber kaynağı yok.")
                 except: st.error("Haber servisine ulaşılamıyor.")
 
-# =========================================================================================
-# 💼 SANAL PORTFÖY VE OYUN MOTORU 
-# =========================================================================================
 elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
 
     st.title("📊 Portföy Analiz ve Yönetimi")
