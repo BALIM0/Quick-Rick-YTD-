@@ -23,7 +23,7 @@ except ImportError:
 st.set_page_config(page_title="Portföy Analiz ve Yönetimi", layout="wide", page_icon="📊")
 
 # =========================================================================================
-# 🔥 FIREBASE VERİTABANI BAĞLANTISI (YENİ ÇELİK KASA MOTORU)
+# 🔥 FIREBASE VERİTABANI BAĞLANTISI 
 # =========================================================================================
 if not firebase_admin._apps:
     try:
@@ -71,15 +71,26 @@ def db_yukle():
             veri[ADMIN_ID] = {"sifre": sifre_sifrele(ADMIN_PASS), "nickname": "👑 SİSTEM YÖNETİCİSİ", "son_isim_degistirme": 0, "kayit_tarihi": time.time(), "rozetler": [], "istatistikler": {"islem_sayisi": 0, "odenen_komisyon": 0.0}, "cuzdan": {"nakit": 0.0, "varliklar": {}, "kaldiracli_islemler": [], "izleme_listesi": [], "bekleyen_emirler": [], "banka": {"gecelik": {"miktar": 0.0, "son_guncelleme": time.time()}, "vadeli": []}}, "is_admin": True}
             degisiklik_var = True
             
+        # ÇÖZÜM BURADA: Firebase'in sildiği boşlukları Python'da tekrar doldurma zırhı
         for k, v in veri.items():
             if k not in ["_GLOBAL_", "_OTURUMLAR_"]:
-                if "rozetler" not in v: v["rozetler"] = []; degisiklik_var = True
-                if "kayit_tarihi" not in v: v["kayit_tarihi"] = time.time(); degisiklik_var = True
-                if "istatistikler" not in v: v["istatistikler"] = {"islem_sayisi": 0, "odenen_komisyon": 0.0}; degisiklik_var = True
-                if "cuzdan" in v:
-                    if "bekleyen_emirler" not in v["cuzdan"]: v["cuzdan"]["bekleyen_emirler"] = []; degisiklik_var = True
-                    if "kaldiracli_islemler" not in v["cuzdan"]: v["cuzdan"]["kaldiracli_islemler"] = []; degisiklik_var = True
-                    if "banka" not in v["cuzdan"]: v["cuzdan"]["banka"] = {"gecelik": {"miktar": 0.0, "son_guncelleme": time.time()}, "vadeli": []}; degisiklik_var = True
+                if "rozetler" not in v: v["rozetler"] = []
+                if "kayit_tarihi" not in v: v["kayit_tarihi"] = time.time()
+                if "istatistikler" not in v: v["istatistikler"] = {"islem_sayisi": 0, "odenen_komisyon": 0.0}
+                
+                if "cuzdan" not in v:
+                    v["cuzdan"] = {}
+                
+                cuz = v["cuzdan"]
+                if "nakit" not in cuz: cuz["nakit"] = 1000000.0
+                if "varliklar" not in cuz: cuz["varliklar"] = {}
+                if "kaldiracli_islemler" not in cuz: cuz["kaldiracli_islemler"] = []
+                if "izleme_listesi" not in cuz: cuz["izleme_listesi"] = ["Türk Hava Yolları", "Bitcoin", "Altın (Ons)", "NVIDIA", "Apple"]
+                if "bekleyen_emirler" not in cuz: cuz["bekleyen_emirler"] = []
+                
+                if "banka" not in cuz: cuz["banka"] = {}
+                if "gecelik" not in cuz["banka"]: cuz["banka"]["gecelik"] = {"miktar": 0.0, "son_guncelleme": time.time()}
+                if "vadeli" not in cuz["banka"]: cuz["banka"]["vadeli"] = []
         
         if degisiklik_var:
             firebase_db.reference('/').set(veri)
@@ -176,7 +187,7 @@ db = db_yukle()
 def rozet_ver(db_ref, k_id, rozet, mesaj):
     if rozet not in db_ref[k_id].setdefault("rozetler", []):
         db_ref[k_id]["rozetler"].append(rozet)
-        db_kaydet(db_ref) # SPAMI ÖNLEYEN HAYATİ KAYIT EMRİ
+        db_kaydet(db_ref) 
         if k_id == st.session_state.get("aktif_kullanici"):
             st.toast(f"YENİ BAŞARIM AÇILDI: {rozet} {mesaj}", icon="🏆")
         return True
@@ -239,7 +250,20 @@ if st.session_state.aktif_kullanici is None:
     st.stop()
 
 aktif_kullanici = st.session_state.aktif_kullanici
+
+# =========================================================================================
+# GÜVENLİ CÜZDAN OKUMA (Firebase Hatalarına Karşı Zırh)
+# =========================================================================================
+if "cuzdan" not in db[aktif_kullanici]:
+    db[aktif_kullanici]["cuzdan"] = {}
 cuzdan = db[aktif_kullanici]["cuzdan"]
+if "nakit" not in cuzdan: cuzdan["nakit"] = 1000000.0
+if "varliklar" not in cuzdan: cuzdan["varliklar"] = {}
+if "kaldiracli_islemler" not in cuzdan: cuzdan["kaldiracli_islemler"] = []
+if "izleme_listesi" not in cuzdan: cuzdan["izleme_listesi"] = ["Türk Hava Yolları", "Bitcoin", "Altın (Ons)", "NVIDIA", "Apple"]
+if "bekleyen_emirler" not in cuzdan: cuzdan["bekleyen_emirler"] = []
+if "banka" not in cuzdan: cuzdan["banka"] = {"gecelik": {"miktar": 0.0, "son_guncelleme": time.time()}, "vadeli": []}
+
 aktif_nickname = db[aktif_kullanici].get("nickname", aktif_kullanici)
 is_admin = db[aktif_kullanici].get("is_admin", False)
 
@@ -845,7 +869,7 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
         toplam_varlik_degeri = 0
         guncel_fiyatlar_metrik = {}
         
-        if cuzdan["varliklar"]:
+        if cuzdan.get("varliklar"):
             for varlik_ismi, v_veri in list(cuzdan["varliklar"].items()):
                 if isinstance(v_veri, (int, float)): 
                     cuzdan["varliklar"][varlik_ismi] = {"adet": v_veri, "maliyet": 0.0}
