@@ -68,26 +68,23 @@ def db_yukle():
             degisiklik_var = True
             
         if ADMIN_ID not in veri:
-            veri[ADMIN_ID] = {"sifre": sifre_sifrele(ADMIN_PASS), "nickname": "👑 SİSTEM YÖNETİCİSİ", "son_isim_degistirme": 0, "kayit_tarihi": time.time(), "rozetler": [], "istatistikler": {"islem_sayisi": 0, "odenen_komisyon": 0.0}, "cuzdan": {"nakit": 0.0, "varliklar": {}, "kaldiracli_islemler": [], "izleme_listesi": [], "bekleyen_emirler": [], "banka": {"gecelik": {"miktar": 0.0, "son_guncelleme": time.time()}, "vadeli": []}}, "is_admin": True}
+            # YENİ ÇÖZÜM: Yönetici de artık 1 Milyon TL bakiye ile başlıyor
+            veri[ADMIN_ID] = {"sifre": sifre_sifrele(ADMIN_PASS), "nickname": "👑 SİSTEM YÖNETİCİSİ", "son_isim_degistirme": 0, "kayit_tarihi": time.time(), "rozetler": [], "istatistikler": {"islem_sayisi": 0, "odenen_komisyon": 0.0}, "cuzdan": {"nakit": 1000000.0, "varliklar": {}, "kaldiracli_islemler": [], "izleme_listesi": ["Türk Hava Yolları", "Bitcoin", "Altın (Ons)", "NVIDIA", "Apple"], "bekleyen_emirler": [], "banka": {"gecelik": {"miktar": 0.0, "son_guncelleme": time.time()}, "vadeli": []}}, "is_admin": True}
             degisiklik_var = True
             
-        # ÇÖZÜM BURADA: Firebase'in sildiği boşlukları Python'da tekrar doldurma zırhı
         for k, v in veri.items():
             if k not in ["_GLOBAL_", "_OTURUMLAR_"]:
                 if "rozetler" not in v: v["rozetler"] = []
                 if "kayit_tarihi" not in v: v["kayit_tarihi"] = time.time()
                 if "istatistikler" not in v: v["istatistikler"] = {"islem_sayisi": 0, "odenen_komisyon": 0.0}
                 
-                if "cuzdan" not in v:
-                    v["cuzdan"] = {}
-                
+                if "cuzdan" not in v: v["cuzdan"] = {}
                 cuz = v["cuzdan"]
                 if "nakit" not in cuz: cuz["nakit"] = 1000000.0
                 if "varliklar" not in cuz: cuz["varliklar"] = {}
                 if "kaldiracli_islemler" not in cuz: cuz["kaldiracli_islemler"] = []
                 if "izleme_listesi" not in cuz: cuz["izleme_listesi"] = ["Türk Hava Yolları", "Bitcoin", "Altın (Ons)", "NVIDIA", "Apple"]
                 if "bekleyen_emirler" not in cuz: cuz["bekleyen_emirler"] = []
-                
                 if "banka" not in cuz: cuz["banka"] = {}
                 if "gecelik" not in cuz["banka"]: cuz["banka"]["gecelik"] = {"miktar": 0.0, "son_guncelleme": time.time()}
                 if "vadeli" not in cuz["banka"]: cuz["banka"]["vadeli"] = []
@@ -251,11 +248,7 @@ if st.session_state.aktif_kullanici is None:
 
 aktif_kullanici = st.session_state.aktif_kullanici
 
-# =========================================================================================
-# GÜVENLİ CÜZDAN OKUMA (Firebase Hatalarına Karşı Zırh)
-# =========================================================================================
-if "cuzdan" not in db[aktif_kullanici]:
-    db[aktif_kullanici]["cuzdan"] = {}
+if "cuzdan" not in db[aktif_kullanici]: db[aktif_kullanici]["cuzdan"] = {}
 cuzdan = db[aktif_kullanici]["cuzdan"]
 if "nakit" not in cuzdan: cuzdan["nakit"] = 1000000.0
 if "varliklar" not in cuzdan: cuzdan["varliklar"] = {}
@@ -404,7 +397,7 @@ if uygulama_modu == "👑 Yönetici Paneli (Kurucu)":
         oyuncu_listesi = []
         for k, v in db.items():
             if k not in ["_GLOBAL_", "_OTURUMLAR_"] and not v.get("is_admin", False):
-                bakiye = v["cuzdan"].get("nakit", 0)
+                bakiye = v.get("cuzdan", {}).get("nakit", 0)
                 oyuncu_listesi.append({"ID (Gizli)": k, "Takma Ad": v.get("nickname"), "Nakit Bakiye": f"{format_tr(bakiye)} ₺"})
         if oyuncu_listesi:
             st.dataframe(pd.DataFrame(oyuncu_listesi), use_container_width=True)
@@ -421,7 +414,8 @@ if uygulama_modu == "👑 Yönetici Paneli (Kurucu)":
         
         st.markdown("---")
         st.markdown("### 🎯 Bireysel Fon Aktarımı (Tek Kullanıcıya)")
-        kullanicilar = {k: v.get("nickname", k) for k, v in db.items() if k not in ["_GLOBAL_", "_OTURUMLAR_"] and not v.get("is_admin", False)}
+        # YENİ: Artık yönetici kendi hesabına da para yollayabilecek (Testing için)
+        kullanicilar = {k: v.get("nickname", k) for k, v in db.items() if k not in ["_GLOBAL_", "_OTURUMLAR_"]}
         if kullanicilar:
             col_b1, col_b2 = st.columns(2)
             with col_b1: secilen_id = st.selectbox("Alıcı Oyuncu Seçin:", list(kullanicilar.keys()), format_func=lambda x: f"{kullanicilar[x]} (ID: {x})")
@@ -440,7 +434,7 @@ if uygulama_modu == "👑 Yönetici Paneli (Kurucu)":
             if st.button("💸 Parayı Herkese Gönder"):
                 dagitilan_kisi = 0
                 for k, v in db.items():
-                    if k not in ["_GLOBAL_", "_OTURUMLAR_"] and not v.get("is_admin", False):
+                    if k not in ["_GLOBAL_", "_OTURUMLAR_"]: # Yönetici dahil herkese
                         db[k]["cuzdan"]["nakit"] += hibe_miktari
                         dagitilan_kisi += 1
                 db_kaydet(db); st.success(f"Başarılı! {dagitilan_kisi} kişiye toplam {format_tr(dagitilan_kisi * hibe_miktari)} ₺ dağıtıldı.")
@@ -949,6 +943,7 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                 st.warning(f"Fiyat çekilemedi. Hata: {str(e)}")
 
             if kaldirac_orani == 1:
+                # SPOT İŞLEM (Limitsiz)
                 islem_miktari = st.number_input("Adet / Miktar:", min_value=0.01, step=1.0)
                 limit_asildi = islem_miktari > max_islem_limiti
                 if limit_asildi: st.error(f"🚨 LİKİDİTE KISITI: En fazla {format_tr(max_islem_limiti)} adet alabilirsiniz!")
@@ -1023,7 +1018,8 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                         else: st.error("Yetersiz adet!")
             
             else:
-                girilen_teminat = st.number_input("Bağlanacak Nakit Teminat (₺):", min_value=10.0, max_value=cuzdan["nakit"] if cuzdan["nakit"]>10 else 10.0, step=100.0)
+                # KALDIRAÇLI İŞLEM (Limitler Kaldırıldı)
+                girilen_teminat = st.number_input("Bağlanacak Nakit Teminat (₺):", min_value=10.0, value=10.0, step=100.0)
                 islem_hacmi = girilen_teminat * kaldirac_orani
                 alinacak_adet = islem_hacmi / anlik_fiyat if anlik_fiyat > 0 else 0
                 
@@ -1262,7 +1258,8 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                     
                 c_yatir, c_cek = st.columns(2)
                 with c_yatir:
-                    yatirilacak = st.number_input("Fona Yatır (₺)", min_value=0.0, max_value=float(cz_canli["nakit"]), step=100.0)
+                    # LİMİTLER KALDIRILDI: Kullanıcı özgürce yazabilir, sadece buton basıldığında kasada var mı diye kontrol edilir.
+                    yatirilacak = st.number_input("Fona Yatır (₺)", min_value=0.0, step=100.0)
                     if st.button("💸 Fona Aktar", use_container_width=True) and yatirilacak > 0:
                         if cz_canli["nakit"] >= yatirilacak:
                             cz_canli["nakit"] -= yatirilacak
@@ -1271,8 +1268,10 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                             cz_canli["banka"] = banka_canli
                             db_kaydet(db_canli)
                             st.rerun()
+                        else:
+                            st.error("Yetersiz Nakit Bakiye!")
                 with c_cek:
-                    cekilecek = st.number_input("Fondaki Parayı Çek (₺)", min_value=0.0, max_value=float(banka_canli["gecelik"]["miktar"]), step=100.0)
+                    cekilecek = st.number_input("Fondaki Parayı Çek (₺)", min_value=0.0, step=100.0)
                     if st.button("🏦 Kasaya Geri Çek", use_container_width=True) and cekilecek > 0:
                         if banka_canli["gecelik"]["miktar"] >= cekilecek:
                             banka_canli["gecelik"]["miktar"] -= cekilecek
@@ -1280,6 +1279,8 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                             cz_canli["banka"] = banka_canli
                             db_kaydet(db_canli)
                             st.rerun()
+                        else:
+                            st.error("Fonda bu kadar paranız bulunmuyor!")
                 st.markdown("</div>", unsafe_allow_html=True)
                 
                 st.markdown("<div class='banka-kart'>", unsafe_allow_html=True)
@@ -1287,23 +1288,26 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                 st.markdown("Paranızı belirli bir süre kilitlerseniz çok daha yüksek faiz alırsınız. Vade bozulursa faiz yanar!")
                 
                 with st.form("vadeli_form"):
-                    v_miktar = st.number_input("Kilitlenecek Tutar (₺)", min_value=0.0, max_value=float(cz_canli["nakit"]), step=1000.0)
+                    v_miktar = st.number_input("Kilitlenecek Tutar (₺)", min_value=0.0, step=1000.0)
                     v_sure = st.selectbox("Vade Seçimi", ["1 Günlük Kilit (%45 Yıllık)", "7 Günlük Kilit (%52 Yıllık)", "30 Günlük Kilit (%60 Yıllık)"])
                     if st.form_submit_button("🔒 Vadeye Bağla"):
-                        if v_miktar > 0 and cz_canli["nakit"] >= v_miktar:
-                            gun = 1 if "1 Günlük" in v_sure else (7 if "7 Günlük" in v_sure else 30)
-                            oran = 0.45 if gun == 1 else (0.52 if gun == 7 else 0.60)
-                            cz_canli["nakit"] -= v_miktar
-                            banka_canli["vadeli"].append({"id": str(uuid.uuid4()), "miktar": v_miktar, "gun": gun, "faiz_orani": oran, "baslangic": time.time(), "bitis": time.time() + (gun * 24 * 3600)})
-                            cz_canli["banka"] = banka_canli
-                            
-                            rozet_ver(db_canli, aktif_kullanici, "🏦", "Merkez Bankeri")
-                            if gun == 30: rozet_ver(db_canli, aktif_kullanici, "🧊", "Buzul Kasa")
+                        if v_miktar > 0:
+                            if cz_canli["nakit"] >= v_miktar:
+                                gun = 1 if "1 Günlük" in v_sure else (7 if "7 Günlük" in v_sure else 30)
+                                oran = 0.45 if gun == 1 else (0.52 if gun == 7 else 0.60)
+                                cz_canli["nakit"] -= v_miktar
+                                banka_canli["vadeli"].append({"id": str(uuid.uuid4()), "miktar": v_miktar, "gun": gun, "faiz_orani": oran, "baslangic": time.time(), "bitis": time.time() + (gun * 24 * 3600)})
+                                cz_canli["banka"] = banka_canli
                                 
-                            db_kaydet(db_canli)
-                            st.success("Tebrikler! Paranız yüksek faizle kilitlendi.")
-                            time.sleep(1); st.rerun()
-                            
+                                rozet_ver(db_canli, aktif_kullanici, "🏦", "Merkez Bankeri")
+                                if gun == 30: rozet_ver(db_canli, aktif_kullanici, "🧊", "Buzul Kasa")
+                                    
+                                db_kaydet(db_canli)
+                                st.success("Tebrikler! Paranız yüksek faizle kilitlendi.")
+                                time.sleep(1); st.rerun()
+                            else:
+                                st.error("Yetersiz Nakit Bakiye!")
+                                
                 if banka_canli.get("vadeli"):
                     st.markdown("#### 🔓 Aktif Kilitli Mevduatlarınız")
                     for v in banka_canli["vadeli"]:
