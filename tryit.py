@@ -68,7 +68,6 @@ def db_yukle():
             degisiklik_var = True
             
         if ADMIN_ID not in veri:
-            # YENİ ÇÖZÜM: Yönetici de artık 1 Milyon TL bakiye ile başlıyor
             veri[ADMIN_ID] = {"sifre": sifre_sifrele(ADMIN_PASS), "nickname": "👑 SİSTEM YÖNETİCİSİ", "son_isim_degistirme": 0, "kayit_tarihi": time.time(), "rozetler": [], "istatistikler": {"islem_sayisi": 0, "odenen_komisyon": 0.0}, "cuzdan": {"nakit": 1000000.0, "varliklar": {}, "kaldiracli_islemler": [], "izleme_listesi": ["Türk Hava Yolları", "Bitcoin", "Altın (Ons)", "NVIDIA", "Apple"], "bekleyen_emirler": [], "banka": {"gecelik": {"miktar": 0.0, "son_guncelleme": time.time()}, "vadeli": []}}, "is_admin": True}
             degisiklik_var = True
             
@@ -123,8 +122,18 @@ st.markdown("""
     html, body, [class*="css"] { font-family: 'Inter', sans-serif !important; }
     .stApp { background: radial-gradient(circle at top right, #131d2b 0%, #0b0f19 100%) !important; }
     [data-testid="stSidebar"] { background-color: #0e131f !important; border-right: 1px solid rgba(0, 255, 255, 0.05) !important; }
+    
     div[data-testid="metric-container"] { background: rgba(20, 26, 36, 0.6) !important; backdrop-filter: blur(12px) !important; border: 1px solid rgba(0, 255, 255, 0.15) !important; padding: 20px !important; border-radius: 16px !important; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3) !important; transition: all 0.4s ease-in-out !important; }
     div[data-testid="metric-container"]:hover { transform: translateY(-7px) !important; border-color: rgba(0, 255, 255, 0.6) !important; box-shadow: 0 12px 40px 0 rgba(0, 255, 255, 0.15) !important; }
+    
+    /* YENİ EKLENEN: Mobil Cihazlar İçin Responsive Metrik (Sayı) Boyutlandırması */
+    [data-testid="stMetricValue"] { font-size: 1.6rem !important; }
+    @media screen and (max-width: 768px) {
+        [data-testid="stMetricValue"] { font-size: 1.1rem !important; white-space: normal !important; word-wrap: break-word !important; }
+        [data-testid="stMetricLabel"] p { font-size: 0.85rem !important; }
+        div[data-testid="metric-container"] { padding: 12px !important; }
+    }
+
     div.stButton > button { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important; color: #fff !important; border: 1px solid rgba(0, 255, 255, 0.3) !important; border-radius: 10px !important; padding: 10px 24px !important; font-weight: 600 !important; letter-spacing: 0.5px !important; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important; width: 100% !important; }
     div.stButton > button:hover { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important; border-color: #00ffff !important; color: #00ffff !important; box-shadow: 0 0 15px rgba(0, 255, 255, 0.3), inset 0 0 10px rgba(0, 255, 255, 0.1) !important; transform: scale(1.03) !important; }
     button[data-baseweb="tab"] { background-color: transparent !important; border: none !important; border-bottom: 3px solid transparent !important; padding: 12px 20px !important; font-weight: 600 !important; color: #667085 !important; transition: all 0.3s ease !important; }
@@ -414,7 +423,6 @@ if uygulama_modu == "👑 Yönetici Paneli (Kurucu)":
         
         st.markdown("---")
         st.markdown("### 🎯 Bireysel Fon Aktarımı (Tek Kullanıcıya)")
-        # YENİ: Artık yönetici kendi hesabına da para yollayabilecek (Testing için)
         kullanicilar = {k: v.get("nickname", k) for k, v in db.items() if k not in ["_GLOBAL_", "_OTURUMLAR_"]}
         if kullanicilar:
             col_b1, col_b2 = st.columns(2)
@@ -434,7 +442,7 @@ if uygulama_modu == "👑 Yönetici Paneli (Kurucu)":
             if st.button("💸 Parayı Herkese Gönder"):
                 dagitilan_kisi = 0
                 for k, v in db.items():
-                    if k not in ["_GLOBAL_", "_OTURUMLAR_"]: # Yönetici dahil herkese
+                    if k not in ["_GLOBAL_", "_OTURUMLAR_"]:
                         db[k]["cuzdan"]["nakit"] += hibe_miktari
                         dagitilan_kisi += 1
                 db_kaydet(db); st.success(f"Başarılı! {dagitilan_kisi} kişiye toplam {format_tr(dagitilan_kisi * hibe_miktari)} ₺ dağıtıldı.")
@@ -943,7 +951,7 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                 st.warning(f"Fiyat çekilemedi. Hata: {str(e)}")
 
             if kaldirac_orani == 1:
-                # SPOT İŞLEM (Limitsiz)
+                # SPOT İŞLEM 
                 islem_miktari = st.number_input("Adet / Miktar:", min_value=0.01, step=1.0)
                 limit_asildi = islem_miktari > max_islem_limiti
                 if limit_asildi: st.error(f"🚨 LİKİDİTE KISITI: En fazla {format_tr(max_islem_limiti)} adet alabilirsiniz!")
@@ -1018,7 +1026,7 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                         else: st.error("Yetersiz adet!")
             
             else:
-                # KALDIRAÇLI İŞLEM (Limitler Kaldırıldı)
+                # KALDIRAÇLI İŞLEM 
                 girilen_teminat = st.number_input("Bağlanacak Nakit Teminat (₺):", min_value=10.0, value=10.0, step=100.0)
                 islem_hacmi = girilen_teminat * kaldirac_orani
                 alinacak_adet = islem_hacmi / anlik_fiyat if anlik_fiyat > 0 else 0
@@ -1258,7 +1266,6 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                     
                 c_yatir, c_cek = st.columns(2)
                 with c_yatir:
-                    # LİMİTLER KALDIRILDI: Kullanıcı özgürce yazabilir, sadece buton basıldığında kasada var mı diye kontrol edilir.
                     yatirilacak = st.number_input("Fona Yatır (₺)", min_value=0.0, step=100.0)
                     if st.button("💸 Fona Aktar", use_container_width=True) and yatirilacak > 0:
                         if cz_canli["nakit"] >= yatirilacak:
