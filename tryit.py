@@ -317,7 +317,8 @@ madenler_emtia = {"Altın (Ons)": "GC=F", "Gümüş (Ons)": "SI=F", "Bakır": "H
 tum_varliklar_mega = {**bist_genis, **abd_hisseleri, **kripto, **madenler_emtia}
 
 st.sidebar.header("🕹️ Uygulama Modu")
-modlar = ["🔍 Algoritmik Piyasa Tarama", "💼 Sanal Portföy (Oyun)"]
+# YENİ DEĞİŞİKLİK: "Sanal Portföy Yönetimi" ilk sıraya alındı, varsayılan açılış sayfası yapıldı.
+modlar = ["💼 Sanal Portföy Yönetimi", "🔍 Algoritmik Piyasa Tarama"]
 if is_admin: modlar.append("👑 Yönetici Paneli (Kurucu)")
 uygulama_modu = st.sidebar.radio("Mod Seçiniz:", modlar, label_visibility="collapsed")
 st.sidebar.markdown("---")
@@ -857,7 +858,7 @@ elif uygulama_modu == "🔍 Algoritmik Piyasa Tarama":
                         else: st.write("Gösterilecek haber kaynağı yok.")
                 except: st.error("Haber servisine ulaşılamıyor.")
 
-elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
+elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
 
     st.title("📊 Portföy Analiz ve Yönetimi")
     global_duyuru = db["_GLOBAL_"].get("duyuru", "")
@@ -1339,9 +1340,6 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
         if hasattr(st, "fragment"): canli_banka_motoru = st.fragment(run_every=2)(canli_banka_motoru)
         canli_banka_motoru()
 
-    # =========================================================================================
-    # YENİ ARENA MEYDAN OKUMA SİSTEMİ (24 SAATLİK DÜELLOLAR)
-    # =========================================================================================
     with tab_arena:
         st.subheader("⚔️ Borsa Arenası (1v1 Düello)")
         st.write("24 saat sürecek amansız bir PNL (Kâr/Zarar) savaşı! Meydan oku veya katıl, başlangıç anından itibaren en çok kâr yüzdesini sen yap, masadaki tüm ödülü topla!")
@@ -1354,7 +1352,6 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                 duellolar = db_arena["_DUELLOLAR_"]
                 degisiklik_var = False
 
-                # YARDIMCI MOTOR: Kullanıcının Canlı Net Değerini (O anki Fiyatlarla) Hesaplar
                 def anlik_net_deger_bul(uid, f_sozluk):
                     if uid not in db_arena: return 0.0
                     cuz = db_arena[uid].get("cuzdan", {})
@@ -1374,7 +1371,6 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                         toplam += max(0, poz["teminat"] + pnl)
                     return toplam
 
-                # 1. BÖLÜM: BİTEN SAVAŞLARI TESPİT ET VE KAZANANA PARAYI VER
                 aktifler = {k: v for k, v in duellolar.items() if v["durum"] == "aktif"}
                 if aktifler:
                     for d_id, d in list(aktifler.items()):
@@ -1414,7 +1410,6 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                             
                 if degisiklik_var: db_kaydet(db_arena)
 
-                # 2. BÖLÜM: YENİ SAVAŞ AÇMA EKRANI
                 st.markdown("<div class='banka-kart'>", unsafe_allow_html=True)
                 st.markdown("### 🥊 Arenaya Çık")
                 bahis = st.number_input("Ortaya Konacak Tutar (₺)", min_value=100.0, step=1000.0, key="yeni_duello")
@@ -1433,7 +1428,6 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                     else: st.error("Kasanda bu kadar nakit yok!")
                 st.markdown("</div>", unsafe_allow_html=True)
 
-                # 3. BÖLÜM: SAVAŞ LİSTELERİ
                 c_bekleyen, c_aktif = st.columns(2)
                 
                 with c_bekleyen:
@@ -1452,9 +1446,6 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                             if st.button("🔥 Meydan Oku (Kabul Et)", key=f"katil_{d_id}"):
                                 if cz_arena["nakit"] >= d["bahis_miktari"]:
                                     with st.spinner("Savaş Meydanı Kuruluyor..."):
-                                        
-                                        # YENİ EKLENEN/DÜZELTİLEN MANTIK: 
-                                        # Önce katılım ücretini düş, sonra Snapshot (Ekran Görüntüsü) al ki %0'dan başlasın!
                                         cz_arena["nakit"] -= d["bahis_miktari"]
                                         
                                         ilgili_v = set()
@@ -1514,7 +1505,6 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                             r1 = "#00ff00" if p1 >= 0 else "#ff4444"
                             r2 = "#00ff00" if p2 >= 0 else "#ff4444"
                             
-                            # Görsellik için artı işareti ekleme
                             p1_str = f"+%{format_tr(p1)}" if p1 > 0 else f"%{format_tr(p1)}"
                             p2_str = f"+%{format_tr(p2)}" if p2 > 0 else f"%{format_tr(p2)}"
                             
