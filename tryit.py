@@ -1173,7 +1173,7 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                             roe_yuzde = (pnl / poz["teminat"]) * 100
                             net_nakit_karsiligi = max(0, poz["teminat"] + pnl)
                             
-                            # YENİ DÜZELTME: Kaldıraç Kartının Kod Gibi Görünmesini Engelleme Zırhı
+                            # YENİ DÜZELTME: Markdown Kod Bloğu Hatasını Önleyen Tek Satır Yapısı
                             kaldirac_html = (
                                 f"<div class='kaldirac-kart {'long' if poz['yon'] == 'AL (Long)' else 'short'}'>"
                                 f"<div style='display:flex; justify-content:space-between; margin-bottom:10px;'>"
@@ -1218,19 +1218,19 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                     st.subheader("🕒 Bekleyen Spot Emirlerim")
                     if cz_canli.get("bekleyen_emirler"):
                         for emir in cz_canli["bekleyen_emirler"]:
-                            st.markdown(f"<div style='background-color:rgba(15, 23, 42, 0.8); border:1px solid rgba(0,255,255,0.2); padding:10px; border-radius:10px; margin-bottom:10px; backdrop-filter:blur(5px);'>", unsafe_allow_html=True)
-                            c1, c2, c3, c4 = st.columns([3, 2, 3, 2])
-                            c1.write(f"**{emir['varlik']}**")
-                            c2.write(f"{'🟢 AL' if emir['tip'] == 'AL' else '🔴 SAT'} ({format_tr(emir['adet'])})")
-                            c3.write(f"Hedef: **{format_tr(emir['hedef_fiyat'])} ₺**")
-                            if c4.button("❌ İptal", key=f"iptal_{emir['id']}"):
+                            # DÜZELTME: Emirler için de aynı zırh uygulandı
+                            emir_html = (
+                                f"<div style='background-color:rgba(15, 23, 42, 0.8); border:1px solid rgba(0,255,255,0.2); padding:10px; border-radius:10px; margin-bottom:10px; backdrop-filter:blur(5px);'>"
+                                f"<b>{emir['varlik']}</b> | {'🟢 AL' if emir['tip'] == 'AL' else '🔴 SAT'} ({format_tr(emir['adet'])}) | Hedef: <b>{format_tr(emir['hedef_fiyat'])} ₺</b></div>"
+                            )
+                            st.markdown(emir_html, unsafe_allow_html=True)
+                            if st.button("❌ İptal", key=f"iptal_{emir['id']}"):
                                 if emir["tip"] == "AL": cz_canli["nakit"] += emir["baglanan_tutar"]
                                 else:
                                     mevcut_veri = cz_canli["varliklar"].get(emir["varlik"], {"adet": 0.0, "maliyet": emir.get("maliyet_rezerv", 0.0)})
                                     cz_canli["varliklar"][emir["varlik"]] = {"adet": mevcut_veri["adet"] + emir["adet"], "maliyet": emir.get("maliyet_rezerv", 0.0)}
                                 cz_canli["bekleyen_emirler"] = [e for e in cz_canli["bekleyen_emirler"] if e["id"] != emir["id"]]
                                 db_kaydet(db_canli); st.rerun()
-                            st.markdown("</div>", unsafe_allow_html=True)
                     else: st.caption("Bekleyen aktif bir emriniz bulunmuyor.")
                 
                 except Exception as e:
@@ -1318,7 +1318,14 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                         kalan_saat = int((kalan_saniye % (24*3600)) // 3600)
                         kalan_dk = int((kalan_saniye % 3600) // 60)
                         beklenen_getiri = v["miktar"] * v["faiz_orani"] * (v["gun"] / 365)
-                        st.markdown(f"<div style='background:rgba(255,255,255,0.05); padding:10px; border-radius:8px; margin-bottom:5px; display:flex; justify-content:space-between; align-items:center;'><div><b>{format_tr(v['miktar'])} ₺</b> ({v['gun']} Günlük)<br><span style='color:#00ff00; font-size:12px;'>Vade Sonu Getirisi: +{format_tr(beklenen_getiri)} ₺</span><br><span style='color:#aaa; font-size:12px;'>⏳ Kalan Süre: {kalan_gun} Gün, {kalan_saat} Saat, {kalan_dk} Dk</span></div></div>", unsafe_allow_html=True)
+                        
+                        # DÜZELTME: Mevduat HTML'i tek satıra indirgendi
+                        mevduat_html = (
+                            f"<div style='background:rgba(255,255,255,0.05); padding:10px; border-radius:8px; margin-bottom:5px; display:flex; justify-content:space-between; align-items:center;'>"
+                            f"<div><b>{format_tr(v['miktar'])} ₺</b> ({v['gun']} Günlük)<br><span style='color:#00ff00; font-size:12px;'>Vade Sonu Getirisi: +{format_tr(beklenen_getiri)} ₺</span><br>"
+                            f"<span style='color:#aaa; font-size:12px;'>⏳ Kalan Süre: {kalan_gun} Gün, {kalan_saat} Saat, {kalan_dk} Dk</span></div></div>"
+                        )
+                        st.markdown(mevduat_html, unsafe_allow_html=True)
                         if st.button("❌ Vadeyi Boz (Faiz Yanar)", key=f"boz_{v['id']}"):
                             banka_canli["vadeli"] = [x for x in banka_canli["vadeli"] if x["id"] != v["id"]]
                             cz_canli["nakit"] += v["miktar"] 
@@ -1334,7 +1341,7 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
         canli_banka_motoru()
 
     # =========================================================================================
-    # YENİ ARENA MEYDAN OKUMA SİSTEMİ (MARKDOWN HATASI GİDERİLDİ)
+    # YENİ ARENA MEYDAN OKUMA SİSTEMİ
     # =========================================================================================
     with tab_arena:
         st.subheader("⚔️ Borsa Arenası (1v1 Düello)")
@@ -1466,7 +1473,12 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                             etiket = "<span style='background:#1e293b; color:#aaa; padding:2px 6px; border-radius:4px; font-size:11px;'>📣 Açık Meydan Okuma</span>"
                             
                         # DÜZELTME: Markdown Kod Bloğu Hatasını Önleyen Tek Satır Yapısı
-                        st.markdown(f"<div style='background:rgba(15,23,42,0.8); border:1px solid rgba(255,215,0,0.3); padding:10px; border-radius:8px; margin-bottom:5px;'>{etiket}<br><b>{d['olusturan_nick']}</b> seni düelloya davet ediyor!<br><span style='color:#FFD700;'>Ortadaki Havuz: {format_tr(d['bahis_miktari']*2)} ₺</span></div>", unsafe_allow_html=True)
+                        bekleyen_html = (
+                            f"<div style='background:rgba(15,23,42,0.8); border:1px solid rgba(255,215,0,0.3); padding:10px; border-radius:8px; margin-bottom:5px;'>"
+                            f"{etiket}<br><b>{d['olusturan_nick']}</b> seni düelloya davet ediyor!<br>"
+                            f"<span style='color:#FFD700;'>Ortadaki Havuz: {format_tr(d['bahis_miktari']*2)} ₺</span></div>"
+                        )
+                        st.markdown(bekleyen_html, unsafe_allow_html=True)
                         
                         if d["olusturan_id"] == aktif_kullanici:
                             if st.button("❌ Geri Çekil (İptal)", key=f"iptal_{d_id}"):
@@ -1475,7 +1487,26 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                                 db_kaydet(db_arena)
                                 st.rerun()
                         else:
-                            if st.button("🔥 Meydan Oku (Kabul Et)", key=f"katil_{d_id}"):
+                            if d.get("hedef_id") == aktif_kullanici:
+                                c1, c2 = st.columns(2)
+                                with c1:
+                                    kabul_edildi = st.button("🔥 Kabul Et", key=f"katil_{d_id}", use_container_width=True)
+                                with c2:
+                                    reddedildi = st.button("👎 Reddet", key=f"reddet_{d_id}", use_container_width=True)
+                            else:
+                                kabul_edildi = st.button("🔥 Meydan Oku (Kabul Et)", key=f"katil_{d_id}", use_container_width=True)
+                                reddedildi = False
+
+                            if reddedildi:
+                                if d["olusturan_id"] in db_arena:
+                                    db_arena[d["olusturan_id"]]["cuzdan"]["nakit"] += d["bahis_miktari"]
+                                del db_arena["_DUELLOLAR_"][d_id]
+                                db_kaydet(db_arena)
+                                st.warning("Düelloyu reddettiniz.")
+                                time.sleep(1)
+                                st.rerun()
+
+                            if kabul_edildi:
                                 if cz_arena["nakit"] >= d["bahis_miktari"]:
                                     with st.spinner("Savaş Meydanı Kuruluyor..."):
                                         cz_arena["nakit"] -= d["bahis_miktari"]
