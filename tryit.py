@@ -317,7 +317,6 @@ madenler_emtia = {"Altın (Ons)": "GC=F", "Gümüş (Ons)": "SI=F", "Bakır": "H
 tum_varliklar_mega = {**bist_genis, **abd_hisseleri, **kripto, **madenler_emtia}
 
 st.sidebar.header("🕹️ Uygulama Modu")
-# YENİ DEĞİŞİKLİK: "Sanal Portföy Yönetimi" ilk sıraya alındı, varsayılan açılış sayfası yapıldı.
 modlar = ["💼 Sanal Portföy Yönetimi", "🔍 Algoritmik Piyasa Tarama"]
 if is_admin: modlar.append("👑 Yönetici Paneli (Kurucu)")
 uygulama_modu = st.sidebar.radio("Mod Seçiniz:", modlar, label_visibility="collapsed")
@@ -1340,6 +1339,9 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
         if hasattr(st, "fragment"): canli_banka_motoru = st.fragment(run_every=2)(canli_banka_motoru)
         canli_banka_motoru()
 
+    # =========================================================================================
+    # YENİ ARENA MEYDAN OKUMA SİSTEMİ (24 SAATLİK DÜELLOLAR)
+    # =========================================================================================
     with tab_arena:
         st.subheader("⚔️ Borsa Arenası (1v1 Düello)")
         st.write("24 saat sürecek amansız bir PNL (Kâr/Zarar) savaşı! Meydan oku veya katıl, başlangıç anından itibaren en çok kâr yüzdesini sen yap, masadaki tüm ödülü topla!")
@@ -1412,18 +1414,37 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
 
                 st.markdown("<div class='banka-kart'>", unsafe_allow_html=True)
                 st.markdown("### 🥊 Arenaya Çık")
-                bahis = st.number_input("Ortaya Konacak Tutar (₺)", min_value=100.0, step=1000.0, key="yeni_duello")
-                if st.button("⚔️ Savaş İlan Et (Tutar Kasadan Düşer)", use_container_width=True):
-                    if cz_arena["nakit"] >= bahis:
+                
+                c_tur, c_bahis = st.columns([1, 1])
+                with c_tur:
+                    # YENİ EKLENEN: İki farklı meydan okuma seçeneği
+                    meydan_turu = st.radio("Meydan Okuma Tipi:", ["Açık Meydan Okuma (Herkese)", "Özel Düello (Kişiye Özel)"], horizontal=True)
+                    hedef_kisi = None
+                    if meydan_turu == "Özel Düello (Kişiye Özel)":
+                        kullanicilar_liste = {k: v.get("nickname", k) for k, v in db_arena.items() if k not in ["_GLOBAL_", "_OTURUMLAR_", "_DUELLOLAR_"] and k != aktif_kullanici and not v.get("is_admin", False)}
+                        if kullanicilar_liste:
+                            hedef_kisi = st.selectbox("Meydan Okunacak Oyuncu Seç:", list(kullanicilar_liste.keys()), format_func=lambda x: kullanicilar_liste[x])
+                        else:
+                            st.warning("Sistemde meydan okunacak başka aktif oyuncu yok.")
+                
+                with c_bahis:
+                    bahis = st.number_input("Ortaya Konacak Tutar (₺)", min_value=100.0, step=1000.0, key="yeni_duello")
+                
+                buton_metni = f"⚔️ {meydan_turu.split(' ')[0]} İlan Et (Tutar Kasadan Düşer)"
+                if st.button(buton_metni, use_container_width=True):
+                    if meydan_turu == "Özel Düello (Kişiye Özel)" and not hedef_kisi:
+                        st.error("Lütfen bir rakip seçin.")
+                    elif cz_arena["nakit"] >= bahis:
                         cz_arena["nakit"] -= bahis
                         db_arena["_DUELLOLAR_"][str(uuid.uuid4())] = {
                             "olusturan_id": aktif_kullanici, "olusturan_nick": aktif_nickname,
                             "bahis_miktari": float(bahis), "durum": "bekliyor",
+                            "hedef_id": hedef_kisi, # YENİ ALAN (Açık meydan ise None olacak)
                             "olusturan_baslangic": 0.0, "katilan_id": None, "katilan_nick": None,
                             "katilan_baslangic": 0.0, "baslangic_zamani": 0, "bitis_zamani": 0
                         }
                         db_kaydet(db_arena)
-                        st.success("Meydan okumanız arenaya asıldı, bir rakip bekleniyor!")
+                        st.success("Meydan okumanız arenaya asıldı!")
                         time.sleep(1); st.rerun()
                     else: st.error("Kasanda bu kadar nakit yok!")
                 st.markdown("</div>", unsafe_allow_html=True)
@@ -1432,10 +1453,29 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                 
                 with c_bekleyen:
                     st.markdown("#### ⏳ Rakip Bekleyenler")
-                    bekleyenler = {k: v for k, v in duellolar.items() if v["durum"] == "bekliyor"}
-                    if not bekleyenler: st.caption("Şu an arenada bekleyen kimse yok.")
+                    
+                    # YENİ EKLENEN: Sadece seni ilgilendiren bekleyen düelloları gör
+                    bekleyenler = {}
+                    for k, v in duellolar.items():
+                        if v["durum"] == "bekliyor":
+                            if v["olusturan_id"] == aktif_kullanici: # Senin açtıkların
+                                bekleyenler[k] = v
+                            elif v.get("hedef_id") == aktif_kullanici: # Sana özel açılanlar
+                                bekleyenler[k] = v
+                            elif v.get("hedef_id") is None: # Herkese açık açılanlar
+                                bekleyenler[k] = v
+                                
+                    if not bekleyenler: st.caption("Şu an senin katılabileceğin bir düello yok.")
                     for d_id, d in bekleyenler.items():
-                        st.markdown(f"<div style='background:rgba(15,23,42,0.8); border:1px solid rgba(255,215,0,0.3); padding:10px; border-radius:8px; margin-bottom:5px;'><b>{d['olusturan_nick']}</b> seni düelloya davet ediyor!<br><span style='color:#FFD700;'>Ortadaki Havuz: {format_tr(d['bahis_miktari']*2)} ₺</span></div>", unsafe_allow_html=True)
+                        
+                        # Özel düello etiketi
+                        if d.get("hedef_id") == aktif_kullanici:
+                            etiket = "<span style='background:#ff4444; color:white; padding:2px 6px; border-radius:4px; font-size:11px;'>🎯 SANA ÖZEL MEYDAN OKUMA</span>"
+                        else:
+                            etiket = "<span style='background:#1e293b; color:#aaa; padding:2px 6px; border-radius:4px; font-size:11px;'>📣 Açık Meydan Okuma</span>"
+                            
+                        st.markdown(f"<div style='background:rgba(15,23,42,0.8); border:1px solid rgba(255,215,0,0.3); padding:10px; border-radius:8px; margin-bottom:5px;'>{etiket}<br><b>{d['olusturan_nick']}</b> seni düelloya davet ediyor!<br><span style='color:#FFD700;'>Ortadaki Havuz: {format_tr(d['bahis_miktari']*2)} ₺</span></div>", unsafe_allow_html=True)
+                        
                         if d["olusturan_id"] == aktif_kullanici:
                             if st.button("❌ Geri Çekil (İptal)", key=f"iptal_{d_id}"):
                                 cz_arena["nakit"] += d["bahis_miktari"]
@@ -1475,12 +1515,14 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                                 else: st.error("Giriş ücreti için kasanızda yeterli nakit yok.")
 
                 with c_aktif:
-                    st.markdown("#### ⚔️ Benim Aktif Savaşlarım")
-                    savaslarim = {k: v for k, v in duellolar.items() if v["durum"] == "aktif" and (v["olusturan_id"] == aktif_kullanici or v["katilan_id"] == aktif_kullanici)}
-                    if not savaslarim: st.caption("Şu an devam eden bir savaşın yok.")
+                    st.markdown("#### 📺 Canlı Arena İzleme")
+                    aktif_savaslar = {k: v for k, v in duellolar.items() if v["durum"] == "aktif"}
+                    
+                    if not aktif_savaslar: 
+                        st.caption("Şu an arenada devam eden bir savaş yok.")
                     else:
                         ilgili_canli = set()
-                        for d_id, d in savaslarim.items():
+                        for d_id, d in aktif_savaslar.items():
                             for uid in [d["olusturan_id"], d["katilan_id"]]:
                                 if uid in db_arena:
                                     for vi in db_arena[uid]["cuzdan"].get("varliklar", {}): ilgili_canli.add(vi)
@@ -1491,7 +1533,11 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                             sembol = tum_varliklar_mega.get(vi)
                             if sembol: f_canli[vi] = canli_fiyat_getir(sembol, usd_kuru if not sembol.endswith(".IS") else 1.0)
                             
-                        for d_id, d in savaslarim.items():
+                        # Kendi savaşlarını liste en üstüne çıkarmak için sıralama yapalım
+                        savaslar_listesi = list(aktif_savaslar.items())
+                        savaslar_listesi.sort(key=lambda x: 0 if (x[1]["olusturan_id"] == aktif_kullanici or x[1]["katilan_id"] == aktif_kullanici) else 1)
+
+                        for d_id, d in savaslar_listesi:
                             net1 = anlik_net_deger_bul(d["olusturan_id"], f_canli)
                             net2 = anlik_net_deger_bul(d["katilan_id"], f_canli)
                             
@@ -1508,13 +1554,28 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                             p1_str = f"+%{format_tr(p1)}" if p1 > 0 else f"%{format_tr(p1)}"
                             p2_str = f"+%{format_tr(p2)}" if p2 > 0 else f"%{format_tr(p2)}"
                             
+                            benim_savasim_mi = (d["olusturan_id"] == aktif_kullanici or d["katilan_id"] == aktif_kullanici)
+                            
+                            # YENİ EKLENEN: Eğer savaş benim savaşım değilse isimleri *** ile sansürle!
+                            if benim_savasim_mi:
+                                isim1 = d['olusturan_nick']
+                                isim2 = d['katilan_nick']
+                                border_style = "border:2px solid #FFD700; box-shadow: 0 0 10px rgba(255,215,0,0.2);"
+                                baslik_etiketi = "<div style='text-align:center; font-size:10px; color:#FFD700; margin-bottom:5px; letter-spacing:1px;'>SENİN SAVAŞIN</div>"
+                            else:
+                                isim1 = d['olusturan_nick'][:2] + "***" if len(d['olusturan_nick']) >= 2 else "G***"
+                                isim2 = d['katilan_nick'][:2] + "***" if len(d['katilan_nick']) >= 2 else "G***"
+                                border_style = "border:1px solid rgba(255,255,255,0.1); opacity:0.8;"
+                                baslik_etiketi = ""
+
                             st.markdown(f"""
-                            <div style='background:rgba(0,0,0,0.5); border:1px solid rgba(0,255,255,0.4); padding:15px; border-radius:10px; margin-bottom:10px;'>
+                            <div style='background:rgba(0,0,0,0.5); {border_style} padding:15px; border-radius:10px; margin-bottom:10px;'>
+                                {baslik_etiketi}
                                 <div style='text-align:center; color:#FFD700; font-weight:bold; margin-bottom:5px; font-size:18px;'>Masa: {format_tr(d['bahis_miktari']*2)} ₺</div>
                                 <div style='display:flex; justify-content:space-between; font-size:16px;'>
-                                    <div style='text-align:center;'><b>{d['olusturan_nick']}</b><br><span style='color:{r1}; font-weight:bold;'>{p1_str}</span></div>
-                                    <div style='color:#aaa; font-size:12px; margin-top:5px; text-align:center;'>⏳ Kalan Süre<br><b>{saat}s {dakika}d</b></div>
-                                    <div style='text-align:center;'><b>{d['katilan_nick']}</b><br><span style='color:{r2}; font-weight:bold;'>{p2_str}</span></div>
+                                    <div style='text-align:center; width:33%;'><b>{isim1}</b><br><span style='color:{r1}; font-weight:bold;'>{p1_str}</span></div>
+                                    <div style='color:#aaa; font-size:12px; margin-top:5px; text-align:center; width:33%;'>⏳ Kalan Süre<br><b>{saat}s {dakika}d</b></div>
+                                    <div style='text-align:center; width:33%;'><b>{isim2}</b><br><span style='color:{r2}; font-weight:bold;'>{p2_str}</span></div>
                                 </div>
                             </div>
                             """, unsafe_allow_html=True)
