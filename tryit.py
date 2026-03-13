@@ -107,7 +107,7 @@ def db_kaydet(veritabani):
         st.error(f"Veritabanı Yazma Hatası: {e}")
 
 # =========================================================================================
-# TÜRKİYE STANDARTLARI SAYI FORMATLAYICI (Binlik = Nokta, Onluk = Virgül)
+# TÜRKİYE STANDARTLARI SAYI FORMATLAYICI
 # =========================================================================================
 def format_tr(val, decimals=2):
     if pd.isna(val): return ""
@@ -118,7 +118,7 @@ def format_tr(val, decimals=2):
         return str(val)
 
 # =========================================================================================
-# --- GELİŞMİŞ UI / UX TASARIMI (PREMIUM ARAYÜZ MÜHENDİSLİĞİ) ---
+# --- GELİŞMİŞ UI / UX TASARIMI ---
 # =========================================================================================
 st.markdown("""
 <style>
@@ -1173,25 +1173,19 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                             roe_yuzde = (pnl / poz["teminat"]) * 100
                             net_nakit_karsiligi = max(0, poz["teminat"] + pnl)
                             
-                            st.markdown(f"""
-                                <div class='kaldirac-kart {"long" if poz["yon"] == "AL (Long)" else "short"}'>
-                                    <div style='display:flex; justify-content:space-between; margin-bottom:10px;'>
-                                        <b>{poz['varlik']}</b>
-                                        <span style='background:#1e293b; padding:2px 8px; border-radius:5px;'>{poz['kaldirac']}x {poz['yon']}</span>
-                                    </div>
-                                    <div style='display:flex; justify-content:space-between; font-size:14px; color:#aaa;'>
-                                        <span>Giriş: {format_tr(poz['giris_fiyati'])} ₺</span>
-                                        <span>Anlık: <span style='color:white'>{format_tr(gf)} ₺</span></span>
-                                    </div>
-                                    <div style='display:flex; justify-content:space-between; font-size:14px; margin-top:5px;'>
-                                        <span>Liq: <span style='color:#ff4444'>{format_tr(poz['liq_fiyati'])} ₺</span></span>
-                                        <span>Bağlanan: {format_tr(poz['teminat'])} ₺</span>
-                                    </div>
-                                    <div style='text-align:right; margin-top:10px; font-size:18px; font-weight:bold; color:{"#00ff00" if pnl > 0 else "#ff4444"};'>
-                                        {format_tr(pnl)} ₺ ( %{format_tr(roe_yuzde)} )
-                                    </div>
-                                </div>
-                            """, unsafe_allow_html=True)
+                            # YENİ DÜZELTME: Kaldıraç Kartının Kod Gibi Görünmesini Engelleme Zırhı
+                            kaldirac_html = (
+                                f"<div class='kaldirac-kart {'long' if poz['yon'] == 'AL (Long)' else 'short'}'>"
+                                f"<div style='display:flex; justify-content:space-between; margin-bottom:10px;'>"
+                                f"<b>{poz['varlik']}</b><span style='background:#1e293b; padding:2px 8px; border-radius:5px;'>{poz['kaldirac']}x {poz['yon']}</span></div>"
+                                f"<div style='display:flex; justify-content:space-between; font-size:14px; color:#aaa;'>"
+                                f"<span>Giriş: {format_tr(poz['giris_fiyati'])} ₺</span><span>Anlık: <span style='color:white'>{format_tr(gf)} ₺</span></span></div>"
+                                f"<div style='display:flex; justify-content:space-between; font-size:14px; margin-top:5px;'>"
+                                f"<span>Liq: <span style='color:#ff4444'>{format_tr(poz['liq_fiyati'])} ₺</span></span><span>Bağlanan: {format_tr(poz['teminat'])} ₺</span></div>"
+                                f"<div style='text-align:right; margin-top:10px; font-size:18px; font-weight:bold; color:{'#00ff00' if pnl > 0 else '#ff4444'};'>"
+                                f"{format_tr(pnl)} ₺ ( %{format_tr(roe_yuzde)} )</div></div>"
+                            )
+                            st.markdown(kaldirac_html, unsafe_allow_html=True)
                             
                             if st.button("❌ Pozisyonu Kapat", key=f"kapat_{poz['id']}"):
                                 v_isim = poz["varlik"]
@@ -1340,7 +1334,7 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
         canli_banka_motoru()
 
     # =========================================================================================
-    # YENİ ARENA MEYDAN OKUMA SİSTEMİ (24 SAATLİK DÜELLOLAR)
+    # YENİ ARENA MEYDAN OKUMA SİSTEMİ (MARKDOWN HATASI GİDERİLDİ)
     # =========================================================================================
     with tab_arena:
         st.subheader("⚔️ Borsa Arenası (1v1 Düello)")
@@ -1417,7 +1411,6 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                 
                 c_tur, c_bahis = st.columns([1, 1])
                 with c_tur:
-                    # YENİ EKLENEN: İki farklı meydan okuma seçeneği
                     meydan_turu = st.radio("Meydan Okuma Tipi:", ["Açık Meydan Okuma (Herkese)", "Özel Düello (Kişiye Özel)"], horizontal=True)
                     hedef_kisi = None
                     if meydan_turu == "Özel Düello (Kişiye Özel)":
@@ -1439,7 +1432,7 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                         db_arena["_DUELLOLAR_"][str(uuid.uuid4())] = {
                             "olusturan_id": aktif_kullanici, "olusturan_nick": aktif_nickname,
                             "bahis_miktari": float(bahis), "durum": "bekliyor",
-                            "hedef_id": hedef_kisi, # YENİ ALAN (Açık meydan ise None olacak)
+                            "hedef_id": hedef_kisi, 
                             "olusturan_baslangic": 0.0, "katilan_id": None, "katilan_nick": None,
                             "katilan_baslangic": 0.0, "baslangic_zamani": 0, "bitis_zamani": 0
                         }
@@ -1454,26 +1447,25 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                 with c_bekleyen:
                     st.markdown("#### ⏳ Rakip Bekleyenler")
                     
-                    # YENİ EKLENEN: Sadece seni ilgilendiren bekleyen düelloları gör
                     bekleyenler = {}
                     for k, v in duellolar.items():
                         if v["durum"] == "bekliyor":
-                            if v["olusturan_id"] == aktif_kullanici: # Senin açtıkların
+                            if v["olusturan_id"] == aktif_kullanici: 
                                 bekleyenler[k] = v
-                            elif v.get("hedef_id") == aktif_kullanici: # Sana özel açılanlar
+                            elif v.get("hedef_id") == aktif_kullanici: 
                                 bekleyenler[k] = v
-                            elif v.get("hedef_id") is None: # Herkese açık açılanlar
+                            elif v.get("hedef_id") is None: 
                                 bekleyenler[k] = v
                                 
                     if not bekleyenler: st.caption("Şu an senin katılabileceğin bir düello yok.")
                     for d_id, d in bekleyenler.items():
                         
-                        # Özel düello etiketi
                         if d.get("hedef_id") == aktif_kullanici:
                             etiket = "<span style='background:#ff4444; color:white; padding:2px 6px; border-radius:4px; font-size:11px;'>🎯 SANA ÖZEL MEYDAN OKUMA</span>"
                         else:
                             etiket = "<span style='background:#1e293b; color:#aaa; padding:2px 6px; border-radius:4px; font-size:11px;'>📣 Açık Meydan Okuma</span>"
                             
+                        # DÜZELTME: Markdown Kod Bloğu Hatasını Önleyen Tek Satır Yapısı
                         st.markdown(f"<div style='background:rgba(15,23,42,0.8); border:1px solid rgba(255,215,0,0.3); padding:10px; border-radius:8px; margin-bottom:5px;'>{etiket}<br><b>{d['olusturan_nick']}</b> seni düelloya davet ediyor!<br><span style='color:#FFD700;'>Ortadaki Havuz: {format_tr(d['bahis_miktari']*2)} ₺</span></div>", unsafe_allow_html=True)
                         
                         if d["olusturan_id"] == aktif_kullanici:
@@ -1533,7 +1525,6 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                             sembol = tum_varliklar_mega.get(vi)
                             if sembol: f_canli[vi] = canli_fiyat_getir(sembol, usd_kuru if not sembol.endswith(".IS") else 1.0)
                             
-                        # Kendi savaşlarını liste en üstüne çıkarmak için sıralama yapalım
                         savaslar_listesi = list(aktif_savaslar.items())
                         savaslar_listesi.sort(key=lambda x: 0 if (x[1]["olusturan_id"] == aktif_kullanici or x[1]["katilan_id"] == aktif_kullanici) else 1)
 
@@ -1556,7 +1547,6 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                             
                             benim_savasim_mi = (d["olusturan_id"] == aktif_kullanici or d["katilan_id"] == aktif_kullanici)
                             
-                            # YENİ EKLENEN: Eğer savaş benim savaşım değilse isimleri *** ile sansürle!
                             if benim_savasim_mi:
                                 isim1 = d['olusturan_nick']
                                 isim2 = d['katilan_nick']
@@ -1568,17 +1558,18 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                                 border_style = "border:1px solid rgba(255,255,255,0.1); opacity:0.8;"
                                 baslik_etiketi = ""
 
-                            st.markdown(f"""
-                            <div style='background:rgba(0,0,0,0.5); {border_style} padding:15px; border-radius:10px; margin-bottom:10px;'>
-                                {baslik_etiketi}
-                                <div style='text-align:center; color:#FFD700; font-weight:bold; margin-bottom:5px; font-size:18px;'>Masa: {format_tr(d['bahis_miktari']*2)} ₺</div>
-                                <div style='display:flex; justify-content:space-between; font-size:16px;'>
-                                    <div style='text-align:center; width:33%;'><b>{isim1}</b><br><span style='color:{r1}; font-weight:bold;'>{p1_str}</span></div>
-                                    <div style='color:#aaa; font-size:12px; margin-top:5px; text-align:center; width:33%;'>⏳ Kalan Süre<br><b>{saat}s {dakika}d</b></div>
-                                    <div style='text-align:center; width:33%;'><b>{isim2}</b><br><span style='color:{r2}; font-weight:bold;'>{p2_str}</span></div>
-                                </div>
-                            </div>
-                            """, unsafe_allow_html=True)
+                            # DÜZELTME: Markdown Kod Bloğu Hatasını Önleyen Tek Satır Yapısı (Tüm boşluklar temizlendi)
+                            html_str_arena = (
+                                f"<div style='background:rgba(0,0,0,0.5); {border_style} padding:15px; border-radius:10px; margin-bottom:10px;'>"
+                                f"{baslik_etiketi}"
+                                f"<div style='text-align:center; color:#FFD700; font-weight:bold; margin-bottom:5px; font-size:18px;'>Masa: {format_tr(d['bahis_miktari']*2)} ₺</div>"
+                                f"<div style='display:flex; justify-content:space-between; font-size:16px;'>"
+                                f"<div style='text-align:center; width:33%;'><b>{isim1}</b><br><span style='color:{r1}; font-weight:bold;'>{p1_str}</span></div>"
+                                f"<div style='color:#aaa; font-size:12px; margin-top:5px; text-align:center; width:33%;'>⏳ Kalan Süre<br><b>{saat}s {dakika}d</b></div>"
+                                f"<div style='text-align:center; width:33%;'><b>{isim2}</b><br><span style='color:{r2}; font-weight:bold;'>{p2_str}</span></div>"
+                                f"</div></div>"
+                            )
+                            st.markdown(html_str_arena, unsafe_allow_html=True)
             except Exception as e:
                 pass
 
