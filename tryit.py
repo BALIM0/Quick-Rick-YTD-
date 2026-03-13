@@ -67,12 +67,16 @@ def db_yukle():
             veri["_OTURUMLAR_"] = {}
             degisiklik_var = True
             
+        if "_DUELLOLAR_" not in veri: 
+            veri["_DUELLOLAR_"] = {}
+            degisiklik_var = True
+            
         if ADMIN_ID not in veri:
             veri[ADMIN_ID] = {"sifre": sifre_sifrele(ADMIN_PASS), "nickname": "👑 SİSTEM YÖNETİCİSİ", "son_isim_degistirme": 0, "kayit_tarihi": time.time(), "rozetler": [], "istatistikler": {"islem_sayisi": 0, "odenen_komisyon": 0.0}, "cuzdan": {"nakit": 1000000.0, "varliklar": {}, "kaldiracli_islemler": [], "izleme_listesi": ["Türk Hava Yolları", "Bitcoin", "Altın (Ons)", "NVIDIA", "Apple"], "bekleyen_emirler": [], "banka": {"gecelik": {"miktar": 0.0, "son_guncelleme": time.time()}, "vadeli": []}}, "is_admin": True}
             degisiklik_var = True
             
         for k, v in veri.items():
-            if k not in ["_GLOBAL_", "_OTURUMLAR_"]:
+            if k not in ["_GLOBAL_", "_OTURUMLAR_", "_DUELLOLAR_"]:
                 if "rozetler" not in v: v["rozetler"] = []
                 if "kayit_tarihi" not in v: v["kayit_tarihi"] = time.time()
                 if "istatistikler" not in v: v["istatistikler"] = {"islem_sayisi": 0, "odenen_komisyon": 0.0}
@@ -126,7 +130,6 @@ st.markdown("""
     div[data-testid="metric-container"] { background: rgba(20, 26, 36, 0.6) !important; backdrop-filter: blur(12px) !important; border: 1px solid rgba(0, 255, 255, 0.15) !important; padding: 20px !important; border-radius: 16px !important; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3) !important; transition: all 0.4s ease-in-out !important; }
     div[data-testid="metric-container"]:hover { transform: translateY(-7px) !important; border-color: rgba(0, 255, 255, 0.6) !important; box-shadow: 0 12px 40px 0 rgba(0, 255, 255, 0.15) !important; }
     
-    /* YENİ EKLENEN: Mobil Cihazlar İçin Responsive Metrik (Sayı) Boyutlandırması */
     [data-testid="stMetricValue"] { font-size: 1.6rem !important; }
     @media screen and (max-width: 768px) {
         [data-testid="stMetricValue"] { font-size: 1.1rem !important; white-space: normal !important; word-wrap: break-word !important; }
@@ -227,7 +230,7 @@ if st.session_state.aktif_kullanici is None:
             g_sifre = st.text_input("Şifre", type="password")
             giris_buton = st.form_submit_button("Giriş Yap", use_container_width=True)
         if giris_buton:
-            sistem_idleri = ["_GLOBAL_", "_OTURUMLAR_"]
+            sistem_idleri = ["_GLOBAL_", "_OTURUMLAR_", "_DUELLOLAR_"]
             if g_kullanici in db and g_kullanici not in sistem_idleri and db[g_kullanici]["sifre"] == sifre_sifrele(g_sifre):
                 yeni_token = str(uuid.uuid4())
                 db["_OTURUMLAR_"][yeni_token] = {"kullanici": g_kullanici, "bitis": su_an + 600, "son_hareket": su_an}
@@ -243,7 +246,7 @@ if st.session_state.aktif_kullanici is None:
             k_sifre = st.text_input("Yeni Şifre", type="password")
             kayit_buton = st.form_submit_button("Hesap Oluştur", use_container_width=True)
         if kayit_buton:
-            sistem_idleri = ["_GLOBAL_", "_OTURUMLAR_"]
+            sistem_idleri = ["_GLOBAL_", "_OTURUMLAR_", "_DUELLOLAR_"]
             mevcut_nicknameler = [v.get("nickname", "").lower() for k, v in db.items() if k not in sistem_idleri]
             if k_kullanici in db or k_kullanici in sistem_idleri: st.error("❌ Bu Gizli Kullanıcı Adı zaten alınmış!")
             elif k_nickname.lower() in mevcut_nicknameler: st.error("❌ Bu Takma Ad (Nickname) başka bir yatırımcı tarafından kullanılıyor!")
@@ -306,7 +309,6 @@ usd_kuru = guncel_kur_getir()
 
 bist_30 = {"Akbank": "AKBNK.IS", "Alarko": "ALARK.IS", "Aselsan": "ASELS.IS", "Astor": "ASTOR.IS", "BİM": "BIMAS.IS", "Borusan": "BRSAN.IS", "Coca-Cola İçecek": "CCOLA.IS", "Emlak Konut": "EKGYO.IS", "Enka": "ENKAI.IS", "Ereğli": "EREGL.IS", "Ford Otosan": "FROTO.IS", "Garanti": "GARAN.IS", "Gübre Fab": "GUBRF.IS", "Hektaş": "HEKTS.IS", "İş Bankası": "ISCTR.IS", "Koç Hol": "KCHOL.IS", "Kontrolmatik": "KONTR.IS", "Koza Altın": "KOZAL.IS", "Kardemir": "KRDMD.IS", "Odaş": "ODAS.IS", "Petkim": "PETKM.IS", "Pegasus": "PGSUS.IS", "Sabancı Hol": "SAHOL.IS", "Sasa": "SASA.IS", "Şişecam": "SISE.IS", "Turkcell": "TCELL.IS", "THY": "THYAO.IS", "Tofaş": "TOASO.IS", "Tüpraş": "TUPRS.IS", "Yapı Kredi": "YKBNK.IS"}
 bist_100 = {**bist_30, **{"Alfa Solar": "ALFAS.IS", "Arçelik": "ARCLK.IS", "Brisa": "BRISA.IS", "Çimsa": "CIMSA.IS", "CW Enerji": "CWENE.IS", "Doğuş Oto": "DOAS.IS", "Doğan Hol": "DOHOL.IS", "Eczacıbaşı": "ECILC.IS", "Ege Endüstri": "EGEEN.IS", "Enerjisa": "ENJSA.IS", "Europower": "EUPWR.IS", "Girişim Elk": "GESAN.IS", "Halkbank": "HALKB.IS", "İskenderun D.": "ISDMR.IS", "İş GYO": "ISGYO.IS", "İş Yatırım": "ISMEN.IS", "Konya Çimento": "KONYA.IS", "Kordsa": "KORDS.IS", "Koza Anadolu": "KOZAA.IS", "Mavi": "MAVI.IS", "Migros": "MGROS.IS", "Mia Teknoloji": "MIATK.IS", "Otokar": "OTKAR.IS", "Oyak Çimento": "OYAKC.IS", "Qua Granite": "QUAGR.IS", "Şekerbank": "SKBNK.IS", "Smart Güneş": "SMRTG.IS", "Şok Market": "SOKM.IS", "TAV": "TAVHL.IS", "Tekfen": "TKFEN.IS", "TSKB": "TSKB.IS", "Türk Telekom": "TTKOM.IS", "Türk Traktör": "TTRAK.IS", "Tukaş": "TUKAS.IS", "Ülker": "ULKER.IS", "Vakıfbank": "VAKBN.IS", "Vestel Beyaz": "VESBE.IS", "Vestel": "VESTL.IS", "Yeo Teknoloji": "YEOTK.IS", "Zorlu Enerji": "ZOREN.IS"}}
-# YENİ SAVUNMA HİSSELERİ EKLENDİ (Altınay ve Katmerciler)
 bist_genis = {**bist_100, **{"Agrotech": "AGROT.IS", "Akfen Yenilenebilir": "AKFYE.IS", "Anadolu Efes": "AEFES.IS", "Anadolu Sigorta": "ANSGR.IS", "Aygaz": "AYGAZ.IS", "Bera Holding": "BERA.IS", "Bien Seramik": "BIENY.IS", "Biotrend": "BIOEN.IS", "Borusan Yatırım": "BRYAT.IS", "Bülbüloğlu Vinç": "BVSAN.IS", "Can Termik": "CANTE.IS", "Çan2 Termik": "CANTE.IS", "CVK Maden": "CVKMD.IS", "Eksun Gıda": "EKSUN.IS", "Esenboğa Elektrik": "ESEN.IS", "Forte Bilgi": "FORTE.IS", "Galata Wind": "GWIND.IS", "GSD Holding": "GSDHO.IS", "Hat-San Gemi": "HATSN.IS", "İmaş Makina": "IMASM.IS", "İnfo Yatırım": "INFO.IS", "İzdemir Enerji": "IZENR.IS", "Kaleseramik": "KLSER.IS", "Kayseri Şeker": "KAYSE.IS", "Kocaer Çelik": "KCAER.IS", "Kuştur Kuşadası": "KSTUR.IS", "Margün Enerji": "MAGEN.IS", "Mercan Kimya": "MERCN.IS", "Naten": "NATEN.IS", "Oyak Yatırım": "OYYAT.IS", "Özsu Balık": "OZSUB.IS", "Penta": "PENTA.IS", "Reeder Teknoloji": "REEDR.IS", "Rubenis Tekstil": "RUBNS.IS", "SDT Uzay": "SDTTR.IS", "Tarkim": "TARKM.IS", "Tatlıpınar Enerji": "TATEN.IS", "Tezol": "TEZOL.IS", "VBT Yazılım": "VBTYZ.IS", "Ziraat GYO": "ZRGYO.IS", "Tab Gıda": "TABGD.IS", "Ebebek": "EBEBK.IS", "Fuzul GYO": "FZLGY.IS", "Aydem": "AYDEM.IS", "Söke Değirmencilik": "SOKE.IS", "Enerya": "ENSRV.IS", "Koton": "KOTON.IS", "Lilak Kağıt": "LILAK.IS", "Rönesans GYO": "RGYAS.IS", "Hareket Proje": "HRKET.IS", "Koç Metalurji": "KOCMT.IS", "Aksa Akrilik": "AKSA.IS", "Aksa Enerji": "AKSEN.IS", "Aksigorta": "AKGRT.IS", "AgeSA Hayat": "AGESA.IS", "Alkim Kimya": "ALKIM.IS", "Afyon Çimento": "AFYON.IS", "Anadolu Isuzu": "ASUZU.IS", "Ard Bilişim": "ARDYZ.IS", "Bursa Çimento": "BUCIM.IS", "Çelebi Hava Servisi": "CLEBI.IS", "Desa Deri": "DESA.IS", "Derimod": "DERIM.IS", "Ege Seramik": "EGSER.IS", "Eczacıbaşı Yatırım": "ECZYT.IS", "Erbosan": "ERBOS.IS", "Goodyear": "GOODY.IS", "Göltaş Çimento": "GOLTS.IS", "Global Yatırım": "GLYHO.IS", "Gedik Yatırım": "GEDIK.IS", "Halk GYO": "HLGYO.IS", "İş Finansal": "ISFIN.IS", "İhlas Holding": "IHLAS.IS", "Jantsa": "JANTS.IS", "Karsan": "KARSN.IS", "Kartonsan": "KARTN.IS", "Karel Elektronik": "KAREL.IS", "Kerevitaş": "KERVT.IS", "Kervan Gıda": "KRVGD.IS", "Kütahya Porselen": "KUTPO.IS", "Klimasan": "KLMSN.IS", "Logo Yazılım": "LOGO.IS", "Lider Turizm": "LIDER.IS", "Net Holding": "NTHOL.IS", "Nuh Çimento": "NUHCM.IS", "Özak GYO": "OZKGY.IS", "Osmanlı Yatırım": "OSMEN.IS", "Papilon Savunma": "PAPIL.IS", "Pınar Süt": "PNSUT.IS", "Pınar Et": "PETUN.IS", "Sinpaş GYO": "SNGYO.IS", "Suwen": "SUWEN.IS", "Torunlar GYO": "TRGYO.IS", "Tat Gıda": "TATGD.IS", "Tümosan": "TMSN.IS", "Vakko": "VAKKO.IS", "Vakıf Finansal": "VAKFN.IS", "Vakıf GYO": "VKGYO.IS", "Yataş": "YATAS.IS", "Yayla Gıda": "YYLGD.IS", "Pasifik GYO": "PSGYO.IS", "Koleksiyon Mobilya": "KLSYN.IS", "Hitit Bilgisayar": "HTTBT.IS", "Orge Enerji": "ORGE.IS", "Arena Bilgisayar": "ARENA.IS", "Lokman Hekim": "LKMNH.IS", "Gentaş": "GENTS.IS", "Bossa": "BOSSA.IS", "E-Data": "EDATA.IS", "Ege Profil": "EGPRO.IS", "Kalekim": "KLKIM.IS", "Ulusoy Un": "ULUUN.IS", "Sarkuysan": "SARKY.IS", "Türkiye Sigorta": "TURSG.IS", "Anadolu Hayat": "ANHYT.IS", "İş Girişim": "ISGSY.IS", "Gözde Girişim": "GOZDE.IS", "Verusa Holding": "VERUS.IS", "İzmir Demir Çelik": "IZMDC.IS", "Çemtaş": "CEMTS.IS", "Banvit": "BANVT.IS", "Altınay Savunma": "ALTNY.IS", "Katmerciler Savunma": "KATMR.IS"}}
 abd_hisseleri = {"Apple": "AAPL", "Microsoft": "MSFT", "NVIDIA": "NVDA", "Tesla": "TSLA", "Amazon": "AMZN", "Alphabet (Google)": "GOOGL", "Meta (Facebook)": "META", "AMD": "AMD", "Netflix": "NFLX", "Intel": "INTC", "Coca-Cola (ABD)": "KO", "PepsiCo": "PEP", "McDonald's": "MCD", "Boeing": "BA", "Ford Motor (ABD)": "F", "General Motors": "GM", "Uber": "UBER", "Airbnb": "ABNB", "Disney": "DIS", "Pfizer": "PFE", "Johnson & Johnson": "JNJ", "Visa": "V", "Mastercard": "MA", "JPMorgan Chase": "JPM", "Bank of America": "BAC", "Goldman Sachs": "GS", "Walmart": "WMT", "Nike": "NKE", "Starbucks": "SBUX", "Alibaba": "BABA"}
 kripto = {"Bitcoin": "BTC-USD", "Ethereum": "ETH-USD", "Solana": "SOL-USD", "Binance Coin": "BNB-USD", "Ripple (XRP)": "XRP-USD", "Cardano": "ADA-USD", "Avalanche": "AVAX-USD", "Dogecoin": "DOGE-USD", "Chainlink": "LINK-USD", "Polkadot": "DOT-USD", "Polygon (MATIC)": "MATIC-USD", "Shiba Inu": "SHIB-USD", "Litecoin": "LTC-USD", "TRON": "TRX-USD", "Bitcoin Cash": "BCH-USD", "Uniswap": "UNI-USD", "Cosmos": "ATOM-USD", "Monero": "XMR-USD", "Stellar": "XLM-USD", "Ethereum Classic": "ETC-USD", "VeChain": "VET-USD", "Filecoin": "FIL-USD", "Aave": "AAVE-USD", "Algorand": "ALGO-USD", "EOS": "EOS-USD", "The Sandbox": "SAND-USD", "Decentraland": "MANA-USD", "ApeCoin": "APE-USD", "Fantom": "FTM-USD", "Near Protocol": "NEAR-USD", "Aptos": "APT-USD", "Arbitrum": "ARB-USD", "Injective": "INJ-USD", "Optimism": "OP-USD", "Render": "RNDR-USD", "Kaspa": "KAS-USD", "Pepe": "PEPE-USD", "Bonk": "BONK-USD", "Floki": "FLOKI-USD", "Gala": "GALA-USD", "Fetch.ai": "FET-USD", "dogwifhat": "WIF-USD", "Jupiter": "JUP-USD", "Theta Network": "THETA-USD", "Hedera": "HBAR-USD", "Synthetix": "SNX-USD", "Maker": "MKR-USD", "Celestia": "TIA-USD", "Sei": "SEI-USD", "Manta Network": "MANTA-USD", "Starknet": "STRK-USD", "Ondo": "ONDO-USD", "Pyth Network": "PYTH-USD", "Arweave": "AR-USD", "Immutable": "IMX-USD", "Mantle": "MNT-USD", "Lido DAO": "LDO-USD"}
@@ -331,7 +333,7 @@ with st.sidebar.expander(f"🟢 Çevrimiçi Tüccarlar ({len(online_user_ids)})"
         st.caption("Şu an kimse aktif değil.")
     else:
         for uid in online_user_ids:
-            if uid in db and uid not in ["_GLOBAL_", "_OTURUMLAR_"]:
+            if uid in db and uid not in ["_GLOBAL_", "_OTURUMLAR_", "_DUELLOLAR_"]:
                 nick = db[uid].get("nickname", uid)
                 rozetler_str = "".join(db[uid].get("rozetler", []))
                 if db[uid].get("is_admin", False):
@@ -376,7 +378,7 @@ with st.sidebar.expander("⚙️ Hesap Ayarları", expanded=False):
                 st.caption("Sadece Liderlik Tablosunda görünür.")
                 yeni_isim = st.text_input("Yeni Takma Ad (Nickname)")
                 if st.form_submit_button("İsmi Güncelle", use_container_width=True):
-                    mevcut_nicknameler = [v.get("nickname", "").lower() for k, v in db.items() if k not in ["_GLOBAL_", "_OTURUMLAR_"]]
+                    mevcut_nicknameler = [v.get("nickname", "").lower() for k, v in db.items() if k not in ["_GLOBAL_", "_OTURUMLAR_", "_DUELLOLAR_"]]
                     if yeni_isim.lower() in mevcut_nicknameler and yeni_isim.lower() != aktif_nickname.lower(): st.error("❌ Bu isim kullanılıyor!")
                     elif yeni_isim.lower() == aktif_kullanici.lower() and not is_admin: st.error("❌ Güvenlik: Giriş ID'niz ile aynı olamaz!")
                     elif len(yeni_isim) < 3: st.warning("⚠️ En az 3 karakter olmalı.")
@@ -406,7 +408,7 @@ if uygulama_modu == "👑 Yönetici Paneli (Kurucu)":
         st.subheader("Aktif Kullanıcılar ve Giyotin")
         oyuncu_listesi = []
         for k, v in db.items():
-            if k not in ["_GLOBAL_", "_OTURUMLAR_"] and not v.get("is_admin", False):
+            if k not in ["_GLOBAL_", "_OTURUMLAR_", "_DUELLOLAR_"] and not v.get("is_admin", False):
                 bakiye = v.get("cuzdan", {}).get("nakit", 0)
                 oyuncu_listesi.append({"ID (Gizli)": k, "Takma Ad": v.get("nickname"), "Nakit Bakiye": f"{format_tr(bakiye)} ₺"})
         if oyuncu_listesi:
@@ -424,7 +426,7 @@ if uygulama_modu == "👑 Yönetici Paneli (Kurucu)":
         
         st.markdown("---")
         st.markdown("### 🎯 Bireysel Fon Aktarımı (Tek Kullanıcıya)")
-        kullanicilar = {k: v.get("nickname", k) for k, v in db.items() if k not in ["_GLOBAL_", "_OTURUMLAR_"]}
+        kullanicilar = {k: v.get("nickname", k) for k, v in db.items() if k not in ["_GLOBAL_", "_OTURUMLAR_", "_DUELLOLAR_"]}
         if kullanicilar:
             col_b1, col_b2 = st.columns(2)
             with col_b1: secilen_id = st.selectbox("Alıcı Oyuncu Seçin:", list(kullanicilar.keys()), format_func=lambda x: f"{kullanicilar[x]} (ID: {x})")
@@ -443,7 +445,7 @@ if uygulama_modu == "👑 Yönetici Paneli (Kurucu)":
             if st.button("💸 Parayı Herkese Gönder"):
                 dagitilan_kisi = 0
                 for k, v in db.items():
-                    if k not in ["_GLOBAL_", "_OTURUMLAR_"]:
+                    if k not in ["_GLOBAL_", "_OTURUMLAR_", "_DUELLOLAR_"]:
                         db[k]["cuzdan"]["nakit"] += hibe_miktari
                         dagitilan_kisi += 1
                 db_kaydet(db); st.success(f"Başarılı! {dagitilan_kisi} kişiye toplam {format_tr(dagitilan_kisi * hibe_miktari)} ₺ dağıtıldı.")
@@ -865,7 +867,8 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
     toplam_komisyon = db["_GLOBAL_"].get("toplam_komisyon", 0.0)
     st.markdown(f"<div class='bagis-panosu'>🌟 <b>Merkez Bankası Komisyon ve Likidasyon Havuzu:</b> <br><span class='bagis-sayi'>{format_tr(toplam_komisyon)} ₺</span></div>", unsafe_allow_html=True)
 
-    tab_portfoy, tab_banka, tab_liderlik, tab_sohbet = st.tabs(["💼 Portföyüm", "🏦 Banka (Faiz)", "🏆 Liderlik Tablosu", "💬 Borsa Meydanı"])
+    # YENİ ARENA SEKMESİ EKLENDİ
+    tab_portfoy, tab_banka, tab_arena, tab_liderlik, tab_sohbet = st.tabs(["💼 Portföyüm", "🏦 Banka (Faiz)", "⚔️ Arena (Düello)", "🏆 Liderlik Tablosu", "💬 Borsa Meydanı"])
     
     with tab_portfoy:
         
@@ -952,7 +955,6 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                 st.warning(f"Fiyat çekilemedi. Hata: {str(e)}")
 
             if kaldirac_orani == 1:
-                # SPOT İŞLEM 
                 islem_miktari = st.number_input("Adet / Miktar:", min_value=0.01, step=1.0)
                 limit_asildi = islem_miktari > max_islem_limiti
                 if limit_asildi: st.error(f"🚨 LİKİDİTE KISITI: En fazla {format_tr(max_islem_limiti)} adet alabilirsiniz!")
@@ -1027,7 +1029,6 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                         else: st.error("Yetersiz adet!")
             
             else:
-                # KALDIRAÇLI İŞLEM 
                 girilen_teminat = st.number_input("Bağlanacak Nakit Teminat (₺):", min_value=10.0, value=10.0, step=100.0)
                 islem_hacmi = girilen_teminat * kaldirac_orani
                 alinacak_adet = islem_hacmi / anlik_fiyat if anlik_fiyat > 0 else 0
@@ -1339,6 +1340,196 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
         if hasattr(st, "fragment"): canli_banka_motoru = st.fragment(run_every=2)(canli_banka_motoru)
         canli_banka_motoru()
 
+    # =========================================================================================
+    # YENİ ARENA MEYDAN OKUMA SİSTEMİ (24 SAATLİK DÜELLOLAR)
+    # =========================================================================================
+    with tab_arena:
+        st.subheader("⚔️ Borsa Arenası (1v1 Düello)")
+        st.write("24 saat sürecek amansız bir PNL (Kâr/Zarar) savaşı! Meydan oku veya katıl, başlangıç anından itibaren en çok kâr yüzdesini sen yap, masadaki tüm ödülü topla!")
+
+        def arena_motoru():
+            try:
+                db_arena = db_yukle()
+                cz_arena = db_arena[aktif_kullanici]["cuzdan"]
+                if "_DUELLOLAR_" not in db_arena: db_arena["_DUELLOLAR_"] = {}
+                duellolar = db_arena["_DUELLOLAR_"]
+                degisiklik_var = False
+
+                # YARDIMCI MOTOR: Kullanıcının Canlı Net Değerini (O anki Fiyatlarla) Hesaplar
+                def anlik_net_deger_bul(uid, f_sozluk):
+                    if uid not in db_arena: return 0.0
+                    cuz = db_arena[uid].get("cuzdan", {})
+                    toplam = cuz.get("nakit", 0.0)
+                    b_veri = cuz.get("banka", {"gecelik": {"miktar": 0.0}, "vadeli": []})
+                    toplam += b_veri["gecelik"]["miktar"] + sum([x["miktar"] for x in b_veri["vadeli"]])
+                    for be in cuz.get("bekleyen_emirler", []):
+                        if be["tip"] == "AL": toplam += be["baglanan_tutar"]
+                    for v_isim, v_veri in cuz.get("varliklar", {}).items():
+                        adet = v_veri if isinstance(v_veri, (int, float)) else v_veri.get("adet", 0)
+                        toplam += adet * f_sozluk.get(v_isim, 0.0)
+                    for be in cuz.get("bekleyen_emirler", []):
+                        if be["tip"] == "SAT": toplam += be["adet"] * f_sozluk.get(be["varlik"], 0.0)
+                    for poz in cuz.get("kaldiracli_islemler", []):
+                        g_fiyat = f_sozluk.get(poz["varlik"], poz["giris_fiyati"])
+                        pnl = (g_fiyat - poz["giris_fiyati"]) * poz["adet"] if poz["yon"] == "AL (Long)" else (poz["giris_fiyati"] - g_fiyat) * poz["adet"]
+                        toplam += max(0, poz["teminat"] + pnl)
+                    return toplam
+
+                # 1. BÖLÜM: BİTEN SAVAŞLARI TESPİT ET VE KAZANANA PARAYI VER
+                aktifler = {k: v for k, v in duellolar.items() if v["durum"] == "aktif"}
+                if aktifler:
+                    for d_id, d in list(aktifler.items()):
+                        if time.time() >= d["bitis_zamani"]:
+                            # Biten savaşlar için güncel fiyatları bir kez çek
+                            ilgili_varliklar = set()
+                            for uid in [d["olusturan_id"], d["katilan_id"]]:
+                                if uid in db_arena:
+                                    for vi in db_arena[uid]["cuzdan"].get("varliklar", {}): ilgili_varliklar.add(vi)
+                                    for pi in db_arena[uid]["cuzdan"].get("kaldiracli_islemler", []): ilgili_varliklar.add(pi["varlik"])
+                            
+                            fiyatlar = {}
+                            for vi in ilgili_varliklar:
+                                sembol = tum_varliklar_mega.get(vi)
+                                if sembol: fiyatlar[vi] = canli_fiyat_getir(sembol, usd_kuru if not sembol.endswith(".IS") else 1.0)
+                                
+                            net1 = anlik_net_deger_bul(d["olusturan_id"], fiyatlar)
+                            net2 = anlik_net_deger_bul(d["katilan_id"], fiyatlar)
+                            
+                            pnl1 = ((net1 - d["olusturan_baslangic"]) / d["olusturan_baslangic"]) * 100 if d["olusturan_baslangic"] > 0 else 0
+                            pnl2 = ((net2 - d["katilan_baslangic"]) / d["katilan_baslangic"]) * 100 if d["katilan_baslangic"] > 0 else 0
+                            
+                            toplam_odul = d["bahis_miktari"] * 2
+                            
+                            if pnl1 > pnl2: kazanan = d["olusturan_id"]
+                            elif pnl2 > pnl1: kazanan = d["katilan_id"]
+                            else: kazanan = "berabere"
+                            
+                            if kazanan == "berabere":
+                                db_arena[d["olusturan_id"]]["cuzdan"]["nakit"] += d["bahis_miktari"]
+                                db_arena[d["katilan_id"]]["cuzdan"]["nakit"] += d["bahis_miktari"]
+                            else:
+                                db_arena[kazanan]["cuzdan"]["nakit"] += toplam_odul
+                                
+                            d["durum"] = "bitti"
+                            d["kazanan_id"] = kazanan
+                            degisiklik_var = True
+                            
+                if degisiklik_var: db_kaydet(db_arena)
+
+                # 2. BÖLÜM: YENİ SAVAŞ AÇMA EKRANI
+                st.markdown("<div class='banka-kart'>", unsafe_allow_html=True)
+                st.markdown("### 🥊 Arenaya Çık")
+                bahis = st.number_input("Ortaya Konacak Tutar (₺)", min_value=100.0, step=1000.0, key="yeni_duello")
+                if st.button("⚔️ Savaş İlan Et (Tutar Kasadan Düşer)", use_container_width=True):
+                    if cz_arena["nakit"] >= bahis:
+                        cz_arena["nakit"] -= bahis
+                        db_arena["_DUELLOLAR_"][str(uuid.uuid4())] = {
+                            "olusturan_id": aktif_kullanici, "olusturan_nick": aktif_nickname,
+                            "bahis_miktari": float(bahis), "durum": "bekliyor",
+                            "olusturan_baslangic": 0.0, "katilan_id": None, "katilan_nick": None,
+                            "katilan_baslangic": 0.0, "baslangic_zamani": 0, "bitis_zamani": 0
+                        }
+                        db_kaydet(db_arena)
+                        st.success("Meydan okumanız arenaya asıldı, bir rakip bekleniyor!")
+                        time.sleep(1); st.rerun()
+                    else: st.error("Kasanda bu kadar nakit yok!")
+                st.markdown("</div>", unsafe_allow_html=True)
+
+                # 3. BÖLÜM: SAVAŞ LİSTELERİ
+                c_bekleyen, c_aktif = st.columns(2)
+                
+                with c_bekleyen:
+                    st.markdown("#### ⏳ Rakip Bekleyenler")
+                    bekleyenler = {k: v for k, v in duellolar.items() if v["durum"] == "bekliyor"}
+                    if not bekleyenler: st.caption("Şu an arenada bekleyen kimse yok.")
+                    for d_id, d in bekleyenler.items():
+                        st.markdown(f"<div style='background:rgba(15,23,42,0.8); border:1px solid rgba(255,215,0,0.3); padding:10px; border-radius:8px; margin-bottom:5px;'><b>{d['olusturan_nick']}</b> seni düelloya davet ediyor!<br><span style='color:#FFD700;'>Ortadaki Havuz: {format_tr(d['bahis_miktari']*2)} ₺</span></div>", unsafe_allow_html=True)
+                        if d["olusturan_id"] == aktif_kullanici:
+                            if st.button("❌ Geri Çekil (İptal)", key=f"iptal_{d_id}"):
+                                cz_arena["nakit"] += d["bahis_miktari"]
+                                del db_arena["_DUELLOLAR_"][d_id]
+                                db_kaydet(db_arena)
+                                st.rerun()
+                        else:
+                            if st.button("🔥 Meydan Oku (Kabul Et)", key=f"katil_{d_id}"):
+                                if cz_arena["nakit"] >= d["bahis_miktari"]:
+                                    with st.spinner("Savaş Meydanı Kuruluyor..."):
+                                        # Savaş başladığı an İKİ OYUNCUNUN DA anlık portföyünün SNAPSHOT'ı (Fotoğrafı) alınır.
+                                        ilgili_v = set()
+                                        for uid in [d["olusturan_id"], aktif_kullanici]:
+                                            if uid in db_arena:
+                                                for vi in db_arena[uid]["cuzdan"].get("varliklar", {}): ilgili_v.add(vi)
+                                                for pi in db_arena[uid]["cuzdan"].get("kaldiracli_islemler", []): ilgili_v.add(pi["varlik"])
+                                        fiy_sozluk = {}
+                                        for vi in ilgili_v:
+                                            sembol = tum_varliklar_mega.get(vi)
+                                            if sembol: fiy_sozluk[vi] = canli_fiyat_getir(sembol, usd_kuru if not sembol.endswith(".IS") else 1.0)
+                                        
+                                        net_1 = anlik_net_deger_bul(d["olusturan_id"], fiy_sozluk)
+                                        net_2 = anlik_net_deger_bul(aktif_kullanici, fiy_sozluk)
+                                        
+                                        cz_arena["nakit"] -= d["bahis_miktari"]
+                                        d["durum"] = "aktif"
+                                        d["katilan_id"] = aktif_kullanici
+                                        d["katilan_nick"] = aktif_nickname
+                                        d["olusturan_baslangic"] = net_1
+                                        d["katilan_baslangic"] = net_2
+                                        d["baslangic_zamani"] = time.time()
+                                        d["bitis_zamani"] = time.time() + (24 * 3600)
+                                        
+                                        db_kaydet(db_arena)
+                                        st.success("Düello Başladı! Orijinal net varlıklarınız kilitlendi.")
+                                        time.sleep(1); st.rerun()
+                                else: st.error("Giriş ücreti için kasanızda yeterli nakit yok.")
+
+                with c_aktif:
+                    st.markdown("#### ⚔️ Benim Aktif Savaşlarım")
+                    savaslarim = {k: v for k, v in duellolar.items() if v["durum"] == "aktif" and (v["olusturan_id"] == aktif_kullanici or v["katilan_id"] == aktif_kullanici)}
+                    if not savaslarim: st.caption("Şu an devam eden bir savaşın yok.")
+                    else:
+                        # Canlı PNL hesaplamak için fiyatları çek
+                        ilgili_canli = set()
+                        for d_id, d in savaslarim.items():
+                            for uid in [d["olusturan_id"], d["katilan_id"]]:
+                                if uid in db_arena:
+                                    for vi in db_arena[uid]["cuzdan"].get("varliklar", {}): ilgili_canli.add(vi)
+                                    for pi in db_arena[uid]["cuzdan"].get("kaldiracli_islemler", []): ilgili_canli.add(pi["varlik"])
+                        
+                        f_canli = {}
+                        for vi in ilgili_canli:
+                            sembol = tum_varliklar_mega.get(vi)
+                            if sembol: f_canli[vi] = canli_fiyat_getir(sembol, usd_kuru if not sembol.endswith(".IS") else 1.0)
+                            
+                        for d_id, d in savaslarim.items():
+                            net1 = anlik_net_deger_bul(d["olusturan_id"], f_canli)
+                            net2 = anlik_net_deger_bul(d["katilan_id"], f_canli)
+                            
+                            p1 = ((net1 - d["olusturan_baslangic"]) / d["olusturan_baslangic"]) * 100 if d["olusturan_baslangic"] > 0 else 0
+                            p2 = ((net2 - d["katilan_baslangic"]) / d["katilan_baslangic"]) * 100 if d["katilan_baslangic"] > 0 else 0
+                            
+                            k_saniye = d["bitis_zamani"] - time.time()
+                            saat = int(k_saniye // 3600)
+                            dakika = int((k_saniye % 3600) // 60)
+                            
+                            r1 = "#00ff00" if p1 >= 0 else "#ff4444"
+                            r2 = "#00ff00" if p2 >= 0 else "#ff4444"
+                            
+                            st.markdown(f"""
+                            <div style='background:rgba(0,0,0,0.5); border:1px solid rgba(0,255,255,0.4); padding:15px; border-radius:10px; margin-bottom:10px;'>
+                                <div style='text-align:center; color:#FFD700; font-weight:bold; margin-bottom:5px; font-size:18px;'>Masa: {format_tr(d['bahis_miktari']*2)} ₺</div>
+                                <div style='display:flex; justify-content:space-between; font-size:16px;'>
+                                    <div style='text-align:center;'><b>{d['olusturan_nick']}</b><br><span style='color:{r1}; font-weight:bold;'>%{format_tr(p1)}</span></div>
+                                    <div style='color:#aaa; font-size:12px; margin-top:5px; text-align:center;'>⏳ Kalan Süre<br><b>{saat}s {dakika}d</b></div>
+                                    <div style='text-align:center;'><b>{d['katilan_nick']}</b><br><span style='color:{r2}; font-weight:bold;'>%{format_tr(p2)}</span></div>
+                                </div>
+                            </div>
+                            """, unsafe_allow_html=True)
+            except Exception as e:
+                pass
+
+        if hasattr(st, "fragment"): arena_motoru = st.fragment(run_every=5)(arena_motoru)
+        arena_motoru()
+
     with tab_liderlik:
         st.subheader("🏆 En İyi Fon Yöneticileri")
         st.write("Sistemdeki tüm yatırımcıların başarımları ve portföy büyüklükleri.")
@@ -1348,7 +1539,7 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                 db_canli = db_yukle()
                 tum_kullanici_varliklari = set()
                 for k, v in db_canli.items():
-                    if k not in ["_GLOBAL_", "_OTURUMLAR_"] and not v.get("is_admin", False) and "cuzdan" in v:
+                    if k not in ["_GLOBAL_", "_OTURUMLAR_", "_DUELLOLAR_"] and not v.get("is_admin", False) and "cuzdan" in v:
                         for varlik_ismi in v["cuzdan"].get("varliklar", {}): tum_kullanici_varliklari.add(varlik_ismi)
                         for poz in v["cuzdan"].get("kaldiracli_islemler", []): tum_kullanici_varliklari.add(poz["varlik"])
                 
@@ -1361,7 +1552,7 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                 
                 liderlik_listesi = []
                 for k, v in db_canli.items():
-                    if k not in ["_GLOBAL_", "_OTURUMLAR_"] and not v.get("is_admin", False) and "cuzdan" in v:
+                    if k not in ["_GLOBAL_", "_OTURUMLAR_", "_DUELLOLAR_"] and not v.get("is_admin", False) and "cuzdan" in v:
                         
                         if time.time() - v.get("kayit_tarihi", time.time()) > 86400:
                             rozet_ver(db_canli, k, "⏳", "Kıdemli Kurt")
