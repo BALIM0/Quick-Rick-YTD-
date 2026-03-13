@@ -867,7 +867,6 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
     toplam_komisyon = db["_GLOBAL_"].get("toplam_komisyon", 0.0)
     st.markdown(f"<div class='bagis-panosu'>🌟 <b>Merkez Bankası Komisyon ve Likidasyon Havuzu:</b> <br><span class='bagis-sayi'>{format_tr(toplam_komisyon)} ₺</span></div>", unsafe_allow_html=True)
 
-    # YENİ ARENA SEKMESİ EKLENDİ
     tab_portfoy, tab_banka, tab_arena, tab_liderlik, tab_sohbet = st.tabs(["💼 Portföyüm", "🏦 Banka (Faiz)", "⚔️ Arena (Düello)", "🏆 Liderlik Tablosu", "💬 Borsa Meydanı"])
     
     with tab_portfoy:
@@ -1380,7 +1379,6 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                 if aktifler:
                     for d_id, d in list(aktifler.items()):
                         if time.time() >= d["bitis_zamani"]:
-                            # Biten savaşlar için güncel fiyatları bir kez çek
                             ilgili_varliklar = set()
                             for uid in [d["olusturan_id"], d["katilan_id"]]:
                                 if uid in db_arena:
@@ -1454,7 +1452,11 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                             if st.button("🔥 Meydan Oku (Kabul Et)", key=f"katil_{d_id}"):
                                 if cz_arena["nakit"] >= d["bahis_miktari"]:
                                     with st.spinner("Savaş Meydanı Kuruluyor..."):
-                                        # Savaş başladığı an İKİ OYUNCUNUN DA anlık portföyünün SNAPSHOT'ı (Fotoğrafı) alınır.
+                                        
+                                        # YENİ EKLENEN/DÜZELTİLEN MANTIK: 
+                                        # Önce katılım ücretini düş, sonra Snapshot (Ekran Görüntüsü) al ki %0'dan başlasın!
+                                        cz_arena["nakit"] -= d["bahis_miktari"]
+                                        
                                         ilgili_v = set()
                                         for uid in [d["olusturan_id"], aktif_kullanici]:
                                             if uid in db_arena:
@@ -1468,7 +1470,6 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                                         net_1 = anlik_net_deger_bul(d["olusturan_id"], fiy_sozluk)
                                         net_2 = anlik_net_deger_bul(aktif_kullanici, fiy_sozluk)
                                         
-                                        cz_arena["nakit"] -= d["bahis_miktari"]
                                         d["durum"] = "aktif"
                                         d["katilan_id"] = aktif_kullanici
                                         d["katilan_nick"] = aktif_nickname
@@ -1478,7 +1479,7 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                                         d["bitis_zamani"] = time.time() + (24 * 3600)
                                         
                                         db_kaydet(db_arena)
-                                        st.success("Düello Başladı! Orijinal net varlıklarınız kilitlendi.")
+                                        st.success("Düello Başladı! Anlık net varlıklarınız kilitlendi ve her iki taraf da %0 ile savaşa başlıyor.")
                                         time.sleep(1); st.rerun()
                                 else: st.error("Giriş ücreti için kasanızda yeterli nakit yok.")
 
@@ -1487,7 +1488,6 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                     savaslarim = {k: v for k, v in duellolar.items() if v["durum"] == "aktif" and (v["olusturan_id"] == aktif_kullanici or v["katilan_id"] == aktif_kullanici)}
                     if not savaslarim: st.caption("Şu an devam eden bir savaşın yok.")
                     else:
-                        # Canlı PNL hesaplamak için fiyatları çek
                         ilgili_canli = set()
                         for d_id, d in savaslarim.items():
                             for uid in [d["olusturan_id"], d["katilan_id"]]:
@@ -1514,13 +1514,17 @@ elif uygulama_modu == "💼 Sanal Portföy (Oyun)":
                             r1 = "#00ff00" if p1 >= 0 else "#ff4444"
                             r2 = "#00ff00" if p2 >= 0 else "#ff4444"
                             
+                            # Görsellik için artı işareti ekleme
+                            p1_str = f"+%{format_tr(p1)}" if p1 > 0 else f"%{format_tr(p1)}"
+                            p2_str = f"+%{format_tr(p2)}" if p2 > 0 else f"%{format_tr(p2)}"
+                            
                             st.markdown(f"""
                             <div style='background:rgba(0,0,0,0.5); border:1px solid rgba(0,255,255,0.4); padding:15px; border-radius:10px; margin-bottom:10px;'>
                                 <div style='text-align:center; color:#FFD700; font-weight:bold; margin-bottom:5px; font-size:18px;'>Masa: {format_tr(d['bahis_miktari']*2)} ₺</div>
                                 <div style='display:flex; justify-content:space-between; font-size:16px;'>
-                                    <div style='text-align:center;'><b>{d['olusturan_nick']}</b><br><span style='color:{r1}; font-weight:bold;'>%{format_tr(p1)}</span></div>
+                                    <div style='text-align:center;'><b>{d['olusturan_nick']}</b><br><span style='color:{r1}; font-weight:bold;'>{p1_str}</span></div>
                                     <div style='color:#aaa; font-size:12px; margin-top:5px; text-align:center;'>⏳ Kalan Süre<br><b>{saat}s {dakika}d</b></div>
-                                    <div style='text-align:center;'><b>{d['katilan_nick']}</b><br><span style='color:{r2}; font-weight:bold;'>%{format_tr(p2)}</span></div>
+                                    <div style='text-align:center;'><b>{d['katilan_nick']}</b><br><span style='color:{r2}; font-weight:bold;'>{p2_str}</span></div>
                                 </div>
                             </div>
                             """, unsafe_allow_html=True)
