@@ -1706,37 +1706,38 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                         rozet_str = "".join(v.get("rozetler", []))
                         isim_ve_rozet = f"{gosterilecek_isim} {rozet_str}"
                         
-                        # Çift rozeti önlemek için "Saf İsim" saklıyoruz
                         liderlik_listesi.append({"id": k, "Kullanici": isim_ve_rozet, "Saf_Isim": gosterilecek_isim, "Toplam": kullanici_toplam})
                 
                 liderlik_listesi = sorted(liderlik_listesi, key=lambda x: x["Toplam"], reverse=True)
                 
                 st.caption("🔍 Profili detaylı incelemek için listedeki 'ℹ️ İncele' butonuna tıklayın.")
                 
-                # YENİ DÜZELTME: Checkbox'lı dataframe yerine çok daha şık, özel tasarım Sütun Listesi (Simüle Tablo)
-                c_h1, c_h2, c_h3, c_h4 = st.columns([1.5, 1, 4, 3])
-                c_h1.markdown("<span style='color:#aaa; font-size:13px; font-weight:bold;'>PROFİL</span>", unsafe_allow_html=True)
-                c_h2.markdown("<span style='color:#aaa; font-size:13px; font-weight:bold;'>SIRA</span>", unsafe_allow_html=True)
-                c_h3.markdown("<span style='color:#aaa; font-size:13px; font-weight:bold;'>YATIRIMCI & BAŞARIMLAR</span>", unsafe_allow_html=True)
-                c_h4.markdown("<span style='color:#aaa; font-size:13px; font-weight:bold;'>KASA BÜYÜKLÜĞÜ</span>", unsafe_allow_html=True)
-                st.markdown("<hr style='margin-top:5px; margin-bottom:10px; border-color:rgba(0,255,255,0.3);'>", unsafe_allow_html=True)
+                # YENİ DÜZELTME: Liderlik Tablosunu Scroll (Kaydırılabilir) Kutu İçine Alıyoruz
+                liderlik_container = st.container(height=450)
+                with liderlik_container:
+                    c_h1, c_h2, c_h3, c_h4 = st.columns([1.5, 1, 4, 3])
+                    c_h1.markdown("<span style='color:#aaa; font-size:13px; font-weight:bold;'>PROFİL</span>", unsafe_allow_html=True)
+                    c_h2.markdown("<span style='color:#aaa; font-size:13px; font-weight:bold;'>SIRA</span>", unsafe_allow_html=True)
+                    c_h3.markdown("<span style='color:#aaa; font-size:13px; font-weight:bold;'>YATIRIMCI & BAŞARIMLAR</span>", unsafe_allow_html=True)
+                    c_h4.markdown("<span style='color:#aaa; font-size:13px; font-weight:bold;'>KASA BÜYÜKLÜĞÜ</span>", unsafe_allow_html=True)
+                    st.markdown("<hr style='margin-top:5px; margin-bottom:10px; border-color:rgba(0,255,255,0.3);'>", unsafe_allow_html=True)
 
-                for i, user_data in enumerate(liderlik_listesi[:50]): # İlk 50 Yatırımcıyı göster
-                    int_str = format_tr(user_data["Toplam"]).split(",")[0]
-                    maskeli_bakiye = int_str[0] + "".join(["*" if c.isdigit() else c for c in int_str[1:]]) + " ₺"
-                    sira = "🥇 1" if i == 0 else "🥈 2" if i == 1 else "🥉 3" if i == 2 else str(i + 1)
-                    
-                    c_r1, c_r2, c_r3, c_r4 = st.columns([1.5, 1, 4, 3])
-                    with c_r1:
-                        if st.button("ℹ️ İncele", key=f"btn_prof_{user_data['id']}", use_container_width=True):
-                            profil_goster(user_data['id'], user_data['Saf_Isim'], db_canli[user_data['id']])
-                    with c_r2:
-                        st.markdown(f"<div style='margin-top:12px; font-weight:bold;'>{sira}</div>", unsafe_allow_html=True)
-                    with c_r3:
-                        st.markdown(f"<div style='margin-top:12px; font-weight:bold; color:white;'>{user_data['Kullanici']}</div>", unsafe_allow_html=True)
-                    with c_r4:
-                        st.markdown(f"<div style='margin-top:12px; font-weight:bold; color:#00ff00;'>{maskeli_bakiye}</div>", unsafe_allow_html=True)
-                    st.markdown("<hr style='margin-top:0px; margin-bottom:5px; border-color:rgba(255,255,255,0.05);'>", unsafe_allow_html=True)
+                    for i, user_data in enumerate(liderlik_listesi[:50]):
+                        int_str = format_tr(user_data["Toplam"]).split(",")[0]
+                        maskeli_bakiye = int_str[0] + "".join(["*" if c.isdigit() else c for c in int_str[1:]]) + " ₺"
+                        sira = "🥇 1" if i == 0 else "🥈 2" if i == 1 else "🥉 3" if i == 2 else str(i + 1)
+                        
+                        c_r1, c_r2, c_r3, c_r4 = st.columns([1.5, 1, 4, 3])
+                        with c_r1:
+                            if st.button("ℹ️ İncele", key=f"btn_prof_{user_data['id']}", use_container_width=True):
+                                profil_goster(user_data['id'], user_data['Saf_Isim'], db_canli[user_data['id']])
+                        with c_r2:
+                            st.markdown(f"<div style='margin-top:12px; font-weight:bold;'>{sira}</div>", unsafe_allow_html=True)
+                        with c_r3:
+                            st.markdown(f"<div style='margin-top:12px; font-weight:bold; color:white;'>{user_data['Kullanici']}</div>", unsafe_allow_html=True)
+                        with c_r4:
+                            st.markdown(f"<div style='margin-top:12px; font-weight:bold; color:#00ff00;'>{maskeli_bakiye}</div>", unsafe_allow_html=True)
+                        st.markdown("<hr style='margin-top:0px; margin-bottom:5px; border-color:rgba(255,255,255,0.05);'>", unsafe_allow_html=True)
                 
                 st.markdown("<br>", unsafe_allow_html=True)
                 with st.expander("💡 Başarım Rozetleri Ne Anlama Geliyor?"):
