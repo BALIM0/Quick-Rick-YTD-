@@ -72,14 +72,21 @@ def db_yukle():
             degisiklik_var = True
             
         if ADMIN_ID not in veri:
-            veri[ADMIN_ID] = {"sifre": sifre_sifrele(ADMIN_PASS), "nickname": "👑 SİSTEM YÖNETİCİSİ", "son_isim_degistirme": 0, "kayit_tarihi": time.time(), "rozetler": [], "istatistikler": {"islem_sayisi": 0, "odenen_komisyon": 0.0}, "cuzdan": {"nakit": 1000000.0, "varliklar": {}, "kaldiracli_islemler": [], "izleme_listesi": ["Türk Hava Yolları", "Bitcoin", "Altın (Ons)", "NVIDIA", "Apple"], "bekleyen_emirler": [], "banka": {"gecelik": {"miktar": 0.0, "son_guncelleme": time.time()}, "vadeli": []}}, "is_admin": True}
+            veri[ADMIN_ID] = {"sifre": sifre_sifrele(ADMIN_PASS), "nickname": "👑 SİSTEM YÖNETİCİSİ", "son_isim_degistirme": 0, "kayit_tarihi": time.time(), "rozetler": [], "istatistikler": {"islem_sayisi": 0, "odenen_komisyon": 0.0, "en_yuksek_kar": 0.0, "favori_varliklar": {}, "duello_karnesi": {"katildigi": 0, "kazandigi": 0}}, "cuzdan": {"nakit": 1000000.0, "varliklar": {}, "kaldiracli_islemler": [], "izleme_listesi": ["Türk Hava Yolları", "Bitcoin", "Altın (Ons)", "NVIDIA", "Apple"], "bekleyen_emirler": [], "banka": {"gecelik": {"miktar": 0.0, "son_guncelleme": time.time()}, "vadeli": []}}, "is_admin": True}
             degisiklik_var = True
             
         for k, v in veri.items():
             if k not in ["_GLOBAL_", "_OTURUMLAR_", "_DUELLOLAR_"]:
                 if "rozetler" not in v: v["rozetler"] = []
                 if "kayit_tarihi" not in v: v["kayit_tarihi"] = time.time()
-                if "istatistikler" not in v: v["istatistikler"] = {"islem_sayisi": 0, "odenen_komisyon": 0.0}
+                
+                # YENİ EKLENEN CASUSLUK İSTATİSTİKLERİ
+                if "istatistikler" not in v: 
+                    v["istatistikler"] = {"islem_sayisi": 0, "odenen_komisyon": 0.0, "en_yuksek_kar": 0.0, "favori_varliklar": {}, "duello_karnesi": {"katildigi": 0, "kazandigi": 0}}
+                else:
+                    if "en_yuksek_kar" not in v["istatistikler"]: v["istatistikler"]["en_yuksek_kar"] = 0.0
+                    if "favori_varliklar" not in v["istatistikler"]: v["istatistikler"]["favori_varliklar"] = {}
+                    if "duello_karnesi" not in v["istatistikler"]: v["istatistikler"]["duello_karnesi"] = {"katildigi": 0, "kazandigi": 0}
                 
                 if "cuzdan" not in v: v["cuzdan"] = {}
                 cuz = v["cuzdan"]
@@ -253,7 +260,7 @@ if st.session_state.aktif_kullanici is None:
             elif k_kullanici.lower() == k_nickname.lower(): st.error("🛡️ Güvenlik İhlali: Kullanıcı adı ile Takma Ad aynı olamaz.")
             elif len(k_kullanici) < 3 or len(k_sifre) < 4 or len(k_nickname) < 3: st.warning("Kullanıcı adı/Takma ad en az 3, şifre en az 4 karakter olmalıdır.")
             else:
-                db[k_kullanici] = {"sifre": sifre_sifrele(k_sifre), "nickname": k_nickname, "son_isim_degistirme": 0, "kayit_tarihi": time.time(), "rozetler": [], "istatistikler": {"islem_sayisi": 0, "odenen_komisyon": 0.0}, "cuzdan": {"nakit": 1000000.0, "varliklar": {}, "kaldiracli_islemler": [], "izleme_listesi": ["Türk Hava Yolları", "Bitcoin", "Altın (Ons)", "NVIDIA", "Apple"], "bekleyen_emirler": [], "banka": {"gecelik": {"miktar": 0.0, "son_guncelleme": time.time()}, "vadeli": []}}, "is_admin": False}
+                db[k_kullanici] = {"sifre": sifre_sifrele(k_sifre), "nickname": k_nickname, "son_isim_degistirme": 0, "kayit_tarihi": time.time(), "rozetler": [], "istatistikler": {"islem_sayisi": 0, "odenen_komisyon": 0.0, "en_yuksek_kar": 0.0, "favori_varliklar": {}, "duello_karnesi": {"katildigi": 0, "kazandigi": 0}}, "cuzdan": {"nakit": 1000000.0, "varliklar": {}, "kaldiracli_islemler": [], "izleme_listesi": ["Türk Hava Yolları", "Bitcoin", "Altın (Ons)", "NVIDIA", "Apple"], "bekleyen_emirler": [], "banka": {"gecelik": {"miktar": 0.0, "son_guncelleme": time.time()}, "vadeli": []}}, "is_admin": False}
                 db_kaydet(db)
                 st.success("✅ Hesabınız oluşturuldu! Şimdi 'Giriş Yap' sekmesinden giriş yapabilirsiniz.")
     st.stop()
@@ -864,6 +871,35 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
     if global_duyuru: st.error(f"📢 **SİSTEM DUYURUSU:** {global_duyuru}")
     st.caption(f"👤 Fon Yöneticisi: **{aktif_nickname.upper()}** | 💵 Güncel Kur (USD/TRY): **{format_tr(usd_kuru)} ₺**")
 
+    # YENİ EKLENEN CASUSLUK POP-UP FONKSİYONU
+    @st.dialog("🕵️ Casusluk: Oyuncu Karnesi")
+    def profil_goster(profil_id, profil_nick, profil_veri):
+        istatistikler = profil_veri.get("istatistikler", {})
+        en_yuksek_kar = istatistikler.get("en_yuksek_kar", 0.0)
+        dk = istatistikler.get("duello_karnesi", {"katildigi": 0, "kazandigi": 0})
+        fav = istatistikler.get("favori_varliklar", {})
+        
+        win_rate = (dk["kazandigi"] / dk["katildigi"] * 100) if dk["katildigi"] > 0 else 0
+        sirali_fav = sorted(fav.items(), key=lambda x: x[1], reverse=True)[:3]
+        
+        rozetler_str = "".join(profil_veri.get("rozetler", []))
+        
+        st.markdown(f"<h2 style='text-align:center; color:#FFD700; margin-bottom:5px;'>{profil_nick}</h2>", unsafe_allow_html=True)
+        if rozetler_str:
+            st.markdown(f"<div style='text-align:center; font-size:24px; margin-bottom:20px;'>{rozetler_str}</div>", unsafe_allow_html=True)
+            
+        c1, c2 = st.columns(2)
+        c1.metric("💰 En Büyük Vurgun", f"+{format_tr(en_yuksek_kar)} ₺")
+        c2.metric("⚔️ Arena Başarısı", f"%{format_tr(win_rate, 0)}", f"{dk['kazandigi']} Galibiyet / {dk['katildigi']} Maç")
+        
+        st.markdown("---")
+        st.markdown("#### 🔥 En Çok İşlem Yaptığı Varlıklar")
+        if sirali_fav:
+            for v_isim, count in sirali_fav:
+                st.markdown(f"- **{v_isim}** ({count} İşlem)")
+        else:
+            st.caption("Henüz yeterli işlem geçmişi yok.")
+
     toplam_komisyon = db["_GLOBAL_"].get("toplam_komisyon", 0.0)
     st.markdown(f"<div class='bagis-panosu'>🌟 <b>Merkez Bankası Komisyon ve Likidasyon Havuzu:</b> <br><span class='bagis-sayi'>{format_tr(toplam_komisyon)} ₺</span></div>", unsafe_allow_html=True)
 
@@ -977,8 +1013,11 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                 buton_metni = "🕒 Bekleyen Emir Gir" if "Limit" in emir_turu else "⚡ Siparişi Anında Onayla"
                 if st.button(buton_metni, use_container_width=True) and anlik_fiyat > 0 and not limit_asildi:
                     
+                    # ARKA PLAN CASUSLUK KAYITLARI (İşlem Sayısı, Komisyon ve Favori Varlıklar)
                     db[aktif_kullanici]["istatistikler"]["islem_sayisi"] += 1
                     db[aktif_kullanici]["istatistikler"]["odenen_komisyon"] += komisyon_tutari
+                    db[aktif_kullanici]["istatistikler"].setdefault("favori_varliklar", {})
+                    db[aktif_kullanici]["istatistikler"]["favori_varliklar"][secili_varlik] = db[aktif_kullanici]["istatistikler"]["favori_varliklar"].get(secili_varlik, 0) + 1
                     
                     if islem_tipi == "AL":
                         if cuzdan["nakit"] >= toplam_islem_maliyeti:
@@ -1007,6 +1046,11 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                             
                             if "Limit" not in emir_turu:
                                 net_kar = toplam_islem_getirisi - (mevcut_veri["maliyet"] * islem_miktari)
+                                
+                                # ARKA PLAN CASUSLUK KAYITLARI (En Yüksek Kar Tespiti)
+                                if net_kar > db[aktif_kullanici]["istatistikler"].get("en_yuksek_kar", 0.0):
+                                    db[aktif_kullanici]["istatistikler"]["en_yuksek_kar"] = net_kar
+                                    
                                 if net_kar >= 10000: rozet_ver(db, aktif_kullanici, "🐋", "Mavi Balina")
 
                             if yeni_adet <= 0.000001: del cuzdan["varliklar"][secili_varlik]
@@ -1049,8 +1093,11 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                         cuzdan["nakit"] -= gerekli_nakit
                         db["_GLOBAL_"]["toplam_komisyon"] += komisyon_tutari
                         
+                        # ARKA PLAN CASUSLUK KAYITLARI
                         db[aktif_kullanici]["istatistikler"]["islem_sayisi"] += 1
                         db[aktif_kullanici]["istatistikler"]["odenen_komisyon"] += komisyon_tutari
+                        db[aktif_kullanici]["istatistikler"].setdefault("favori_varliklar", {})
+                        db[aktif_kullanici]["istatistikler"]["favori_varliklar"][secili_varlik] = db[aktif_kullanici]["istatistikler"]["favori_varliklar"].get(secili_varlik, 0) + 1
                         
                         yeni_pozisyon = {
                             "id": str(uuid.uuid4()), "varlik": secili_varlik, "yon": islem_tipi, "kaldirac": kaldirac_orani,
@@ -1108,6 +1155,12 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                             elif emir["tip"] == "SAT" and anlik >= emir["hedef_fiyat"]:
                                 cz_canli["nakit"] += emir["beklenen_getiri"]
                                 db_canli["_GLOBAL_"]["toplam_komisyon"] += emir["komisyon"]
+                                
+                                # ARKA PLAN CASUSLUK KAYITLARI (Limit Emir Satışından Rekor Kar)
+                                net_k = emir["beklenen_getiri"] - (emir.get("maliyet_rezerv", 0.0) * emir["adet"])
+                                if net_k > db_canli[aktif_kullanici]["istatistikler"].get("en_yuksek_kar", 0.0):
+                                    db_canli[aktif_kullanici]["istatistikler"]["en_yuksek_kar"] = net_k
+                                    
                                 mesaj_listesi.append(f"🔔 {emir['varlik']} hedefe ulaştı! SPOT SATIŞ yapıldı.")
                                 degisiklik_var = True
                             else: kalan_emirler.append(emir)
@@ -1173,7 +1226,6 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                             roe_yuzde = (pnl / poz["teminat"]) * 100
                             net_nakit_karsiligi = max(0, poz["teminat"] + pnl)
                             
-                            # YENİ DÜZELTME: Markdown Kod Bloğu Hatasını Önleyen Tek Satır Yapısı
                             kaldirac_html = (
                                 f"<div class='kaldirac-kart {'long' if poz['yon'] == 'AL (Long)' else 'short'}'>"
                                 f"<div style='display:flex; justify-content:space-between; margin-bottom:10px;'>"
@@ -1201,6 +1253,11 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                                 db_canli["_GLOBAL_"]["toplam_komisyon"] += kapanis_komisyonu
                                 db_canli[aktif_kullanici]["istatistikler"]["odenen_komisyon"] += kapanis_komisyonu
                                 db_canli[aktif_kullanici]["istatistikler"]["islem_sayisi"] += 1
+                                
+                                # ARKA PLAN CASUSLUK KAYITLARI (Kaldıraçtan Rekor Kar)
+                                if pnl > db_canli[aktif_kullanici]["istatistikler"].get("en_yuksek_kar", 0.0):
+                                    db_canli[aktif_kullanici]["istatistikler"]["en_yuksek_kar"] = pnl
+                                
                                 cz_canli["kaldiracli_islemler"] = [p for p in cz_canli["kaldiracli_islemler"] if p["id"] != poz["id"]]
                                 
                                 if pnl >= 10000: rozet_ver(db_canli, aktif_kullanici, "🐋", "Mavi Balina")
@@ -1218,7 +1275,6 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                     st.subheader("🕒 Bekleyen Spot Emirlerim")
                     if cz_canli.get("bekleyen_emirler"):
                         for emir in cz_canli["bekleyen_emirler"]:
-                            # DÜZELTME: Emirler için de aynı zırh uygulandı
                             emir_html = (
                                 f"<div style='background-color:rgba(15, 23, 42, 0.8); border:1px solid rgba(0,255,255,0.2); padding:10px; border-radius:10px; margin-bottom:10px; backdrop-filter:blur(5px);'>"
                                 f"<b>{emir['varlik']}</b> | {'🟢 AL' if emir['tip'] == 'AL' else '🔴 SAT'} ({format_tr(emir['adet'])}) | Hedef: <b>{format_tr(emir['hedef_fiyat'])} ₺</b></div>"
@@ -1318,8 +1374,6 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                         kalan_saat = int((kalan_saniye % (24*3600)) // 3600)
                         kalan_dk = int((kalan_saniye % 3600) // 60)
                         beklenen_getiri = v["miktar"] * v["faiz_orani"] * (v["gun"] / 365)
-                        
-                        # DÜZELTME: Mevduat HTML'i tek satıra indirgendi
                         mevduat_html = (
                             f"<div style='background:rgba(255,255,255,0.05); padding:10px; border-radius:8px; margin-bottom:5px; display:flex; justify-content:space-between; align-items:center;'>"
                             f"<div><b>{format_tr(v['miktar'])} ₺</b> ({v['gun']} Günlük)<br><span style='color:#00ff00; font-size:12px;'>Vade Sonu Getirisi: +{format_tr(beklenen_getiri)} ₺</span><br>"
@@ -1340,9 +1394,6 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
         if hasattr(st, "fragment"): canli_banka_motoru = st.fragment(run_every=2)(canli_banka_motoru)
         canli_banka_motoru()
 
-    # =========================================================================================
-    # YENİ ARENA MEYDAN OKUMA SİSTEMİ
-    # =========================================================================================
     with tab_arena:
         st.subheader("⚔️ Borsa Arenası (1v1 Düello)")
         st.write("24 saat sürecek amansız bir PNL (Kâr/Zarar) savaşı! Meydan oku veya katıl, başlangıç anından itibaren en çok kâr yüzdesini sen yap, masadaki tüm ödülü topla!")
@@ -1406,6 +1457,14 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                                 db_arena[d["katilan_id"]]["cuzdan"]["nakit"] += d["bahis_miktari"]
                             else:
                                 db_arena[kazanan]["cuzdan"]["nakit"] += toplam_odul
+                            
+                            # ARKA PLAN CASUSLUK KAYITLARI (Düello Karnesi Güncelleme)
+                            for uid in [d["olusturan_id"], d["katilan_id"]]:
+                                if uid in db_arena:
+                                    db_arena[uid]["istatistikler"].setdefault("duello_karnesi", {"katildigi": 0, "kazandigi": 0})
+                                    db_arena[uid]["istatistikler"]["duello_karnesi"]["katildigi"] += 1
+                            if kazanan != "berabere" and kazanan in db_arena:
+                                db_arena[kazanan]["istatistikler"]["duello_karnesi"]["kazandigi"] += 1
                                 
                             d["durum"] = "bitti"
                             d["kazanan_id"] = kazanan
@@ -1472,7 +1531,6 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                         else:
                             etiket = "<span style='background:#1e293b; color:#aaa; padding:2px 6px; border-radius:4px; font-size:11px;'>📣 Açık Meydan Okuma</span>"
                             
-                        # DÜZELTME: Markdown Kod Bloğu Hatasını Önleyen Tek Satır Yapısı
                         bekleyen_html = (
                             f"<div style='background:rgba(15,23,42,0.8); border:1px solid rgba(255,215,0,0.3); padding:10px; border-radius:8px; margin-bottom:5px;'>"
                             f"{etiket}<br><b>{d['olusturan_nick']}</b> seni düelloya davet ediyor!<br>"
@@ -1589,7 +1647,6 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                                 border_style = "border:1px solid rgba(255,255,255,0.1); opacity:0.8;"
                                 baslik_etiketi = ""
 
-                            # DÜZELTME: Markdown Kod Bloğu Hatasını Önleyen Tek Satır Yapısı (Tüm boşluklar temizlendi)
                             html_str_arena = (
                                 f"<div style='background:rgba(0,0,0,0.5); {border_style} padding:15px; border-radius:10px; margin-bottom:10px;'>"
                                 f"{baslik_etiketi}"
@@ -1688,6 +1745,21 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
             
         if hasattr(st, "fragment"): liderlik_tablosunu_ciz = st.fragment(run_every=30)(liderlik_tablosunu_ciz)
         liderlik_tablosunu_ciz()
+        
+        # YENİ EKLENEN: CASUSLUK (PROFİL İNCELEME) EKRANI
+        st.markdown("---")
+        st.subheader("🕵️ Oyuncu Profillerini İncele (Casusluk)")
+        st.write("Rakiplerinin en çok oynadığı hisseleri ve düello başarılarını incele.")
+        
+        db_guncel = db_yukle()
+        kullanicilar_liste = {k: v.get("nickname", k) for k, v in db_guncel.items() if k not in ["_GLOBAL_", "_OTURUMLAR_", "_DUELLOLAR_"] and not v.get("is_admin", False)}
+        
+        c_secim, c_buton = st.columns([3, 1])
+        with c_secim:
+            secilen_profil_id = st.selectbox("İncelemek istediğiniz oyuncuyu seçin:", list(kullanicilar_liste.keys()), format_func=lambda x: kullanicilar_liste[x], label_visibility="collapsed")
+        with c_buton:
+            if st.button("🔍 Profili Görüntüle", use_container_width=True) and secilen_profil_id:
+                profil_goster(secilen_profil_id, kullanicilar_liste[secilen_profil_id], db_guncel[secilen_profil_id])
 
     with tab_sohbet:
         st.subheader("💬 Borsa Meydanı")
