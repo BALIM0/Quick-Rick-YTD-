@@ -158,7 +158,6 @@ st.markdown("""
     .sohbet-mesaji { background-color: rgba(15, 23, 42, 0.4); padding: 10px; border-radius: 8px; margin-bottom: 8px; border-left: 3px solid #334155; } .sohbet-mesaji.admin { border-left: 3px solid #FFD700; background-color: rgba(255, 215, 0, 0.05); }
     .kaldirac-kart { background-color: rgba(15, 23, 42, 0.8); border: 1px solid rgba(0, 255, 255, 0.2); padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: all 0.3s;} .kaldirac-kart:hover { transform: scale(1.02); } .kaldirac-kart.long { border-left: 5px solid #00ff00; } .kaldirac-kart.short { border-left: 5px solid #ff4444; }
     .banka-kart { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border: 1px solid rgba(255, 215, 0, 0.3); padding: 20px; border-radius: 12px; margin-bottom: 15px; } .pulsing-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background-color: #00ff00; animation: pulse 2s infinite; margin-right: 5px; } @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(0, 255, 0, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(0, 255, 0, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 255, 0, 0); } }
-    .liderlik-tablosu { width: 100%; border-collapse: collapse; margin-top: 10px; background-color: rgba(15,23,42,0.6); border-radius: 10px; overflow: hidden; } .liderlik-tablosu th { color: #aaa; text-transform: uppercase; font-size: 12px; padding: 15px; border-bottom: 1px solid rgba(0,255,255,0.3); text-align: left; background-color: rgba(0,0,0,0.4); } .liderlik-tablosu td { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); font-weight: 600; color: white; } .liderlik-tablosu tr:hover { background-color: rgba(255,255,255,0.05); } .rozet { cursor: help; font-size: 18px; margin-left: 6px; display: inline-block; transition: transform 0.2s; } .rozet:hover { transform: scale(1.4); }
     .online-user-box { display: flex; align-items: center; padding: 8px 10px; margin-bottom: 5px; background: rgba(255,255,255,0.03); border-radius: 8px; border-left: 2px solid #334155; } .online-user-box.admin-online { border-left: 2px solid #FFD700; background: rgba(255,215,0,0.05); }
 </style>
 """, unsafe_allow_html=True)
@@ -1707,44 +1706,37 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                         rozet_str = "".join(v.get("rozetler", []))
                         isim_ve_rozet = f"{gosterilecek_isim} {rozet_str}"
                         
-                        # DÜZELTME: Çift rozet sorununu önlemek için Saf İsim değişkeni
+                        # Çift rozeti önlemek için "Saf İsim" saklıyoruz
                         liderlik_listesi.append({"id": k, "Kullanici": isim_ve_rozet, "Saf_Isim": gosterilecek_isim, "Toplam": kullanici_toplam})
                 
                 liderlik_listesi = sorted(liderlik_listesi, key=lambda x: x["Toplam"], reverse=True)
                 
-                gosterim_listesi = []
-                for i, user_data in enumerate(liderlik_listesi):
+                st.caption("🔍 Profili detaylı incelemek için listedeki 'ℹ️ İncele' butonuna tıklayın.")
+                
+                # YENİ DÜZELTME: Checkbox'lı dataframe yerine çok daha şık, özel tasarım Sütun Listesi (Simüle Tablo)
+                c_h1, c_h2, c_h3, c_h4 = st.columns([1.5, 1, 4, 3])
+                c_h1.markdown("<span style='color:#aaa; font-size:13px; font-weight:bold;'>PROFİL</span>", unsafe_allow_html=True)
+                c_h2.markdown("<span style='color:#aaa; font-size:13px; font-weight:bold;'>SIRA</span>", unsafe_allow_html=True)
+                c_h3.markdown("<span style='color:#aaa; font-size:13px; font-weight:bold;'>YATIRIMCI & BAŞARIMLAR</span>", unsafe_allow_html=True)
+                c_h4.markdown("<span style='color:#aaa; font-size:13px; font-weight:bold;'>KASA BÜYÜKLÜĞÜ</span>", unsafe_allow_html=True)
+                st.markdown("<hr style='margin-top:5px; margin-bottom:10px; border-color:rgba(0,255,255,0.3);'>", unsafe_allow_html=True)
+
+                for i, user_data in enumerate(liderlik_listesi[:50]): # İlk 50 Yatırımcıyı göster
                     int_str = format_tr(user_data["Toplam"]).split(",")[0]
                     maskeli_bakiye = int_str[0] + "".join(["*" if c.isdigit() else c for c in int_str[1:]]) + " ₺"
                     sira = "🥇 1" if i == 0 else "🥈 2" if i == 1 else "🥉 3" if i == 2 else str(i + 1)
                     
-                    gosterim_listesi.append({
-                        "Profil": "ℹ️",  # YENİ EKLENEN İKON SÜTUNU
-                        "Sıra": sira, 
-                        "Yatırımcı & Başarımlar": user_data["Kullanici"], 
-                        "Gizli Kasa Büyüklüğü": maskeli_bakiye
-                    })
-                    
-                st.caption("🔍 Profili detaylı incelemek için tablodan bir oyuncunun üzerine tıklayabilirsiniz.")
-                
-                df_gosterim = pd.DataFrame(gosterim_listesi)
-                try:
-                    secim_event = st.dataframe(
-                        df_gosterim,
-                        hide_index=True,
-                        use_container_width=True,
-                        on_select="rerun",
-                        selection_mode="single-row"
-                    )
-                    
-                    if hasattr(secim_event, 'selection') and len(secim_event.selection.rows) > 0:
-                        secilen_index = secim_event.selection.rows[0]
-                        secilen_oyuncu_id = liderlik_listesi[secilen_index]["id"]
-                        secilen_oyuncu_nick = liderlik_listesi[secilen_index]["Saf_Isim"] # DÜZELTME: Çift rozet engeli
-                        profil_goster(secilen_oyuncu_id, secilen_oyuncu_nick, db_canli[secilen_oyuncu_id])
-                        
-                except TypeError:
-                    st.dataframe(df_gosterim.style.hide(axis="index"), use_container_width=True)
+                    c_r1, c_r2, c_r3, c_r4 = st.columns([1.5, 1, 4, 3])
+                    with c_r1:
+                        if st.button("ℹ️ İncele", key=f"btn_prof_{user_data['id']}", use_container_width=True):
+                            profil_goster(user_data['id'], user_data['Saf_Isim'], db_canli[user_data['id']])
+                    with c_r2:
+                        st.markdown(f"<div style='margin-top:12px; font-weight:bold;'>{sira}</div>", unsafe_allow_html=True)
+                    with c_r3:
+                        st.markdown(f"<div style='margin-top:12px; font-weight:bold; color:white;'>{user_data['Kullanici']}</div>", unsafe_allow_html=True)
+                    with c_r4:
+                        st.markdown(f"<div style='margin-top:12px; font-weight:bold; color:#00ff00;'>{maskeli_bakiye}</div>", unsafe_allow_html=True)
+                    st.markdown("<hr style='margin-top:0px; margin-bottom:5px; border-color:rgba(255,255,255,0.05);'>", unsafe_allow_html=True)
                 
                 st.markdown("<br>", unsafe_allow_html=True)
                 with st.expander("💡 Başarım Rozetleri Ne Anlama Geliyor?"):
@@ -1769,7 +1761,6 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
             secilen_profil_id = st.selectbox("İncelemek istediğiniz oyuncuyu seçin:", list(kullanicilar_liste.keys()), format_func=lambda x: kullanicilar_liste[x], label_visibility="collapsed")
         with c_buton:
             if st.button("🔍 Profili Görüntüle", use_container_width=True) and secilen_profil_id:
-                # DÜZELTME: Çift rozet sorununu aşağıdaki manuel aramada da çözdük
                 saf_isim_arama = kullanicilar_liste[secilen_profil_id]
                 profil_goster(secilen_profil_id, saf_isim_arama, db_guncel[secilen_profil_id])
 
