@@ -1707,8 +1707,8 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                         rozet_str = "".join(v.get("rozetler", []))
                         isim_ve_rozet = f"{gosterilecek_isim} {rozet_str}"
                         
-                        # YENİ EKLENEN: Gizli Kullanıcı ID'sini listede tutuyoruz (Tıklama için gerekli)
-                        liderlik_listesi.append({"id": k, "Kullanici": isim_ve_rozet, "Toplam": kullanici_toplam})
+                        # DÜZELTME: Çift rozet sorununu önlemek için Saf İsim değişkeni
+                        liderlik_listesi.append({"id": k, "Kullanici": isim_ve_rozet, "Saf_Isim": gosterilecek_isim, "Toplam": kullanici_toplam})
                 
                 liderlik_listesi = sorted(liderlik_listesi, key=lambda x: x["Toplam"], reverse=True)
                 
@@ -1719,17 +1719,16 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                     sira = "🥇 1" if i == 0 else "🥈 2" if i == 1 else "🥉 3" if i == 2 else str(i + 1)
                     
                     gosterim_listesi.append({
+                        "Profil": "ℹ️",  # YENİ EKLENEN İKON SÜTUNU
                         "Sıra": sira, 
                         "Yatırımcı & Başarımlar": user_data["Kullanici"], 
                         "Gizli Kasa Büyüklüğü": maskeli_bakiye
                     })
                     
-                # YENİ EKLENEN: Liderlik Tablosunun Tıklanabilir (Seçilebilir) Hale Getirilmesi
                 st.caption("🔍 Profili detaylı incelemek için tablodan bir oyuncunun üzerine tıklayabilirsiniz.")
                 
                 df_gosterim = pd.DataFrame(gosterim_listesi)
                 try:
-                    # Yeni Streamlit sürümlerinde satır seçmeyi açıyoruz
                     secim_event = st.dataframe(
                         df_gosterim,
                         hide_index=True,
@@ -1738,15 +1737,13 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                         selection_mode="single-row"
                     )
                     
-                    # Eğer bir satıra tıklandıysa, o satırdaki oyuncunun profilini aç
                     if hasattr(secim_event, 'selection') and len(secim_event.selection.rows) > 0:
                         secilen_index = secim_event.selection.rows[0]
                         secilen_oyuncu_id = liderlik_listesi[secilen_index]["id"]
-                        secilen_oyuncu_nick = liderlik_listesi[secilen_index]["Kullanici"]
+                        secilen_oyuncu_nick = liderlik_listesi[secilen_index]["Saf_Isim"] # DÜZELTME: Çift rozet engeli
                         profil_goster(secilen_oyuncu_id, secilen_oyuncu_nick, db_canli[secilen_oyuncu_id])
                         
                 except TypeError:
-                    # Eski bir Streamlit sürümü kullanılıyorsa hata vermemesi için güvenli zırh
                     st.dataframe(df_gosterim.style.hide(axis="index"), use_container_width=True)
                 
                 st.markdown("<br>", unsafe_allow_html=True)
@@ -1760,7 +1757,6 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
         if hasattr(st, "fragment"): liderlik_tablosunu_ciz = st.fragment(run_every=30)(liderlik_tablosunu_ciz)
         liderlik_tablosunu_ciz()
         
-        # Casusluk yazısı temizlendi.
         st.markdown("---")
         st.subheader("🕵️ Oyuncu Profillerini İncele")
         st.write("Rakiplerinin en çok oynadığı hisseleri ve düello başarılarını incele.")
@@ -1773,7 +1769,9 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
             secilen_profil_id = st.selectbox("İncelemek istediğiniz oyuncuyu seçin:", list(kullanicilar_liste.keys()), format_func=lambda x: kullanicilar_liste[x], label_visibility="collapsed")
         with c_buton:
             if st.button("🔍 Profili Görüntüle", use_container_width=True) and secilen_profil_id:
-                profil_goster(secilen_profil_id, kullanicilar_liste[secilen_profil_id], db_guncel[secilen_profil_id])
+                # DÜZELTME: Çift rozet sorununu aşağıdaki manuel aramada da çözdük
+                saf_isim_arama = kullanicilar_liste[secilen_profil_id]
+                profil_goster(secilen_profil_id, saf_isim_arama, db_guncel[secilen_profil_id])
 
     with tab_sohbet:
         st.subheader("💬 Borsa Meydanı")
