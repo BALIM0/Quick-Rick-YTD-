@@ -79,6 +79,10 @@ def db_yukle():
         if "_GLOBAL_" not in veri: 
             veri["_GLOBAL_"] = {"toplam_komisyon": 0.0, "duyuru": "", "sohbet": []}
             degisiklik_var = True
+        else:
+            if "sohbet" not in veri["_GLOBAL_"]: 
+                veri["_GLOBAL_"]["sohbet"] = []
+                degisiklik_var = True
                 
         if "_OTURUMLAR_" not in veri: 
             veri["_OTURUMLAR_"] = {}
@@ -177,6 +181,7 @@ st.markdown("""
     .sohbet-mesaji { background-color: rgba(15, 23, 42, 0.4); padding: 10px; border-radius: 8px; margin-bottom: 8px; border-left: 3px solid #334155; } .sohbet-mesaji.admin { border-left: 3px solid #FFD700; background-color: rgba(255, 215, 0, 0.05); }
     .kaldirac-kart { background-color: rgba(15, 23, 42, 0.8); border: 1px solid rgba(0, 255, 255, 0.2); padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: all 0.3s;} .kaldirac-kart:hover { transform: scale(1.02); } .kaldirac-kart.long { border-left: 5px solid #00ff00; } .kaldirac-kart.short { border-left: 5px solid #ff4444; }
     .banka-kart { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border: 1px solid rgba(255, 215, 0, 0.3); padding: 20px; border-radius: 12px; margin-bottom: 15px; } .pulsing-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background-color: #00ff00; animation: pulse 2s infinite; margin-right: 5px; } @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(0, 255, 0, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(0, 255, 0, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 255, 0, 0); } }
+    .liderlik-tablosu { width: 100%; border-collapse: collapse; margin-top: 10px; background-color: rgba(15,23,42,0.6); border-radius: 10px; overflow: hidden; } .liderlik-tablosu th { color: #aaa; text-transform: uppercase; font-size: 12px; padding: 15px; border-bottom: 1px solid rgba(0,255,255,0.3); text-align: left; background-color: rgba(0,0,0,0.4); } .liderlik-tablosu td { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); font-weight: 600; color: white; } .liderlik-tablosu tr:hover { background-color: rgba(255,255,255,0.05); } .rozet { cursor: help; font-size: 18px; margin-left: 6px; display: inline-block; transition: transform 0.2s; } .rozet:hover { transform: scale(1.4); }
     .online-user-box { display: flex; align-items: center; padding: 8px 10px; margin-bottom: 5px; background: rgba(255,255,255,0.03); border-radius: 8px; border-left: 2px solid #334155; } .online-user-box.admin-online { border-left: 2px solid #FFD700; background: rgba(255,215,0,0.05); }
 </style>
 """, unsafe_allow_html=True)
@@ -297,9 +302,6 @@ if st.session_state.aktif_kullanici is None:
 
 aktif_kullanici = st.session_state.aktif_kullanici
 
-# =========================================================================================
-# MEVCUT OYUNCULAR İÇİN TEK SEFERLİK AVATAR SEÇİM EKRANI
-# =========================================================================================
 if aktif_kullanici and db[aktif_kullanici].get("avatar", "Secilmedi") == "Secilmedi":
     st.title("🎭 Karakter Seçimi")
     st.info("👋 Sisteme yepyeni karakterler eklendi! Oyuna devam etmeden önce bir kereliğine avatarını seçmelisin.")
@@ -394,7 +396,6 @@ with st.sidebar.expander(f"🟢 Çevrimiçi Tüccarlar ({len(online_user_ids)})"
                 nick = db[uid].get("nickname", uid)
                 rozetler_str = "".join(db[uid].get("rozetler", []))
                 
-                # YENİ EKLENEN: Çevrimiçi oyuncuların avatarı
                 av_key = db[uid].get("avatar", "Varsayılan")
                 av_url = AVATARLAR.get(av_key, AVATARLAR["Varsayılan"])
                 
@@ -929,7 +930,6 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
     @st.dialog("🕵️ Oyuncu Karnesi")
     def profil_goster(profil_id, profil_nick, profil_veri):
         
-        # YENİ EKLENEN: Profil fotoğrafının üstte gösterilmesi
         av_url = AVATARLAR.get(profil_veri.get("avatar", "Varsayılan"), AVATARLAR["Varsayılan"])
         st.markdown(f"<div style='text-align:center;'><img src='{av_url}' style='width:120px; height:120px; border-radius:50%; object-fit:cover; border:3px solid #FFD700; box-shadow: 0 0 15px rgba(255,215,0,0.4);'></div>", unsafe_allow_html=True)
         
@@ -1687,7 +1687,6 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                             
                             benim_savasim_mi = (d["olusturan_id"] == aktif_kullanici or d["katilan_id"] == aktif_kullanici)
                             
-                            # YENİ EKLENEN: Arenada Avatar Görüntüleme Sistemi
                             av1_key = db_arena.get(d["olusturan_id"], {}).get("avatar", "Varsayılan")
                             av2_key = db_arena.get(d["katilan_id"], {}).get("avatar", "Varsayılan")
                             
@@ -1799,7 +1798,6 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                         maskeli_bakiye = int_str[0] + "".join(["*" if c.isdigit() else c for c in int_str[1:]]) + " ₺"
                         sira = "🥇 1" if i == 0 else "🥈 2" if i == 1 else "🥉 3" if i == 2 else str(i + 1)
                         
-                        # YENİ EKLENEN: Liderlik tablosunda kullanıcının avatarını gösterme
                         av_key = db_canli[user_data['id']].get("avatar", "Varsayılan")
                         av_url = AVATARLAR.get(av_key, AVATARLAR["Varsayılan"])
                         
@@ -1850,6 +1848,13 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
             mesajlar = db_anlik["_GLOBAL_"].get("sohbet", [])
             chat_container = st.container(height=450)
             
+            # YENİ DÜZELTME: Bütün oyuncuların güncel avatarlarını tespit eden Ajan Haritası
+            guncel_avatarlar = {}
+            for k, v in db_anlik.items():
+                if k not in ["_GLOBAL_", "_OTURUMLAR_", "_DUELLOLAR_"] and isinstance(v, dict):
+                    guncel_avatarlar[v.get("nickname")] = v.get("avatar", "Varsayılan")
+            guncel_avatarlar["👑 SİSTEM YÖNETİCİSİ"] = db_anlik.get(ADMIN_ID, {}).get("avatar", "Varsayılan")
+            
             with chat_container:
                 if not mesajlar:
                     st.caption("Burası çok sessiz... İlk mesajı sen gönder!")
@@ -1857,14 +1862,29 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                     for msg in mesajlar:
                         zaman_str = pd.to_datetime(msg["time"], unit="s").tz_localize("UTC").tz_convert("Europe/Istanbul").strftime("%H:%M")
                         
-                        # YENİ EKLENEN: Sohbetteki Avatar Görüntüleri
-                        av_key = msg.get("avatar", "Varsayılan")
+                        gonderen_isim = msg.get("user", "Bilinmeyen")
+                        
+                        # Güncel haritadan avatarı çek, eğer adam silinmişse mesaja kayıtlı olana bak.
+                        av_key = guncel_avatarlar.get(gonderen_isim, msg.get("avatar", "Varsayılan"))
                         av_url = AVATARLAR.get(av_key, AVATARLAR["Varsayılan"])
                         
-                        if msg["user"] == "👑 SİSTEM YÖNETİCİSİ":
-                            st.markdown(f"<div class='sohbet-mesaji admin'><img src='{av_url}' style='width:25px; height:25px; border-radius:50%; object-fit:cover; vertical-align:middle; margin-right:8px;'><b><span style='color:#FFD700'>{msg['user']}</span></b> <span style='font-size:11px; color:#aaa;'>🕒 {zaman_str}</span><br><span style='color:#FFD700'>{msg['text']}</span></div>", unsafe_allow_html=True)
+                        # YENİ DÜZELTME: Markdown Kayma Hatasını Önleyen Flexbox Yapısı
+                        if gonderen_isim == "👑 SİSTEM YÖNETİCİSİ":
+                            sohbet_html = (
+                                f"<div class='sohbet-mesaji admin' style='display:flex; align-items:flex-start;'>"
+                                f"<img src='{av_url}' style='width:32px; height:32px; border-radius:50%; object-fit:cover; margin-right:10px; border:2px solid #FFD700;'>"
+                                f"<div><b><span style='color:#FFD700'>{gonderen_isim}</span></b> <span style='font-size:11px; color:#aaa;'>🕒 {zaman_str}</span><br>"
+                                f"<span style='color:#FFD700; font-size:14px;'>{msg['text']}</span></div></div>"
+                            )
+                            st.markdown(sohbet_html, unsafe_allow_html=True)
                         else:
-                            st.markdown(f"<div class='sohbet-mesaji'><img src='{av_url}' style='width:25px; height:25px; border-radius:50%; object-fit:cover; vertical-align:middle; margin-right:8px;'><b><span style='color:#00ffff'>{msg['user']}</span></b> <span style='font-size:11px; color:#aaa;'>🕒 {zaman_str}</span><br>{msg['text']}</div>", unsafe_allow_html=True)
+                            sohbet_html = (
+                                f"<div class='sohbet-mesaji' style='display:flex; align-items:flex-start;'>"
+                                f"<img src='{av_url}' style='width:32px; height:32px; border-radius:50%; object-fit:cover; margin-right:10px; border:1px solid rgba(0,255,255,0.4);'>"
+                                f"<div><b><span style='color:#00ffff'>{gonderen_isim}</span></b> <span style='font-size:11px; color:#aaa;'>🕒 {zaman_str}</span><br>"
+                                f"<span style='color:#e2e8f0; font-size:14px;'>{msg['text']}</span></div></div>"
+                            )
+                            st.markdown(sohbet_html, unsafe_allow_html=True)
 
         if hasattr(st, "fragment"): sohbet_kutusunu_ciz = st.fragment(run_every=2)(sohbet_kutusunu_ciz)
         else:
@@ -1878,7 +1898,7 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                 "user": aktif_nickname, 
                 "text": yeni_mesaj[:250], 
                 "time": time.time(),
-                "avatar": db_guncel[aktif_kullanici].get("avatar", "Varsayılan") # Avatarı mesaja iliştir
+                "avatar": db_guncel[aktif_kullanici].get("avatar", "Varsayılan")
             })
             db_guncel["_GLOBAL_"]["sohbet"] = db_guncel["_GLOBAL_"]["sohbet"][-50:]
             db_kaydet(db_guncel)
