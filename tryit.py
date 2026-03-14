@@ -23,6 +23,27 @@ except ImportError:
 st.set_page_config(page_title="Portföy Analiz ve Yönetimi", layout="wide", page_icon="📊")
 
 # =========================================================================================
+# 🎭 AVATAR KÜTÜPHANESİ
+# =========================================================================================
+AVATARLAR = {
+    "Secilmedi": "https://cdn-icons-png.flaticon.com/512/149/149071.png",
+    "Varsayılan": "https://cdn-icons-png.flaticon.com/512/149/149071.png",
+    "Leo (Para Avcısı)": "https://episodedergi.com/wp-content/uploads/2024/02/Para-Avcisi.jpeg",
+    "Jeff Bezos": "https://i.imgflip.com/212ph6.jpg?a492552",
+    "Harvey Specter": "https://i.redd.it/harvey-specter-is-really-handsome-v0-gysy7blhhkud1.jpg?width=736&format=pjpg&auto=webp&s=f23f39e1fc52ad27637ae2e11ce2d2df7865043c",
+    "The Mask": "https://i.redd.it/9ipl7sx9o0r31.jpg",
+    "Süleyman Çakır": "https://img.memurlar.net/galeri/1201/f586f663-7610-e311-a396-14feb5cc1801.jpg?width=800",
+    "Pembe": "https://cf.kizlarsoruyor.com/q13723734/a7f810af-671d-4ef8-9f33-5111ca4067fd.jpg",
+    "Ziyaa": "https://daragacisanat.com/wp-content/uploads/2020/10/sakir.png?w=600",
+    "Sid": "https://i.pinimg.com/474x/3c/d0/2a/3cd02a732787e5dc9bf957f970d5c78b.jpg",
+    "Barney Stinson": "https://i.hizliresim.com/ey34p0.png",
+    "Bilemedik 1": "https://img-s2.onedio.com/id-5e765d4578ae45ab2b8578e1/rev-0/w-600/h-337/f-jpg/s-b79bd07b726549bae83dc84d5e9ae6c5e107b63a.jpg",
+    "Bilemedik 2": "https://img-s1.onedio.com/id-5e766715d64a625e2d0670fe/rev-0/w-600/h-304/f-jpg/s-8684248c95bc72fe0336c129122cd0e4cfbec0d2.jpg",
+    "Havuçlu Anne": "https://image.posta.com.tr/i/posta/75/750x0/616f748045d2a0b25401e983.jpg",
+    "Hıyarcı": "https://i.medyafaresi.com/2/1280/720/storage/old/files/2018/11/18/891156/891156.jpg"
+}
+
+# =========================================================================================
 # 🔥 FIREBASE VERİTABANI BAĞLANTISI 
 # =========================================================================================
 if not firebase_admin._apps:
@@ -58,10 +79,6 @@ def db_yukle():
         if "_GLOBAL_" not in veri: 
             veri["_GLOBAL_"] = {"toplam_komisyon": 0.0, "duyuru": "", "sohbet": []}
             degisiklik_var = True
-        else:
-            if "sohbet" not in veri["_GLOBAL_"]: 
-                veri["_GLOBAL_"]["sohbet"] = []
-                degisiklik_var = True
                 
         if "_OTURUMLAR_" not in veri: 
             veri["_OTURUMLAR_"] = {}
@@ -72,13 +89,15 @@ def db_yukle():
             degisiklik_var = True
             
         if ADMIN_ID not in veri:
-            veri[ADMIN_ID] = {"sifre": sifre_sifrele(ADMIN_PASS), "nickname": "👑 SİSTEM YÖNETİCİSİ", "son_isim_degistirme": 0, "kayit_tarihi": time.time(), "rozetler": [], "istatistikler": {"islem_sayisi": 0, "odenen_komisyon": 0.0, "en_yuksek_kar": 0.0, "favori_varliklar": {}, "duello_karnesi": {"katildigi": 0, "kazandigi": 0}}, "cuzdan": {"nakit": 1000000.0, "varliklar": {}, "kaldiracli_islemler": [], "izleme_listesi": ["Türk Hava Yolları", "Bitcoin", "Altın (Ons)", "NVIDIA", "Apple"], "bekleyen_emirler": [], "banka": {"gecelik": {"miktar": 0.0, "son_guncelleme": time.time()}, "vadeli": []}}, "is_admin": True}
+            veri[ADMIN_ID] = {"sifre": sifre_sifrele(ADMIN_PASS), "nickname": "👑 SİSTEM YÖNETİCİSİ", "avatar": "Secilmedi", "son_isim_degistirme": 0, "kayit_tarihi": time.time(), "rozetler": [], "istatistikler": {"islem_sayisi": 0, "odenen_komisyon": 0.0, "en_yuksek_kar": 0.0, "favori_varliklar": {}, "duello_karnesi": {"katildigi": 0, "kazandigi": 0}}, "cuzdan": {"nakit": 1000000.0, "varliklar": {}, "kaldiracli_islemler": [], "izleme_listesi": ["Türk Hava Yolları", "Bitcoin", "Altın (Ons)", "NVIDIA", "Apple"], "bekleyen_emirler": [], "banka": {"gecelik": {"miktar": 0.0, "son_guncelleme": time.time()}, "vadeli": []}}, "is_admin": True}
             degisiklik_var = True
             
         for k, v in veri.items():
             if k not in ["_GLOBAL_", "_OTURUMLAR_", "_DUELLOLAR_"]:
                 if "rozetler" not in v: v["rozetler"] = []
                 if "kayit_tarihi" not in v: v["kayit_tarihi"] = time.time()
+                
+                if "avatar" not in v: v["avatar"] = "Secilmedi"
                 
                 if "istatistikler" not in v: 
                     v["istatistikler"] = {"islem_sayisi": 0, "odenen_komisyon": 0.0, "en_yuksek_kar": 0.0, "favori_varliklar": {}, "duello_karnesi": {"katildigi": 0, "kazandigi": 0}}
@@ -245,12 +264,19 @@ if st.session_state.aktif_kullanici is None:
                 st.rerun()
             else: st.error("Kullanıcı adı veya şifre hatalı!")
     with tab_kayit:
-        with st.form("kayit_formu"):
-            k_kullanici = st.text_input("Sisteme Giriş İçin Kullanıcı Adı (Kimse Görmeyecek)")
-            k_nickname = st.text_input("Liderlik Tablosu İçin Takma Ad (Nickname - Herkes Görecek)")
-            k_sifre = st.text_input("Yeni Şifre", type="password")
-            kayit_buton = st.form_submit_button("Hesap Oluştur", use_container_width=True)
-        if kayit_buton:
+        k_kullanici = st.text_input("Sisteme Giriş İçin Kullanıcı Adı (Kimse Görmeyecek)", key="reg_usr")
+        k_nickname = st.text_input("Liderlik Tablosu İçin Takma Ad (Nickname - Herkes Görecek)", key="reg_nick")
+        
+        st.markdown("<b>Karakterini (Avatar) Seç:</b>", unsafe_allow_html=True)
+        c_av1, c_av2 = st.columns([3, 1])
+        with c_av1:
+            k_avatar = st.selectbox("Avatar Listesi", [k for k in AVATARLAR.keys() if k not in ["Secilmedi", "Varsayılan"]], label_visibility="collapsed")
+        with c_av2:
+            st.markdown(f"<div style='text-align:right;'><img src='{AVATARLAR[k_avatar]}' style='width:70px; height:70px; border-radius:50%; object-fit:cover; border:2px solid #00ffff;'></div>", unsafe_allow_html=True)
+            
+        k_sifre = st.text_input("Yeni Şifre", type="password", key="reg_pass")
+        
+        if st.button("Hesap Oluştur", use_container_width=True):
             sistem_idleri = ["_GLOBAL_", "_OTURUMLAR_", "_DUELLOLAR_"]
             mevcut_nicknameler = [v.get("nickname", "").lower() for k, v in db.items() if k not in sistem_idleri]
             if k_kullanici in db or k_kullanici in sistem_idleri: st.error("❌ Bu Gizli Kullanıcı Adı zaten alınmış!")
@@ -258,12 +284,38 @@ if st.session_state.aktif_kullanici is None:
             elif k_kullanici.lower() == k_nickname.lower(): st.error("🛡️ Güvenlik İhlali: Kullanıcı adı ile Takma Ad aynı olamaz.")
             elif len(k_kullanici) < 3 or len(k_sifre) < 4 or len(k_nickname) < 3: st.warning("Kullanıcı adı/Takma ad en az 3, şifre en az 4 karakter olmalıdır.")
             else:
-                db[k_kullanici] = {"sifre": sifre_sifrele(k_sifre), "nickname": k_nickname, "son_isim_degistirme": 0, "kayit_tarihi": time.time(), "rozetler": [], "istatistikler": {"islem_sayisi": 0, "odenen_komisyon": 0.0, "en_yuksek_kar": 0.0, "favori_varliklar": {}, "duello_karnesi": {"katildigi": 0, "kazandigi": 0}}, "cuzdan": {"nakit": 1000000.0, "varliklar": {}, "kaldiracli_islemler": [], "izleme_listesi": ["Türk Hava Yolları", "Bitcoin", "Altın (Ons)", "NVIDIA", "Apple"], "bekleyen_emirler": [], "banka": {"gecelik": {"miktar": 0.0, "son_guncelleme": time.time()}, "vadeli": []}}, "is_admin": False}
+                db[k_kullanici] = {
+                    "sifre": sifre_sifrele(k_sifre), "nickname": k_nickname, "avatar": k_avatar, 
+                    "son_isim_degistirme": 0, "kayit_tarihi": time.time(), "rozetler": [], 
+                    "istatistikler": {"islem_sayisi": 0, "odenen_komisyon": 0.0, "en_yuksek_kar": 0.0, "favori_varliklar": {}, "duello_karnesi": {"katildigi": 0, "kazandigi": 0}}, 
+                    "cuzdan": {"nakit": 1000000.0, "varliklar": {}, "kaldiracli_islemler": [], "izleme_listesi": ["Türk Hava Yolları", "Bitcoin", "Altın (Ons)", "NVIDIA", "Apple"], "bekleyen_emirler": [], "banka": {"gecelik": {"miktar": 0.0, "son_guncelleme": time.time()}, "vadeli": []}}, 
+                    "is_admin": False
+                }
                 db_kaydet(db)
                 st.success("✅ Hesabınız oluşturuldu! Şimdi 'Giriş Yap' sekmesinden giriş yapabilirsiniz.")
     st.stop()
 
 aktif_kullanici = st.session_state.aktif_kullanici
+
+# =========================================================================================
+# MEVCUT OYUNCULAR İÇİN TEK SEFERLİK AVATAR SEÇİM EKRANI
+# =========================================================================================
+if aktif_kullanici and db[aktif_kullanici].get("avatar", "Secilmedi") == "Secilmedi":
+    st.title("🎭 Karakter Seçimi")
+    st.info("👋 Sisteme yepyeni karakterler eklendi! Oyuna devam etmeden önce bir kereliğine avatarını seçmelisin.")
+    
+    c_av_1, c_av_2 = st.columns([3, 1])
+    with c_av_1:
+        yeni_av = st.selectbox("Avatarını Seç:", [k for k in AVATARLAR.keys() if k not in ["Secilmedi", "Varsayılan"]])
+    with c_av_2:
+        st.markdown(f"<div style='text-align:center;'><img src='{AVATARLAR[yeni_av]}' style='width:120px; height:120px; border-radius:15px; object-fit:cover; border:2px solid #FFD700;'></div>", unsafe_allow_html=True)
+        
+    st.markdown("<br>", unsafe_allow_html=True)
+    if st.button("✅ Karakterimi Onayla ve Oyuna Başla", use_container_width=True):
+        db[aktif_kullanici]["avatar"] = yeni_av
+        db_kaydet(db)
+        st.rerun()
+    st.stop()
 
 if "cuzdan" not in db[aktif_kullanici]: db[aktif_kullanici]["cuzdan"] = {}
 cuzdan = db[aktif_kullanici]["cuzdan"]
@@ -341,10 +393,15 @@ with st.sidebar.expander(f"🟢 Çevrimiçi Tüccarlar ({len(online_user_ids)})"
             if uid in db and uid not in ["_GLOBAL_", "_OTURUMLAR_", "_DUELLOLAR_"]:
                 nick = db[uid].get("nickname", uid)
                 rozetler_str = "".join(db[uid].get("rozetler", []))
+                
+                # YENİ EKLENEN: Çevrimiçi oyuncuların avatarı
+                av_key = db[uid].get("avatar", "Varsayılan")
+                av_url = AVATARLAR.get(av_key, AVATARLAR["Varsayılan"])
+                
                 if db[uid].get("is_admin", False):
-                    st.markdown(f"<div class='online-user-box admin-online'><span class='pulsing-dot'></span> <span><b style='color:#FFD700;'>👑 {nick}</b> {rozetler_str}</span></div>", unsafe_allow_html=True)
+                    st.markdown(f"<div class='online-user-box admin-online'><img src='{av_url}' style='width:20px; height:20px; border-radius:50%; object-fit:cover; margin-right:8px;'> <span><b style='color:#FFD700;'>👑 {nick}</b> {rozetler_str}</span></div>", unsafe_allow_html=True)
                 else:
-                    st.markdown(f"<div class='online-user-box'><span class='pulsing-dot'></span> <span><b style='color:white;'>{nick}</b> {rozetler_str}</span></div>", unsafe_allow_html=True)
+                    st.markdown(f"<div class='online-user-box'><img src='{av_url}' style='width:20px; height:20px; border-radius:50%; object-fit:cover; margin-right:8px;'> <span><b style='color:white;'>{nick}</b> {rozetler_str}</span></div>", unsafe_allow_html=True)
 
 st.sidebar.markdown("---")
 
@@ -871,6 +928,11 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
 
     @st.dialog("🕵️ Oyuncu Karnesi")
     def profil_goster(profil_id, profil_nick, profil_veri):
+        
+        # YENİ EKLENEN: Profil fotoğrafının üstte gösterilmesi
+        av_url = AVATARLAR.get(profil_veri.get("avatar", "Varsayılan"), AVATARLAR["Varsayılan"])
+        st.markdown(f"<div style='text-align:center;'><img src='{av_url}' style='width:120px; height:120px; border-radius:50%; object-fit:cover; border:3px solid #FFD700; box-shadow: 0 0 15px rgba(255,215,0,0.4);'></div>", unsafe_allow_html=True)
+        
         istatistikler = profil_veri.get("istatistikler", {})
         en_yuksek_kar = istatistikler.get("en_yuksek_kar", 0.0)
         dk = istatistikler.get("duello_karnesi", {"katildigi": 0, "kazandigi": 0})
@@ -881,13 +943,13 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
         
         rozetler_str = "".join(profil_veri.get("rozetler", []))
         
-        st.markdown(f"<h2 style='text-align:center; color:#FFD700; margin-bottom:5px;'>{profil_nick}</h2>", unsafe_allow_html=True)
+        st.markdown(f"<h2 style='text-align:center; color:#FFD700; margin-top:10px; margin-bottom:5px;'>{profil_nick}</h2>", unsafe_allow_html=True)
         if rozetler_str:
             st.markdown(f"<div style='text-align:center; font-size:24px; margin-bottom:20px;'>{rozetler_str}</div>", unsafe_allow_html=True)
             
         c1, c2 = st.columns(2)
         c1.metric("💰 En Büyük Vurgun", f"+{format_tr(en_yuksek_kar)} ₺")
-        c2.metric("⚔️ Arena Başarısı", f"%{format_tr(win_rate, 0)}", f"{dk['kazandigi']} Galibiyet / {dk['katildigi']} Düello")
+        c2.metric("⚔️ Arena Başarısı", f"%{format_tr(win_rate, 0)}", f"{dk['kazandigi']} Galibiyet / {dk['katildigi']} Maç")
         
         st.markdown("---")
         st.markdown("#### 🔥 En Çok İşlem Yaptığı Varlıklar")
@@ -1625,6 +1687,13 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                             
                             benim_savasim_mi = (d["olusturan_id"] == aktif_kullanici or d["katilan_id"] == aktif_kullanici)
                             
+                            # YENİ EKLENEN: Arenada Avatar Görüntüleme Sistemi
+                            av1_key = db_arena.get(d["olusturan_id"], {}).get("avatar", "Varsayılan")
+                            av2_key = db_arena.get(d["katilan_id"], {}).get("avatar", "Varsayılan")
+                            
+                            av1_url = AVATARLAR.get(av1_key, AVATARLAR["Varsayılan"])
+                            av2_url = AVATARLAR.get(av2_key, AVATARLAR["Varsayılan"])
+                            
                             if benim_savasim_mi:
                                 isim1 = d['olusturan_nick']
                                 isim2 = d['katilan_nick']
@@ -1639,11 +1708,15 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                             html_str_arena = (
                                 f"<div style='background:rgba(0,0,0,0.5); {border_style} padding:15px; border-radius:10px; margin-bottom:10px;'>"
                                 f"{baslik_etiketi}"
-                                f"<div style='text-align:center; color:#FFD700; font-weight:bold; margin-bottom:5px; font-size:18px;'>Masa: {format_tr(d['bahis_miktari']*2)} ₺</div>"
-                                f"<div style='display:flex; justify-content:space-between; font-size:16px;'>"
-                                f"<div style='text-align:center; width:33%;'><b>{isim1}</b><br><span style='color:{r1}; font-weight:bold;'>{p1_str}</span></div>"
-                                f"<div style='color:#aaa; font-size:12px; margin-top:5px; text-align:center; width:33%;'>⏳ Kalan Süre<br><b>{saat}s {dakika}d</b></div>"
-                                f"<div style='text-align:center; width:33%;'><b>{isim2}</b><br><span style='color:{r2}; font-weight:bold;'>{p2_str}</span></div>"
+                                f"<div style='text-align:center; color:#FFD700; font-weight:bold; margin-bottom:10px; font-size:18px;'>Masa: {format_tr(d['bahis_miktari']*2)} ₺</div>"
+                                f"<div style='display:flex; justify-content:space-between; align-items:center; font-size:16px;'>"
+                                f"<div style='text-align:center; width:33%;'>"
+                                f"<img src='{av1_url}' style='width:50px; height:50px; border-radius:50%; object-fit:cover; border:2px solid {r1}; margin-bottom:5px;'><br>"
+                                f"<b>{isim1}</b><br><span style='color:{r1}; font-weight:bold;'>{p1_str}</span></div>"
+                                f"<div style='color:#aaa; font-size:12px; text-align:center; width:33%;'>⏳ Kalan Süre<br><b style='font-size:14px;'>{saat}s {dakika}d</b><br><span style='font-size:24px;'>⚔️</span></div>"
+                                f"<div style='text-align:center; width:33%;'>"
+                                f"<img src='{av2_url}' style='width:50px; height:50px; border-radius:50%; object-fit:cover; border:2px solid {r2}; margin-bottom:5px;'><br>"
+                                f"<b>{isim2}</b><br><span style='color:{r2}; font-weight:bold;'>{p2_str}</span></div>"
                                 f"</div></div>"
                             )
                             st.markdown(html_str_arena, unsafe_allow_html=True)
@@ -1712,7 +1785,6 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                 
                 st.caption("🔍 Profili detaylı incelemek için listedeki 'ℹ️ İncele' butonuna tıklayın.")
                 
-                # YENİ DÜZELTME: Liderlik Tablosunu Scroll (Kaydırılabilir) Kutu İçine Alıyoruz
                 liderlik_container = st.container(height=450)
                 with liderlik_container:
                     c_h1, c_h2, c_h3, c_h4 = st.columns([1.5, 1, 4, 3])
@@ -1727,16 +1799,20 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                         maskeli_bakiye = int_str[0] + "".join(["*" if c.isdigit() else c for c in int_str[1:]]) + " ₺"
                         sira = "🥇 1" if i == 0 else "🥈 2" if i == 1 else "🥉 3" if i == 2 else str(i + 1)
                         
+                        # YENİ EKLENEN: Liderlik tablosunda kullanıcının avatarını gösterme
+                        av_key = db_canli[user_data['id']].get("avatar", "Varsayılan")
+                        av_url = AVATARLAR.get(av_key, AVATARLAR["Varsayılan"])
+                        
                         c_r1, c_r2, c_r3, c_r4 = st.columns([1.5, 1, 4, 3])
                         with c_r1:
                             if st.button("ℹ️ İncele", key=f"btn_prof_{user_data['id']}", use_container_width=True):
                                 profil_goster(user_data['id'], user_data['Saf_Isim'], db_canli[user_data['id']])
                         with c_r2:
-                            st.markdown(f"<div style='margin-top:12px; font-weight:bold;'>{sira}</div>", unsafe_allow_html=True)
+                            st.markdown(f"<div style='margin-top:8px; font-weight:bold;'>{sira}</div>", unsafe_allow_html=True)
                         with c_r3:
-                            st.markdown(f"<div style='margin-top:12px; font-weight:bold; color:white;'>{user_data['Kullanici']}</div>", unsafe_allow_html=True)
+                            st.markdown(f"<div style='margin-top:5px; font-weight:bold; color:white; display:flex; align-items:center;'><img src='{av_url}' style='width:30px; height:30px; border-radius:50%; object-fit:cover; margin-right:10px;'> {user_data['Kullanici']}</div>", unsafe_allow_html=True)
                         with c_r4:
-                            st.markdown(f"<div style='margin-top:12px; font-weight:bold; color:#00ff00;'>{maskeli_bakiye}</div>", unsafe_allow_html=True)
+                            st.markdown(f"<div style='margin-top:8px; font-weight:bold; color:#00ff00;'>{maskeli_bakiye}</div>", unsafe_allow_html=True)
                         st.markdown("<hr style='margin-top:0px; margin-bottom:5px; border-color:rgba(255,255,255,0.05);'>", unsafe_allow_html=True)
                 
                 st.markdown("<br>", unsafe_allow_html=True)
@@ -1780,10 +1856,15 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                 else:
                     for msg in mesajlar:
                         zaman_str = pd.to_datetime(msg["time"], unit="s").tz_localize("UTC").tz_convert("Europe/Istanbul").strftime("%H:%M")
+                        
+                        # YENİ EKLENEN: Sohbetteki Avatar Görüntüleri
+                        av_key = msg.get("avatar", "Varsayılan")
+                        av_url = AVATARLAR.get(av_key, AVATARLAR["Varsayılan"])
+                        
                         if msg["user"] == "👑 SİSTEM YÖNETİCİSİ":
-                            st.markdown(f"<div class='sohbet-mesaji admin'><b><span style='color:#FFD700'>{msg['user']}</span></b> <span style='font-size:11px; color:#aaa;'>🕒 {zaman_str}</span><br><span style='color:#FFD700'>{msg['text']}</span></div>", unsafe_allow_html=True)
+                            st.markdown(f"<div class='sohbet-mesaji admin'><img src='{av_url}' style='width:25px; height:25px; border-radius:50%; object-fit:cover; vertical-align:middle; margin-right:8px;'><b><span style='color:#FFD700'>{msg['user']}</span></b> <span style='font-size:11px; color:#aaa;'>🕒 {zaman_str}</span><br><span style='color:#FFD700'>{msg['text']}</span></div>", unsafe_allow_html=True)
                         else:
-                            st.markdown(f"<div class='sohbet-mesaji'><b><span style='color:#00ffff'>{msg['user']}</span></b> <span style='font-size:11px; color:#aaa;'>🕒 {zaman_str}</span><br>{msg['text']}</div>", unsafe_allow_html=True)
+                            st.markdown(f"<div class='sohbet-mesaji'><img src='{av_url}' style='width:25px; height:25px; border-radius:50%; object-fit:cover; vertical-align:middle; margin-right:8px;'><b><span style='color:#00ffff'>{msg['user']}</span></b> <span style='font-size:11px; color:#aaa;'>🕒 {zaman_str}</span><br>{msg['text']}</div>", unsafe_allow_html=True)
 
         if hasattr(st, "fragment"): sohbet_kutusunu_ciz = st.fragment(run_every=2)(sohbet_kutusunu_ciz)
         else:
@@ -1793,7 +1874,12 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
         yeni_mesaj = st.chat_input("Piyasa hakkında bir şeyler yaz...")
         if yeni_mesaj:
             db_guncel = db_yukle() 
-            db_guncel["_GLOBAL_"]["sohbet"].append({"user": aktif_nickname, "text": yeni_mesaj[:250], "time": time.time()})
+            db_guncel["_GLOBAL_"]["sohbet"].append({
+                "user": aktif_nickname, 
+                "text": yeni_mesaj[:250], 
+                "time": time.time(),
+                "avatar": db_guncel[aktif_kullanici].get("avatar", "Varsayılan") # Avatarı mesaja iliştir
+            })
             db_guncel["_GLOBAL_"]["sohbet"] = db_guncel["_GLOBAL_"]["sohbet"][-50:]
             db_kaydet(db_guncel)
             st.rerun()
