@@ -887,7 +887,7 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
             
         c1, c2 = st.columns(2)
         c1.metric("💰 En Büyük Vurgun", f"+{format_tr(en_yuksek_kar)} ₺")
-        c2.metric("⚔️ Arena Başarısı", f"%{format_tr(win_rate, 0)}", f"{dk['kazandigi']} Galibiyet / {dk['katildigi']} Maç")
+        c2.metric("⚔️ Arena Başarısı", f"%{format_tr(win_rate, 0)}", f"{dk['kazandigi']} Galibiyet / {dk['katildigi']} Düello")
         
         st.markdown("---")
         st.markdown("#### 🔥 En Çok İşlem Yaptığı Varlıklar")
