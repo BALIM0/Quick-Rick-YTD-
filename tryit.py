@@ -80,7 +80,6 @@ def db_yukle():
                 if "rozetler" not in v: v["rozetler"] = []
                 if "kayit_tarihi" not in v: v["kayit_tarihi"] = time.time()
                 
-                # YENİ EKLENEN CASUSLUK İSTATİSTİKLERİ
                 if "istatistikler" not in v: 
                     v["istatistikler"] = {"islem_sayisi": 0, "odenen_komisyon": 0.0, "en_yuksek_kar": 0.0, "favori_varliklar": {}, "duello_karnesi": {"katildigi": 0, "kazandigi": 0}}
                 else:
@@ -871,8 +870,7 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
     if global_duyuru: st.error(f"📢 **SİSTEM DUYURUSU:** {global_duyuru}")
     st.caption(f"👤 Fon Yöneticisi: **{aktif_nickname.upper()}** | 💵 Güncel Kur (USD/TRY): **{format_tr(usd_kuru)} ₺**")
 
-    # YENİ EKLENEN CASUSLUK POP-UP FONKSİYONU
-    @st.dialog("🕵️ Casusluk: Oyuncu Karnesi")
+    @st.dialog("🕵️ Oyuncu Karnesi")
     def profil_goster(profil_id, profil_nick, profil_veri):
         istatistikler = profil_veri.get("istatistikler", {})
         en_yuksek_kar = istatistikler.get("en_yuksek_kar", 0.0)
@@ -1013,7 +1011,6 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                 buton_metni = "🕒 Bekleyen Emir Gir" if "Limit" in emir_turu else "⚡ Siparişi Anında Onayla"
                 if st.button(buton_metni, use_container_width=True) and anlik_fiyat > 0 and not limit_asildi:
                     
-                    # ARKA PLAN CASUSLUK KAYITLARI (İşlem Sayısı, Komisyon ve Favori Varlıklar)
                     db[aktif_kullanici]["istatistikler"]["islem_sayisi"] += 1
                     db[aktif_kullanici]["istatistikler"]["odenen_komisyon"] += komisyon_tutari
                     db[aktif_kullanici]["istatistikler"].setdefault("favori_varliklar", {})
@@ -1046,11 +1043,8 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                             
                             if "Limit" not in emir_turu:
                                 net_kar = toplam_islem_getirisi - (mevcut_veri["maliyet"] * islem_miktari)
-                                
-                                # ARKA PLAN CASUSLUK KAYITLARI (En Yüksek Kar Tespiti)
                                 if net_kar > db[aktif_kullanici]["istatistikler"].get("en_yuksek_kar", 0.0):
                                     db[aktif_kullanici]["istatistikler"]["en_yuksek_kar"] = net_kar
-                                    
                                 if net_kar >= 10000: rozet_ver(db, aktif_kullanici, "🐋", "Mavi Balina")
 
                             if yeni_adet <= 0.000001: del cuzdan["varliklar"][secili_varlik]
@@ -1093,7 +1087,6 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                         cuzdan["nakit"] -= gerekli_nakit
                         db["_GLOBAL_"]["toplam_komisyon"] += komisyon_tutari
                         
-                        # ARKA PLAN CASUSLUK KAYITLARI
                         db[aktif_kullanici]["istatistikler"]["islem_sayisi"] += 1
                         db[aktif_kullanici]["istatistikler"]["odenen_komisyon"] += komisyon_tutari
                         db[aktif_kullanici]["istatistikler"].setdefault("favori_varliklar", {})
@@ -1156,7 +1149,6 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                                 cz_canli["nakit"] += emir["beklenen_getiri"]
                                 db_canli["_GLOBAL_"]["toplam_komisyon"] += emir["komisyon"]
                                 
-                                # ARKA PLAN CASUSLUK KAYITLARI (Limit Emir Satışından Rekor Kar)
                                 net_k = emir["beklenen_getiri"] - (emir.get("maliyet_rezerv", 0.0) * emir["adet"])
                                 if net_k > db_canli[aktif_kullanici]["istatistikler"].get("en_yuksek_kar", 0.0):
                                     db_canli[aktif_kullanici]["istatistikler"]["en_yuksek_kar"] = net_k
@@ -1254,7 +1246,6 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                                 db_canli[aktif_kullanici]["istatistikler"]["odenen_komisyon"] += kapanis_komisyonu
                                 db_canli[aktif_kullanici]["istatistikler"]["islem_sayisi"] += 1
                                 
-                                # ARKA PLAN CASUSLUK KAYITLARI (Kaldıraçtan Rekor Kar)
                                 if pnl > db_canli[aktif_kullanici]["istatistikler"].get("en_yuksek_kar", 0.0):
                                     db_canli[aktif_kullanici]["istatistikler"]["en_yuksek_kar"] = pnl
                                 
@@ -1458,7 +1449,6 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                             else:
                                 db_arena[kazanan]["cuzdan"]["nakit"] += toplam_odul
                             
-                            # ARKA PLAN CASUSLUK KAYITLARI (Düello Karnesi Güncelleme)
                             for uid in [d["olusturan_id"], d["katilan_id"]]:
                                 if uid in db_arena:
                                     db_arena[uid]["istatistikler"].setdefault("duello_karnesi", {"katildigi": 0, "kazandigi": 0})
@@ -1717,7 +1707,8 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                         rozet_str = "".join(v.get("rozetler", []))
                         isim_ve_rozet = f"{gosterilecek_isim} {rozet_str}"
                         
-                        liderlik_listesi.append({"Kullanici": isim_ve_rozet, "Toplam": kullanici_toplam})
+                        # YENİ EKLENEN: Gizli Kullanıcı ID'sini listede tutuyoruz (Tıklama için gerekli)
+                        liderlik_listesi.append({"id": k, "Kullanici": isim_ve_rozet, "Toplam": kullanici_toplam})
                 
                 liderlik_listesi = sorted(liderlik_listesi, key=lambda x: x["Toplam"], reverse=True)
                 
@@ -1733,7 +1724,30 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                         "Gizli Kasa Büyüklüğü": maskeli_bakiye
                     })
                     
-                st.dataframe(pd.DataFrame(gosterim_listesi).style.hide(axis="index"), use_container_width=True)
+                # YENİ EKLENEN: Liderlik Tablosunun Tıklanabilir (Seçilebilir) Hale Getirilmesi
+                st.caption("🔍 Profili detaylı incelemek için tablodan bir oyuncunun üzerine tıklayabilirsiniz.")
+                
+                df_gosterim = pd.DataFrame(gosterim_listesi)
+                try:
+                    # Yeni Streamlit sürümlerinde satır seçmeyi açıyoruz
+                    secim_event = st.dataframe(
+                        df_gosterim,
+                        hide_index=True,
+                        use_container_width=True,
+                        on_select="rerun",
+                        selection_mode="single-row"
+                    )
+                    
+                    # Eğer bir satıra tıklandıysa, o satırdaki oyuncunun profilini aç
+                    if hasattr(secim_event, 'selection') and len(secim_event.selection.rows) > 0:
+                        secilen_index = secim_event.selection.rows[0]
+                        secilen_oyuncu_id = liderlik_listesi[secilen_index]["id"]
+                        secilen_oyuncu_nick = liderlik_listesi[secilen_index]["Kullanici"]
+                        profil_goster(secilen_oyuncu_id, secilen_oyuncu_nick, db_canli[secilen_oyuncu_id])
+                        
+                except TypeError:
+                    # Eski bir Streamlit sürümü kullanılıyorsa hata vermemesi için güvenli zırh
+                    st.dataframe(df_gosterim.style.hide(axis="index"), use_container_width=True)
                 
                 st.markdown("<br>", unsafe_allow_html=True)
                 with st.expander("💡 Başarım Rozetleri Ne Anlama Geliyor?"):
@@ -1746,9 +1760,9 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
         if hasattr(st, "fragment"): liderlik_tablosunu_ciz = st.fragment(run_every=30)(liderlik_tablosunu_ciz)
         liderlik_tablosunu_ciz()
         
-        # YENİ EKLENEN: CASUSLUK (PROFİL İNCELEME) EKRANI
+        # Casusluk yazısı temizlendi.
         st.markdown("---")
-        st.subheader("🕵️ Oyuncu Profillerini İncele (Casusluk)")
+        st.subheader("🕵️ Oyuncu Profillerini İncele")
         st.write("Rakiplerinin en çok oynadığı hisseleri ve düello başarılarını incele.")
         
         db_guncel = db_yukle()
