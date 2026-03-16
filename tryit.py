@@ -32,7 +32,10 @@ AVATARLAR = {
     "Jeff Bezos": "https://i.imgflip.com/212ph6.jpg?a492552",
     "Harvey Specter": "https://i.redd.it/harvey-specter-is-really-handsome-v0-gysy7blhhkud1.jpg?width=736&format=pjpg&auto=webp&s=f23f39e1fc52ad27637ae2e11ce2d2df7865043c",
     "The Mask": "https://i.redd.it/9ipl7sx9o0r31.jpg",
+    "Polat Alemdar": "https://cdn.gunes.com/Documents/Gunes/images/2024/08/29/29082024172493204092c60d6c.jpg",
+    "Elif": "https://cdn.yeniakit.com.tr/images/album/kurtlar-vadisinin-unutulmaz-21-efsanesi-a2151d.jpg",
     "Süleyman Çakır": "https://img.memurlar.net/galeri/1201/f586f663-7610-e311-a396-14feb5cc1801.jpg?width=800",
+    "Damon": "https://static0.srcdn.com/wordpress/wp-content/uploads/2023/11/damon-smiling-in-the-vampire-diaries-pilot.jpg?w=1600&h=900&fit=crop",
     "Pembe": "https://cf.kizlarsoruyor.com/q13723734/a7f810af-671d-4ef8-9f33-5111ca4067fd.jpg",
     "Ziyaa": "https://daragacisanat.com/wp-content/uploads/2020/10/sakir.png?w=600",
     "Sid": "https://i.pinimg.com/474x/3c/d0/2a/3cd02a732787e5dc9bf957f970d5c78b.jpg",
@@ -93,7 +96,7 @@ def db_yukle():
             degisiklik_var = True
             
         if ADMIN_ID not in veri:
-            veri[ADMIN_ID] = {"sifre": sifre_sifrele(ADMIN_PASS), "nickname": "👑 SİSTEM YÖNETİCİSİ", "avatar": "Secilmedi", "son_isim_degistirme": 0, "kayit_tarihi": time.time(), "rozetler": [], "istatistikler": {"islem_sayisi": 0, "odenen_komisyon": 0.0, "en_yuksek_kar": 0.0, "favori_varliklar": {}, "duello_karnesi": {"katildigi": 0, "kazandigi": 0}}, "cuzdan": {"nakit": 1000000.0, "varliklar": {}, "kaldiracli_islemler": [], "izleme_listesi": ["Türk Hava Yolları", "Bitcoin", "Altın (Ons)", "NVIDIA", "Apple"], "bekleyen_emirler": [], "banka": {"gecelik": {"miktar": 0.0, "son_guncelleme": time.time()}, "vadeli": []}}, "is_admin": True}
+            veri[ADMIN_ID] = {"sifre": sifre_sifrele(ADMIN_PASS), "nickname": "👑 SİSTEM YÖNETİCİSİ", "avatar": "Secilmedi", "son_isim_degistirme": 0, "son_avatar_degistirme": 0, "kayit_tarihi": time.time(), "rozetler": [], "istatistikler": {"islem_sayisi": 0, "odenen_komisyon": 0.0, "en_yuksek_kar": 0.0, "favori_varliklar": {}, "duello_karnesi": {"katildigi": 0, "kazandigi": 0}}, "cuzdan": {"nakit": 1000000.0, "varliklar": {}, "kaldiracli_islemler": [], "izleme_listesi": ["Türk Hava Yolları", "Bitcoin", "Altın (Ons)", "NVIDIA", "Apple"], "bekleyen_emirler": [], "banka": {"gecelik": {"miktar": 0.0, "son_guncelleme": time.time()}, "vadeli": []}}, "is_admin": True}
             degisiklik_var = True
             
         for k, v in veri.items():
@@ -102,6 +105,7 @@ def db_yukle():
                 if "kayit_tarihi" not in v: v["kayit_tarihi"] = time.time()
                 
                 if "avatar" not in v: v["avatar"] = "Secilmedi"
+                if "son_avatar_degistirme" not in v: v["son_avatar_degistirme"] = 0
                 
                 if "istatistikler" not in v: 
                     v["istatistikler"] = {"islem_sayisi": 0, "odenen_komisyon": 0.0, "en_yuksek_kar": 0.0, "favori_varliklar": {}, "duello_karnesi": {"katildigi": 0, "kazandigi": 0}}
@@ -291,7 +295,7 @@ if st.session_state.aktif_kullanici is None:
             else:
                 db[k_kullanici] = {
                     "sifre": sifre_sifrele(k_sifre), "nickname": k_nickname, "avatar": k_avatar, 
-                    "son_isim_degistirme": 0, "kayit_tarihi": time.time(), "rozetler": [], 
+                    "son_isim_degistirme": 0, "son_avatar_degistirme": 0, "kayit_tarihi": time.time(), "rozetler": [], 
                     "istatistikler": {"islem_sayisi": 0, "odenen_komisyon": 0.0, "en_yuksek_kar": 0.0, "favori_varliklar": {}, "duello_karnesi": {"katildigi": 0, "kazandigi": 0}}, 
                     "cuzdan": {"nakit": 1000000.0, "varliklar": {}, "kaldiracli_islemler": [], "izleme_listesi": ["Türk Hava Yolları", "Bitcoin", "Altın (Ons)", "NVIDIA", "Apple"], "bekleyen_emirler": [], "banka": {"gecelik": {"miktar": 0.0, "son_guncelleme": time.time()}, "vadeli": []}}, 
                     "is_admin": False
@@ -416,7 +420,9 @@ if st.sidebar.button("🚪 Çıkış Yap", use_container_width=True):
     st.rerun()
 
 with st.sidebar.expander("⚙️ Hesap Ayarları", expanded=False):
-    tab_sifre, tab_isim, tab_sil = st.tabs(["🔑 Şifre", "🏷️ İsim", "❌ Sil"])
+    # YENİ EKLENEN: Profil Resmi (Avatar) Sekmesi
+    tab_sifre, tab_isim, tab_avatar, tab_sil = st.tabs(["🔑 Şifre", "🏷️ İsim", "🎭 Avatar", "❌ Sil"])
+    
     with tab_sifre:
         with st.form("sifre_degistir_form"):
             eski_sifre = st.text_input("Mevcut Şifre", type="password")
@@ -430,6 +436,7 @@ with st.sidebar.expander("⚙️ Hesap Ayarları", expanded=False):
                     db[aktif_kullanici]["sifre"] = sifre_sifrele(yeni_sifre)
                     db_kaydet(db)
                     st.success("✅ Şifre güncellendi!")
+                    
     with tab_isim:
         son_degisim = db[aktif_kullanici].get("son_isim_degistirme", 0)
         kalan_saniye = (7 * 24 * 60 * 60) - (su_an - son_degisim)
@@ -451,6 +458,28 @@ with st.sidebar.expander("⚙️ Hesap Ayarları", expanded=False):
                         db_kaydet(db)
                         st.success("✅ İsim güncellendi!")
                         time.sleep(1); st.rerun()
+
+    # YENİ EKLENEN: Avatar Değiştirme Mantığı (Haftada 1 Kez Sınırıyla)
+    with tab_avatar:
+        son_av_degisim = db[aktif_kullanici].get("son_avatar_degistirme", 0)
+        kalan_av_saniye = (7 * 24 * 60 * 60) - (su_an - son_av_degisim)
+        if kalan_av_saniye > 0 and not is_admin:
+            kalan_gun_av, kalan_saat_av = int(kalan_av_saniye // (24 * 3600)), int((kalan_av_saniye % (24 * 3600)) // 3600)
+            st.info(f"⏳ Avatarınızı değiştirmek için **{kalan_gun_av} gün {kalan_saat_av} saat** beklemelisiniz.")
+        else:
+            st.caption("Yeni karakterini seç (Haftada 1 kez değiştirebilirsin).")
+            c_av1, c_av2 = st.columns([3, 1])
+            with c_av1:
+                yeni_avatar_secim = st.selectbox("Yeni Avatar:", [k for k in AVATARLAR.keys() if k not in ["Secilmedi", "Varsayılan"]], key="ayarlar_avatar_secim")
+            with c_av2:
+                st.markdown(f"<div style='text-align:right;'><img src='{AVATARLAR[yeni_avatar_secim]}' style='width:70px; height:70px; border-radius:50%; object-fit:cover; border:2px solid #00ffff;'></div>", unsafe_allow_html=True)
+            if st.button("🎭 Avatarı Güncelle", use_container_width=True):
+                db[aktif_kullanici]["avatar"] = yeni_avatar_secim
+                db[aktif_kullanici]["son_avatar_degistirme"] = su_an
+                db_kaydet(db)
+                st.success("✅ Avatar güncellendi!")
+                time.sleep(1); st.rerun()
+
     with tab_sil:
         st.markdown("<span style='font-size: 13px; color: #ff4444;'>Dikkat: Bu işlem kalıcıdır.</span>", unsafe_allow_html=True)
         sil_onay = st.checkbox("Silme işlemini onaylıyorum")
@@ -1848,7 +1877,6 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
             mesajlar = db_anlik["_GLOBAL_"].get("sohbet", [])
             chat_container = st.container(height=450)
             
-            # YENİ DÜZELTME: Bütün oyuncuların güncel avatarlarını tespit eden Ajan Haritası
             guncel_avatarlar = {}
             for k, v in db_anlik.items():
                 if k not in ["_GLOBAL_", "_OTURUMLAR_", "_DUELLOLAR_"] and isinstance(v, dict):
@@ -1864,11 +1892,9 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
                         
                         gonderen_isim = msg.get("user", "Bilinmeyen")
                         
-                        # Güncel haritadan avatarı çek, eğer adam silinmişse mesaja kayıtlı olana bak.
                         av_key = guncel_avatarlar.get(gonderen_isim, msg.get("avatar", "Varsayılan"))
                         av_url = AVATARLAR.get(av_key, AVATARLAR["Varsayılan"])
                         
-                        # YENİ DÜZELTME: Markdown Kayma Hatasını Önleyen Flexbox Yapısı
                         if gonderen_isim == "👑 SİSTEM YÖNETİCİSİ":
                             sohbet_html = (
                                 f"<div class='sohbet-mesaji admin' style='display:flex; align-items:flex-start;'>"
