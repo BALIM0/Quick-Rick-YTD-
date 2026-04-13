@@ -153,25 +153,53 @@ def format_tr(val, decimals=2):
 # =========================================================================================
 # --- GELİŞMİŞ UI / UX TASARIMI ---
 # =========================================================================================
+# =========================================================================================
+# --- GELİŞMİŞ UI / UX TASARIMI ---
+# =========================================================================================
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Share+Tech+Mono&display=swap');
     html, body, [class*="css"] { font-family: 'Inter', sans-serif !important; }
-    .stApp { background: radial-gradient(circle at top right, #131d2b 0%, #0b0f19 100%) !important; }
-    [data-testid="stSidebar"] { background-color: #0e131f !important; border-right: 1px solid rgba(0, 255, 255, 0.05) !important; }
     
-    div[data-testid="metric-container"] { background: rgba(20, 26, 36, 0.6) !important; backdrop-filter: blur(12px) !important; border: 1px solid rgba(0, 255, 255, 0.15) !important; padding: 20px !important; border-radius: 16px !important; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3) !important; transition: all 0.4s ease-in-out !important; }
-    div[data-testid="metric-container"]:hover { transform: translateY(-7px) !important; border-color: rgba(0, 255, 255, 0.6) !important; box-shadow: 0 12px 40px 0 rgba(0, 255, 255, 0.15) !important; }
+    /* 🌌 Dark Mode / HUD Arka Plan Ayarları */
+    .stApp { background: radial-gradient(circle at top right, #0d131f 0%, #03050a 100%) !important; color: #e2e8f0; }
+    [data-testid="stSidebar"] { background-color: #070b14 !important; border-right: 1px solid rgba(0, 255, 255, 0.1) !important; box-shadow: 2px 0 15px rgba(0, 255, 255, 0.05); }
     
-    [data-testid="stMetricValue"] { font-size: 1.6rem !important; }
+    /* 📊 HUD Özel Metrik Kartları (Yeni Eklenen) */
+    .hud-metric-card {
+        background: linear-gradient(145deg, rgba(15, 23, 42, 0.6) 0%, rgba(5, 8, 15, 0.8) 100%);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(0, 255, 255, 0.2);
+        border-radius: 12px;
+        padding: 20px 15px;
+        text-align: center;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(0, 255, 255, 0.02);
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        position: relative;
+        overflow: hidden;
+    }
+    .hud-metric-card::before { content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 2px; background: linear-gradient(90deg, transparent, #00ffff, transparent); transition: left 0.5s ease; }
+    .hud-metric-card:hover { transform: translateY(-7px); border-color: rgba(0, 255, 255, 0.6); box-shadow: 0 12px 40px rgba(0, 255, 255, 0.15), inset 0 0 20px rgba(0, 255, 255, 0.08); }
+    .hud-metric-card:hover::before { left: 100%; }
+    .hud-metric-title { font-size: 13px; color: #8b9bb4; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600; margin-bottom: 8px; }
+    .hud-metric-value { font-family: 'Share Tech Mono', monospace; font-size: 26px; color: #ffffff; font-weight: 800; text-shadow: 0 0 10px rgba(255,255,255,0.2); margin-bottom: 5px;}
+    .hud-metric-delta { font-size: 13px; font-weight: 600; letter-spacing: 0.5px; }
+    .hud-delta-up { color: #00ffcc; text-shadow: 0 0 8px rgba(0, 255, 204, 0.4); }
+    .hud-delta-down { color: #ff4444; text-shadow: 0 0 8px rgba(255, 68, 68, 0.4); }
+
+    /* Eski stMetric gizleme ve Mobil Uyum */
+    [data-testid="stMetricValue"] { font-size: 1.6rem !important; display: none; }
     @media screen and (max-width: 768px) {
-        [data-testid="stMetricValue"] { font-size: 1.1rem !important; white-space: normal !important; word-wrap: break-word !important; }
-        [data-testid="stMetricLabel"] p { font-size: 0.85rem !important; }
-        div[data-testid="metric-container"] { padding: 12px !important; }
+        .hud-metric-value { font-size: 20px; }
     }
 
-    div.stButton > button { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important; color: #fff !important; border: 1px solid rgba(0, 255, 255, 0.3) !important; border-radius: 10px !important; padding: 10px 24px !important; font-weight: 600 !important; letter-spacing: 0.5px !important; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important; width: 100% !important; }
-    div.stButton > button:hover { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important; border-color: #00ffff !important; color: #00ffff !important; box-shadow: 0 0 15px rgba(0, 255, 255, 0.3), inset 0 0 10px rgba(0, 255, 255, 0.1) !important; transform: scale(1.03) !important; }
+    /* 🔘 Neon Glow Butonlar (Cilalanmış) */
+    div.stButton > button { background: linear-gradient(135deg, #0d1b2a 0%, #1a233a 100%) !important; color: #00ffff !important; border: 1px solid rgba(0, 255, 255, 0.3) !important; border-radius: 8px !important; padding: 12px 24px !important; font-weight: 600 !important; letter-spacing: 1px !important; text-transform: uppercase; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important; width: 100% !important; overflow: hidden; position: relative; z-index: 1;}
+    div.stButton > button::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, rgba(0,255,255,0.2) 0%, transparent 100%); z-index: -1; opacity: 0; transition: opacity 0.3s ease; }
+    div.stButton > button:hover::after { opacity: 1; }
+    div.stButton > button:hover { border-color: #00ffff !important; color: #ffffff !important; box-shadow: 0 0 20px rgba(0, 255, 255, 0.4), inset 0 0 15px rgba(0, 255, 255, 0.1) !important; transform: scale(1.02) !important; text-shadow: 0 0 8px rgba(255,255,255,0.5); }
+    
+    /* Diğer Mevcut CSS Sınıfları (Aynen Korundu) */
     button[data-baseweb="tab"] { background-color: transparent !important; border: none !important; border-bottom: 3px solid transparent !important; padding: 12px 20px !important; font-weight: 600 !important; color: #667085 !important; transition: all 0.3s ease !important; }
     button[data-baseweb="tab"][aria-selected="true"] { color: #00ffff !important; border-bottom: 3px solid #00ffff !important; background-color: rgba(0, 255, 255, 0.05) !important; border-radius: 8px 8px 0 0 !important; }
     button[data-baseweb="tab"]:hover { color: #e2e8f0 !important; background-color: rgba(255, 255, 255, 0.02) !important; }
@@ -1032,12 +1060,44 @@ elif uygulama_modu == "💼 Sanal Portföy Yönetimi":
 
         toplam_portfoy = cuzdan["nakit"] + toplam_varlik_degeri + toplam_kaldirac_net_deger + toplam_banka
         
-        col1, col2, col3, col4 = st.columns(4)
-        col1.metric("Toplam Net Değer", f"{format_tr(toplam_portfoy)} ₺", f"% {format_tr(((toplam_portfoy - 1000000.0) / 1000000.0) * 100)}")
-        col2.metric("Boş Nakit", f"{format_tr(cuzdan['nakit'])} ₺")
-        col3.metric("Yatırımdaki Varlıklar", f"{format_tr(toplam_varlik_degeri + toplam_kaldirac_net_deger)} ₺")
-        col4.metric("Bankadaki Nakit (Faiz)", f"{format_tr(toplam_banka)} ₺")
-        st.markdown("---")
+        kar_zarar_yuzde = ((toplam_portfoy - 1000000.0) / 1000000.0) * 100
+        kz_renk_sinifi = "hud-delta-up" if kar_zarar_yuzde >= 0 else "hud-delta-down"
+        kz_ok = "🟢 ▲" if kar_zarar_yuzde >= 0 else "🔴 ▼"
+
+        c1, c2, c3, c4 = st.columns(4)
+        with c1:
+            st.markdown(f"""
+                <div class='hud-metric-card'>
+                    <div class='hud-metric-title'>💎 Toplam Net Değer</div>
+                    <div class='hud-metric-value'>{format_tr(toplam_portfoy)} ₺</div>
+                    <div class='hud-metric-delta {kz_renk_sinifi}'>{kz_ok} %{format_tr(kar_zarar_yuzde)}</div>
+                </div>
+            """, unsafe_allow_html=True)
+        with c2:
+            st.markdown(f"""
+                <div class='hud-metric-card'>
+                    <div class='hud-metric-title'>💵 Boş Nakit</div>
+                    <div class='hud-metric-value' style='color:#a3b8cc;'>{format_tr(cuzdan['nakit'])} ₺</div>
+                    <div class='hud-metric-delta' style='color:#5c7080;'>Kullanılabilir Nakit</div>
+                </div>
+            """, unsafe_allow_html=True)
+        with c3:
+            st.markdown(f"""
+                <div class='hud-metric-card'>
+                    <div class='hud-metric-title'>📈 Yatırımdaki Varlıklar</div>
+                    <div class='hud-metric-value' style='color:#00ffcc;'>{format_tr(toplam_varlik_degeri + toplam_kaldirac_net_deger)} ₺</div>
+                    <div class='hud-metric-delta' style='color:#5c7080;'>Spot + Kaldıraç</div>
+                </div>
+            """, unsafe_allow_html=True)
+        with c4:
+            st.markdown(f"""
+                <div class='hud-metric-card'>
+                    <div class='hud-metric-title'>🏦 Bankadaki Nakit</div>
+                    <div class='hud-metric-value' style='color:#FFD700;'>{format_tr(toplam_banka)} ₺</div>
+                    <div class='hud-metric-delta' style='color:#5c7080;'>Faiz Getirili</div>
+                </div>
+            """, unsafe_allow_html=True)
+        st.markdown("<br>", unsafe_allow_html=True)
 
         col_islem, col_durum = st.columns([1, 2])
         
